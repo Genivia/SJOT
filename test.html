@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>SJOT test</h1>
+
+<h2>SJOT in JSON</h2>
+<p id="sjot"></p>
+
+<h2>With SJOT schema</h2>
+<p id="with"></p>
+
+<script src="sjot.js"></script>
+
+<script>
+
+var text =
+'{ "@sjot": {' +
+'    "@root": "#person",' +
+'    "person": {' +
+'      "id?456": "integer",' +
+'      "name": "#name",' +
+'      "street": "string",' +
+'      "tags?": "string{1,}",' +
+'      "phone?": "([- 0-9]+)",' +
+'      "@all": [ [ "tags", "phone" ] ]' +
+'    },' +
+'    "name": "string"' +
+'  },' +
+'  "name": "John Johnson",' +
+'  "street": "Oslo West 16",' +
+'  "tags": [ "JSON" ],' +
+'  "phone":"555 1234567"' +
+'}';
+
+var schema =
+'{' + 
+'  "person": {' +
+'    "id?456": "integer",' +
+'    "name": "#name",' +
+'    "street": "string",' +
+'    "tags?": "string{1,}",' +
+'    "phone?": "([- 0-9]+)",' +
+'    "@all": [ [ "tags", "phone" ] ]' +
+'  },' +
+'  "name": "string"' +
+'}';
+
+var obj = JSON.parse(text);
+
+// validate obj against embedded SJOT
+if (SJOT.validate(obj)) {
+
+  document.getElementById("sjot").innerHTML =
+    obj.id + "<br>" +
+    obj.name + "<br>" +
+    obj.street + "<br>" +
+    obj.phone;
+
+}
+
+// validate obj against the schema person object type
+if (SJOT.validateWith(schema, obj, "#person")) {
+
+  document.getElementById("with").innerHTML =
+    obj.id + "<br>" +
+    obj.name + "<br>" +
+    obj.street + "<br>" +
+    obj.phone;
+
+}
+
+</script>
+
+</body>
+</html>
