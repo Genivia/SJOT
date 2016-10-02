@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.0.1
+ * sjot.js v0.0.2
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -21,10 +21,10 @@
  *
  * var sjot = '{ "sometype": { ... } }';
  *
- * if (SJOT.validateWith(sjot, obj, "#sometype"))
+ * if (SJOT.validate(obj, "#sometype", sjot))
  *   ... // obj validated against sjot schema type sometype
  *
- * if (SJOT.validateWith(null, obj, "http://example.com/sjot.json#sometype"))
+ * if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
  *   ... // obj validated against sjot schema type sometype from http://example.com/sjot.json
  *
  */
@@ -39,33 +39,20 @@
 
 class SJOT {
 
-  static validate(obj) {
-
-    try {
-
-      validate(null, obj, "object");
-
-    } catch (e) {
-
-      console.log(e); // TODO FIXME error handling
-      return false;
-
-    }
-
-    return true;
-
-  }
-
-  static validateWith(schema, obj, type) {
+  // validate(obj [, type [, schema ] ])
+  static validate(obj, type, schema) {
 
     var sjot = schema;
 
     if (typeof schema === "string")
       sjot = JSON.parse(schema);
 
+    if (type === undefined)
+      type = "any";
+
     try {
 
-      validate(sjot, obj, type);
+      sjot_validate(sjot, obj, type);
 
     } catch (e) {
 
@@ -80,7 +67,8 @@ class SJOT {
 
 }
 
-function validate(sjot, data, type) {
+// one validation function that is tail recursive
+function sjot_validate(sjot, data, type) {
 
   if (type === "any") {
 
@@ -89,7 +77,8 @@ function validate(sjot, data, type) {
       // sjoot: validate this object using the embedded SJOT schema
       var sjoot = data['@sjot'];
 
-      validate(sjoot, data, sjoot.hasOwnProperty('@root') ? sjoot['@root'] : sjoot[Object.keys(sjoot)[0]]);
+      sjot_validate(sjoot, data, sjoot.hasOwnProperty('@root') ? sjoot['@root'] : sjoot[Object.keys(sjoot)[0]]);
+      return;
 
     }
 
@@ -103,7 +92,7 @@ function validate(sjot, data, type) {
     if (h === 0) {
 
       // validate using the local type reference
-      validate(sjot, data, sjot[type.slice(1)]);
+      sjot_validate(sjot, data, sjot[type.slice(1)]);
       return;
 
     } else if (h !== -1) {
@@ -111,7 +100,8 @@ function validate(sjot, data, type) {
       if (sjot.hasOwnProperty('@id') && type.startsWith(sjot['@id']) && sjot['@id'].length === h) {
 
         // validate using the local type reference if URI matches the @id of this SJOT schema
-        validate(sjot, data, type.slice(h + 1));
+        sjot_validate(sjot, data, type.slice(h + 1));
+	return;
 
       } else {
 
@@ -144,36 +134,41 @@ function validate(sjot, data, type) {
           if (data.length !== type.length)
             throw "data.length!=type.length";
           for (var i = 0; i < data.length; i++)
-            validate(sjot, data[i], type[i]);
+            sjot_validate(sjot, data[i], type[i]);
+	  return;
 
-        } else if (type.endsWith("]")) {
+	} else if (typeof type === "string") {
 
-          // validate an array
-          var i = type.lastIndexOf("[");
-          var itemtype = type.slice(0, i);
+	  if (type.endsWith("]")) {
 
-          validate_bounds(data.length, type, i + 1);
+	    // validate an array
+	    var i = type.lastIndexOf("[");
+	    var itemtype = type.slice(0, i);
 
-          for (var item of data)
-            validate(sjot, item, itemtype);
+	    sjot_validate_bounds(data.length, type, i + 1);
 
-        } else if (type.endsWith("}")) {
+	    for (var item of data)
+	      sjot_validate(sjot, item, itemtype);
+	    return;
 
-          // validate a set
-          var i = type.lastIndexOf("{");
-          var itemtype = type.slice(0, i);
+	  } else if (type.endsWith("}")) {
 
-          // TODO check uniqueness of array items
-          validate_bounds(data.length, type, i + 1);
+	    // validate a set
+	    var i = type.lastIndexOf("{");
+	    var itemtype = type.slice(0, i);
 
-          for (var item of data)
-            validate(sjot, item, itemtype);
+	    // TODO check uniqueness of array items
+	    sjot_validate_bounds(data.length, type, i + 1);
 
-        } else {
+	    for (var item of data)
+	      sjot_validate(sjot, item, itemtype);
+	    return;
 
-          throw "array!=" + type;
+	  }
 
-        }
+	}
+
+	throw "array!=" + type;
 
       } else {
 
@@ -181,7 +176,7 @@ function validate(sjot, data, type) {
         if (type === "object") {
 
           // validate this object using the embedded @sjot, if present
-          validate(sjot, data, "any");
+          sjot_validate(sjot, data, "any");
           return;
 
         }
@@ -191,6 +186,7 @@ function validate(sjot, data, type) {
           // special case for JS (not JSON), check for Date object
           if (!data.constructor.name != "Date")
             throw "data!=Date";
+	  return;
 
         } else if (typeof type === "object") {
 
@@ -263,7 +259,7 @@ function validate(sjot, data, type) {
                 // validate required property
                 if (!data.hasOwnProperty(prop))
                   throw prop + " required";
-                validate(sjot, data[prop], type[prop]);
+                sjot_validate(sjot, data[prop], type[prop]);
 
               } else {
 
@@ -272,23 +268,31 @@ function validate(sjot, data, type) {
                 // validate optional property when present or set default value when absent
                 if (data.hasOwnProperty(name)) {
 
-                  validate(sjot, data[name], type[prop]);
+                  sjot_validate(sjot, data[name], type[prop]);
 
                 } else if (i < prop.length - 1) {
 
-                  var s = prop.slice(i + 1);
+                  var value = prop.slice(i + 1);
                   var proptype = type[prop];
 
                   if (typeof proptype === "string") {
+
+		    if (proptype.startsWith("#")) {
+
+		      // TODO if proptype is a type reference, get its type from the schema
+
+		    }
 
                     switch (proptype) {
 
                       case "boolean":
 
-                        data[name] = (s === "true");
+                        data[name] = (value === "true");
                         break;
 
                       case "number":
+                      case "float":
+                      case "double":
                       case "integer":
                       case "byte":
                       case "short":
@@ -299,13 +303,28 @@ function validate(sjot, data, type) {
                       case "uint":
                       case "ulong":
 
-                        data[name] = Number.parseFloat(s);
+                        data[name] = Number.parseFloat(value);
                         break;
 
                       default:
 
-                        // TODO check proptype for numeric range and if so set number, not string
-                        data[name] = s;
+                        data[name] = value;
+
+                        // check proptype for numeric range and if so set number, not string
+			if (!proptype.startsWith("(")) {
+
+			  for (var i = 0; i < proptype.length; i++) {
+
+			    if (proptype.charCodeAt(i) >= 0x30 && proptype.charCodeAt(i) <= 0x39) {
+
+			      data[name] = Number.parseFloat(value);
+			      break;
+
+			    }
+
+			  }
+
+			}
 
                     }
 
@@ -343,7 +362,7 @@ function validate(sjot, data, type) {
     case "number":
 
       // validate a number
-      if (type === "number" || type === "atom")
+      if (type === "number" || type === "float" || type === "double" || type === "atom")
         return;
       if (typeof type !== "string")
         throw type;
@@ -523,7 +542,7 @@ function validate(sjot, data, type) {
 
         } else {
 
-          validate_bounds(data.length, type, 5);
+          sjot_validate_bounds(data.length, type, 5);
 
         }
 
@@ -576,7 +595,8 @@ function validate(sjot, data, type) {
 
 }
 
-function validate_bounds(len, type, i) {
+// check array/set/string bounds
+function sjot_validate_bounds(len, type, i) {
 
   var j = type.indexOf("]", i);
   var k = type.indexOf(",", i);
@@ -594,6 +614,14 @@ function validate_bounds(len, type, i) {
 
     if (len !== n)
       throw "len!=" + n;
+
+  } else if (i + 1 == k) {
+
+    // check [,m]
+    var m = Number.parseInt(type.slice(i, k));
+
+    if (len > m)
+      throw "len>" + m;
 
   } else if (k + 1 == j) {
 

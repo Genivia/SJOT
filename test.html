@@ -18,7 +18,7 @@ var text =
 '{ "@sjot": {' +
 '    "@root": "#person",' +
 '    "person": {' +
-'      "id?456": "integer",' +
+'      "id?999": "0..999",' +
 '      "name": "#name",' +
 '      "street": "string",' +
 '      "tags?": "string{1,}",' +
@@ -36,7 +36,7 @@ var text =
 var schema =
 '{' + 
 '  "person": {' +
-'    "id?456": "integer",' +
+'    "id?999": "0..999",' +
 '    "name": "#name",' +
 '    "street": "string",' +
 '    "tags?": "string{1,}",' +
@@ -60,7 +60,7 @@ if (SJOT.validate(obj)) {
 }
 
 // validate obj against the schema person object type
-if (SJOT.validateWith(schema, obj, "#person")) {
+if (SJOT.validate(obj, "#person", schema)) {
 
   document.getElementById("with").innerHTML =
     obj.id + "<br>" +
