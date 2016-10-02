@@ -2,12 +2,15 @@
 <html>
 <body>
 
-<h1>SJOT test</h1>
+<img align="top" src="https://www.genivia.com/images/sjot-logo.png"> <b style="font-size:45px">SJOT for JS in action</b>
 
-<h2>SJOT in JSON</h2>
+<h2>JSON source:</h2>
+<p id="json"></p>
+
+<h2>SJOT in JSON test</h2>
 <p id="sjot"></p>
 
-<h2>With SJOT schema</h2>
+<h2>SJOT schema test</h2>
 <p id="with"></p>
 
 <script src="sjot.js"></script>
@@ -15,36 +18,40 @@
 <script>
 
 var text =
-'{ "@sjot": {' +
-'    "@root": "#person",' +
-'    "person": {' +
-'      "id?999": "0..999",' +
-'      "name": "#name",' +
-'      "street": "string",' +
-'      "tags?": "string{1,}",' +
-'      "phone?": "([- 0-9]+)",' +
-'      "@all": [ [ "tags", "phone" ] ]' +
-'    },' +
-'    "name": "string"' +
-'  },' +
-'  "name": "John Johnson",' +
-'  "street": "Oslo West 16",' +
-'  "tags": [ "JSON" ],' +
-'  "phone":"555 1234567"' +
+'{\n' +
+'  "@sjot": {\n' +
+'    "@root": "#person",\n' +
+'    "person": {\n' +
+'      "id?999": "0..999",\n' +
+'      "name": "#name",\n' +
+'      "street": "string",\n' +
+'      "tags?": "string{1,}",\n' +
+'      "phone?": "([- 0-9]+)",\n' +
+'      "@all": [ [ "tags", "phone" ] ]\n' +
+'    },\n' +
+'    "name": "string"\n' +
+'  },\n' +
+'  "name": "John Johnson",\n' +
+'  "street": "Oslo West 16",\n' +
+'  "tags": [ "JSON" ],\n' +
+'  "phone":"555 1234567"\n' +
 '}';
 
 var schema =
-'{' + 
-'  "person": {' +
-'    "id?999": "0..999",' +
-'    "name": "#name",' +
-'    "street": "string",' +
-'    "tags?": "string{1,}",' +
-'    "phone?": "([- 0-9]+)",' +
-'    "@all": [ [ "tags", "phone" ] ]' +
-'  },' +
-'  "name": "string"' +
+'{\n' + 
+'  "person": {\n' +
+'    "id?999": "0..999",\n' +
+'    "name": "#name",\n' +
+'    "street": "string",\n' +
+'    "tags?": "string{1,}",\n' +
+'    "phone?": "([- 0-9]+)",\n' +
+'    "@all": [ [ "tags", "phone" ] ]\n' +
+'  },\n' +
+'  "name": "string"\n' +
 '}';
+
+document.getElementById("json").innerHTML =
+  "<pre>" + text + "</pre>";
 
 var obj = JSON.parse(text);
 
