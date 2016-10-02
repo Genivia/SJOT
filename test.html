@@ -19,35 +19,41 @@
 
 var text =
 '{\n' +
-'  "@sjot": {\n' +
-'    "@root": "#person",\n' +
-'    "person": {\n' +
-'      "id?999": "0..999",\n' +
-'      "name": "#name",\n' +
-'      "street": "string",\n' +
-'      "tags?": "string{1,}",\n' +
-'      "phone?": "([- 0-9]+)",\n' +
-'      "@all": [ [ "tags", "phone" ] ]\n' +
+'    "@sjot": {\n' +
+'        "@root": "#personDetails",\n' +
+'            "person": {\n' +
+'            "id?999": "0..999",\n' +
+'            "name":   "string",\n' +
+'            "street": "string",\n' +
+'            "tags?":  "string{1,}",\n' +
+'            "phone?": "([- 0-9]+)",\n' +
+'            "@all":   [ [ "tags", "phone" ] ]\n' +
+'        },\n' +
+'        "personDetails": {\n' +
+'            "@extends": "#person",\n' +
+'            "age?":     "0.."\n' +
+'        }\n' +
 '    },\n' +
-'    "name": "string"\n' +
-'  },\n' +
-'  "name": "John Johnson",\n' +
-'  "street": "Oslo West 16",\n' +
-'  "tags": [ "JSON" ],\n' +
-'  "phone":"555 1234567"\n' +
+'    "name":   "John Johnson",\n' +
+'    "street": "Oslo West 16",\n' +
+'    "tags":   [ "JSON" ],\n' +
+'    "phone":  "555 1234567"\n' +
 '}';
 
 var schema =
 '{\n' + 
-'  "person": {\n' +
-'    "id?999": "0..999",\n' +
-'    "name": "#name",\n' +
-'    "street": "string",\n' +
-'    "tags?": "string{1,}",\n' +
-'    "phone?": "([- 0-9]+)",\n' +
-'    "@all": [ [ "tags", "phone" ] ]\n' +
-'  },\n' +
-'  "name": "string"\n' +
+'    "person": {\n' +
+'        "id?999": "0..999",\n' +
+'        "name":   "string",\n' +
+'        "street": "string",\n' +
+'        "tags?":  "string{1,}",\n' +
+'        "phone?": "([- 0-9]+)",\n' +
+'        "@all":   [ [ "tags", "phone" ] ]\n' +
+'    },\n' +
+'    "personDetails": {\n' +
+'        "@extends": "#person",\n' +
+'        "age?":     "0.."\n' +
+'    }\n' +
 '}';
 
 document.getElementById("json").innerHTML =
@@ -67,7 +73,7 @@ if (SJOT.validate(obj)) {
 }
 
 // validate obj against the schema person object type
-if (SJOT.validate(obj, "#person", schema)) {
+if (SJOT.validate(obj, "#personDetails", schema)) {
 
   document.getElementById("with").innerHTML =
     obj.id + "<br>" +

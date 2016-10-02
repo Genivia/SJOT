@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.0.2
+ * sjot.js v0.1.0
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -31,9 +31,10 @@
 
 // TODO see inlined TODOs:
 //
-// - Implement @extends and @final
+// - Implement @final
 // - Implement external type references "URI#type"
 // - Implement uniqueness check for sets
+// - Implement date, time, datetime, and duration validation
 // - Improve error handling
 // - Modularize and create npm
 
@@ -56,7 +57,7 @@ class SJOT {
 
     } catch (e) {
 
-      console.log(e); // TODO FIXME error handling
+      // console.log(e); // TODO FIXME error handling
       return false;
 
     }
@@ -101,7 +102,7 @@ function sjot_validate(sjot, data, type) {
 
         // validate using the local type reference if URI matches the @id of this SJOT schema
         sjot_validate(sjot, data, type.slice(h + 1));
-	return;
+        return;
 
       } else {
 
@@ -135,40 +136,41 @@ function sjot_validate(sjot, data, type) {
             throw "data.length!=type.length";
           for (var i = 0; i < data.length; i++)
             sjot_validate(sjot, data[i], type[i]);
-	  return;
+          return;
 
-	} else if (typeof type === "string") {
+        } else if (typeof type === "string") {
 
-	  if (type.endsWith("]")) {
+          if (type.endsWith("]")) {
 
-	    // validate an array
-	    var i = type.lastIndexOf("[");
-	    var itemtype = type.slice(0, i);
+            // validate an array
+            var i = type.lastIndexOf("[");
+            var itemtype = type.slice(0, i);
 
-	    sjot_validate_bounds(data.length, type, i + 1);
+            sjot_validate_bounds(data.length, type, i + 1);
 
-	    for (var item of data)
-	      sjot_validate(sjot, item, itemtype);
-	    return;
+            for (var item of data)
+              sjot_validate(sjot, item, itemtype);
+            return;
 
-	  } else if (type.endsWith("}")) {
+          } else if (type.endsWith("}")) {
 
-	    // validate a set
-	    var i = type.lastIndexOf("{");
-	    var itemtype = type.slice(0, i);
+            // validate a set
+            var i = type.lastIndexOf("{");
+            var itemtype = type.slice(0, i);
 
-	    // TODO check uniqueness of array items
-	    sjot_validate_bounds(data.length, type, i + 1);
+            // TODO check uniqueness of array items, which must be primitive types
 
-	    for (var item of data)
-	      sjot_validate(sjot, item, itemtype);
-	    return;
+            sjot_validate_bounds(data.length, type, i + 1);
 
-	  }
+            for (var item of data)
+              sjot_validate(sjot, item, itemtype);
+            return;
 
-	}
+          }
 
-	throw "array!=" + type;
+        }
+
+        throw "array!=" + type;
 
       } else {
 
@@ -186,11 +188,69 @@ function sjot_validate(sjot, data, type) {
           // special case for JS (not JSON), check for Date object
           if (!data.constructor.name != "Date")
             throw "data!=Date";
-	  return;
+          return;
 
         } else if (typeof type === "object") {
 
-          // TODO extract @extend object properties and put into this type
+          // put @extends properties into this type
+          while (type.hasOwnProperty("@extends")) {
+
+            // TODO handle external type references URI#type
+
+            var basetype = type["@extends"];
+
+            type["@extends"] = undefined;
+
+            if (typeof basetype !== "string" || !basetype.startsWith("#"))
+              break;
+
+            // local reference #type
+            var base = sjot[basetype.slice(1)];
+
+            if (typeof base === "object") {
+
+              for (var prop in base) {
+
+                if (base.hasOwnProperty(prop)) {
+
+                  if (prop.startsWith("@")) {
+
+                    switch (prop) {
+
+                      case "@extends":
+                        type[prop] = base[prop];
+                        break;
+
+                      case "@final":
+                        throw basetype + " is final";
+
+                      case "@one":
+                      case "@any":
+                      case "@all":
+                        if (type.hasOwnProperty(prop))
+                          type[prop] = type[prop].concat(base[prop]);
+                        else
+                          type[prop] = base[prop];
+                        break;
+
+                    }
+
+                  } else {
+
+                    if (type.hasOwnProperty(prop))
+                      throw basetype + "." + prop + " overriding";
+
+                    type[prop] = base[prop];
+
+                  }
+
+                }
+
+              }
+
+            }
+
+          }
 
           // check properties
           for (var prop in type) {
@@ -202,7 +262,9 @@ function sjot_validate(sjot, data, type) {
                 case "@final":
 
                   if (type[prop]) {
+
                     // TODO check if no extra properties in data
+
                   }
 
                   break;
@@ -277,11 +339,21 @@ function sjot_validate(sjot, data, type) {
 
                   if (typeof proptype === "string") {
 
-		    if (proptype.startsWith("#")) {
+                    if (proptype.startsWith("#")) {
 
-		      // TODO if proptype is a type reference, get its type from the schema
+                      // TODO handle external type references URI#type
 
-		    }
+                      // if proptype is a type reference, get its type from the schema
+                      while (proptype.startsWith("#")) {
+
+                        var prop = proptype.slice(1);
+
+                        if (sjot.hasOwnProperty(prop))
+                          proptype = sjot[prop];
+
+                      }
+
+                    }
 
                     switch (proptype) {
 
@@ -311,20 +383,20 @@ function sjot_validate(sjot, data, type) {
                         data[name] = value;
 
                         // check proptype for numeric range and if so set number, not string
-			if (!proptype.startsWith("(")) {
+                        if (!proptype.startsWith("(")) {
 
-			  for (var i = 0; i < proptype.length; i++) {
+                          for (var i = 0; i < proptype.length; i++) {
 
-			    if (proptype.charCodeAt(i) >= 0x30 && proptype.charCodeAt(i) <= 0x39) {
+                            if (proptype.charCodeAt(i) >= 0x30 && proptype.charCodeAt(i) <= 0x39) {
 
-			      data[name] = Number.parseFloat(value);
-			      break;
+                              data[name] = Number.parseFloat(value);
+                              break;
 
-			    }
+                            }
 
-			  }
+                          }
 
-			}
+                        }
 
                     }
 
@@ -550,12 +622,40 @@ function sjot_validate(sjot, data, type) {
 
       } else if (type === "base64") {
 
-        // TODO check base64
+        // check base64
+        for (var i = 0; i < data.length; i++) {
+
+          var c = data.charCodeAt(i);
+
+          if (c < 0x2B || (c > 0x2B && c < 0x2F) || (c > 0x39 && c < 0x41) || (c > 0x5A && c < 0x61) || c > 0x7A) {
+
+            while (c === 0x3D && ++i < data.length)
+              c = data.charCodeAt(i);
+
+            if (i < data.length)
+              throw "data!=base64";
+
+          }
+
+        }
+
         return;
 
       } else if (type === "hex") {
 
-        // TODO check hex
+        // check hex
+        if (data.length % 2)
+          throw "data!=hex";
+
+        for (var i = 0; i < data.length; i++) {
+
+          var c = data.charCodeAt(i);
+
+          if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
+            throw "data!=hex";
+
+        }
+
         return;
 
       } else if (type === "date") {

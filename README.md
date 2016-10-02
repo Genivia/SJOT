@@ -15,7 +15,7 @@ JSON validation API
 
 sjot.js is a working version with some limitations:
 
-- No @extends and @final
+- No @final check
 - No external type references "URI#type"
 - No uniqueness check for sets
 - Needs improved error handling
@@ -40,3 +40,8 @@ gSOAP JSON validation
 
 sjot.c and sjot.cpp initial release expected in October 2016.
 
+Changelog
+---------
+
+Oct 1, 2016: sjot.js 0.0.2 released
+Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
