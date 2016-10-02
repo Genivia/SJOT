@@ -7,18 +7,12 @@ by Robert van Engelen, engelen@genivia.com
 More info:
 http://genivia.com/sjot.html
 
-Copyright (C) 2016, Robert van Engelen, Genivia Inc., All Rights Reserved
-Released under the BSD3 license
+Released under the BSD3 license.
+
+Copyright (C) 2016, Robert van Engelen, Genivia Inc., All Rights Reserved.
 
 JSON validation API
 -------------------
-
-sjot.js is a working version with some limitations:
-
-- No @final check
-- No external type references "URI#type"
-- No uniqueness check for sets
-- Needs improved error handling
 
 Usage:
 
@@ -35,6 +29,13 @@ Usage:
     if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
       ... // obj validated against schema type sometype from http://example.com/sjot.json
 
+sjot.js is fully functional but the current version has some limitations:
+
+- No @final check
+- No external type references "URI#type"
+- No uniqueness check for sets
+- Needs improved error handling
+
 gSOAP JSON validation
 ---------------------
 
@@ -43,5 +44,5 @@ sjot.c and sjot.cpp initial release expected in October 2016.
 Changelog
 ---------
 
-Oct 1, 2016: sjot.js 0.0.2 released
-Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
+- Oct 1, 2016: sjot.js 0.0.2 released
+- Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
