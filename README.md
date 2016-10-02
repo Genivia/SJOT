@@ -20,6 +20,21 @@ sjot.js is a working version with some limitations:
 - No uniqueness check for sets
 - Needs improved error handling
 
+Usage:
+
+    var obj = JSON.parse(text);
+
+    if (SJOT.validate(obj))
+      ... // obj validated against the embedded @sjot schema (if any)
+   
+    var schema = '{ "sometype": { ... } }';
+   
+    if (SJOT.validate(obj, "#sometype", schema))
+      ... // obj validated against schema type sometype
+   
+    if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
+      ... // obj validated against schema type sometype from http://example.com/sjot.json
+
 gSOAP JSON validation
 ---------------------
 
