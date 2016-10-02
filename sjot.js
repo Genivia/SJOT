@@ -19,13 +19,13 @@
  * if (SJOT.validate(obj))
  *   ... // obj validated against the embedded @sjot schema (if any)
  *
- * var sjot = '{ "sometype": { ... } }';
+ * var schema = '{ "sometype": { ... } }';
  *
- * if (SJOT.validate(obj, "#sometype", sjot))
- *   ... // obj validated against sjot schema type sometype
+ * if (SJOT.validate(obj, "#sometype", schema))
+ *   ... // obj validated against schema type sometype
  *
  * if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
- *   ... // obj validated against sjot schema type sometype from http://example.com/sjot.json
+ *   ... // obj validated against schema type sometype from http://example.com/sjot.json
  *
  */
 
@@ -211,7 +211,7 @@ function sjot_validate(sjot, data, type) {
 
                   for (var propset of type[prop]) {
 
-                    if (propset.reduce((sum, prop) => sum + data.hasOwnProperty(prop), 0) !== 1)
+                    if (propset.reduce( function (sum, prop) { return sum + data.hasOwnProperty(prop); }, 0) !== 1)
                       throw "not one";
 
                   }
@@ -222,7 +222,7 @@ function sjot_validate(sjot, data, type) {
 
                   for (var propset of type[prop]) {
 
-                    if (!propset.some(prop => data.hasOwnProperty(prop)))
+                    if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
                       throw "not any";
 
                   }
@@ -233,8 +233,8 @@ function sjot_validate(sjot, data, type) {
 
                   for (var propset of type[prop]) {
 
-                    if (propset.some(prop => data.hasOwnProperty(prop)) &&
-                        !propset.every(prop => data.hasOwnProperty(prop)))
+                    if (propset.some(function (prop) { return data.hasOwnProperty(prop); }) &&
+                        !propset.every(function (prop) { return data.hasOwnProperty(prop); }))
                       throw "not all or none at all";
 
                   }
