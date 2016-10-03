@@ -19,21 +19,21 @@
 
 var text =
 '{\n' +
-'    "@sjot": {\n' +
-'        "@root": "#personDetails",\n' +
-'            "person": {\n' +
+'    "@sjot": {\n\n' +
+'        "@root": "#personDetails",\n\n' +
+'        "person": {\n' +
 '            "id?999": "0..999",\n' +
 '            "name":   "string",\n' +
 '            "street": "string",\n' +
 '            "tags?":  "string{1,}",\n' +
 '            "phone?": "([- 0-9]+)",\n' +
 '            "@all":   [ [ "tags", "phone" ] ]\n' +
-'        },\n' +
+'        },\n\n' +
 '        "personDetails": {\n' +
 '            "@extends": "#person",\n' +
 '            "age?":     "0.."\n' +
-'        }\n' +
-'    },\n' +
+'        }\n\n' +
+'    },\n\n' +
 '    "name":   "John Johnson",\n' +
 '    "street": "Oslo West 16",\n' +
 '    "tags":   [ "JSON" ],\n' +

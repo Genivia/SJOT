@@ -7,8 +7,8 @@
  * More info:
  * http://genivia.com/sjot.html
  *
- * Copyright (C) 2016, Robert van Engelen, Genivia Inc., All Rights Reserved
- * Released under the BSD3 license
+ * Released under the BSD3 license.
+ * Copyright (C) 2016, Robert van Engelen, Genivia Inc., All Rights Reserved.
  */
 
 /* 
