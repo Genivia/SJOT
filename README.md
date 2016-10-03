@@ -29,11 +29,15 @@ Usage:
     if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
       ... // obj validated against schema type sometype from http://example.com/sjot.json
 
+    // check if schema is compliant and correct (throws an exception otherwise):
+    SJOT.check(schema);
+
 sjot.js is fully functional but the current version has some limitations:
 
 - No @final check yet
-- No external type references "URI#type" yet
+- No external type references "URI#type" yet (when URI is a URL of a schema to load)
 - No uniqueness check for sets yet
+- No `SJOT.check(schema)` yet
 - Needs improved error handling
 
 gSOAP JSON validation
@@ -47,3 +51,4 @@ Changelog
 - Oct 1, 2016: sjot.js 0.0.2 released
 - Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
 - Oct 3, 2016: sjot.js 0.1.1 fixes for minor issues
+- Oct 3, 2016: sjot.js 0.1.2 fixes for minor issues

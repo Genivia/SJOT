@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.1.1
+ * sjot.js v0.1.2
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -27,37 +27,34 @@
  * if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
  *   ... // obj validated against schema type sometype from http://example.com/sjot.json
  *
+ * // check if schema is compliant and correct (throws an exception otherwise):
+ * SJOT.check(schema);
+ *
  */
-
-// TODO see inlined TODOs:
-//
-// - Implement @final
-// - Implement external type references "URI#type"
-// - Implement uniqueness check for sets
-// - Implement date, time, datetime validation
-// - Improve error handling
-// - Modularize and create npm
 
 class SJOT {
 
   // validate(obj [, type [, schema ] ])
   static validate(obj, type, schema) {
 
-    var sjot = schema;
+    var sjots = schema;
 
     if (typeof schema === "string")
-      sjot = JSON.parse(schema);
+      sjots = JSON.parse(schema);
 
     if (type === undefined)
       type = "any";
 
     try {
 
-      sjot_validate(sjot, obj, type);
+      if (Array.isArray(sjots))
+        sjot_validate(sjots, obj, type, sjots[0]);
+      else
+        sjot_validate([sjots], obj, type, sjots);
 
     } catch (e) {
 
-      // console.log(e); // TODO FIXME error handling
+      // console.log(e); // error handling
       return false;
 
     }
@@ -66,20 +63,35 @@ class SJOT {
 
   }
 
+  // check(schema)
+  static check(schema) {
+
+    var sjots = schema;
+
+    if (typeof schema === "string")
+      sjots = JSON.parse(schema);
+
+    sjot_check(sjots); // TODO implement
+
+  }
+
 }
 
 // one validation function that is tail recursive
-function sjot_validate(sjot, data, type) {
+function sjot_validate(sjots, data, type, sjot) {
 
   if (type === "any") {
 
     if (data.hasOwnProperty('@sjot')) {
 
-      // sjoot: validate this object using the embedded SJOT schema
+      // sjoot: validate this object using the embedded SJOT schema or schemas
       var sjoot = data['@sjot'];
 
-      sjot_validate(sjoot, data, sjoot.hasOwnProperty('@root') ? sjoot['@root'] : sjoot[Object.keys(sjoot)[0]]);
-      return;
+      if (Array.isArray(sjoot))
+
+        return sjot_validate(sjoot, data, sjoot[0].hasOwnProperty('@root') ? sjoot[0]['@root'] : sjoot[Object.keys(sjoot[0])[0]], sjoot[0]);
+      else
+        return sjot_validate([sjoot], data, sjoot.hasOwnProperty('@root') ? sjoot['@root'] : sjoot[Object.keys(sjoot)[0]], sjoot);
 
     }
 
@@ -93,23 +105,30 @@ function sjot_validate(sjot, data, type) {
 
     if (h === 0) {
 
-      // validate using the local type reference
-      sjot_validate(sjot, data, sjot[type.slice(1)]);
-      return;
+      // validate non-id schema using the local type reference
+      var prop = type.slice(h + 1);
+
+      if (sjot.hasOwnProperty(prop))
+        return sjot_validate(sjots, data, sjot[prop], sjot);
 
     } else if (h !== -1) {
 
-      if (sjot.hasOwnProperty('@id') && type.startsWith(sjot['@id']) && sjot['@id'].length === h) {
+      for (var sjoot of sjots) {
 
-        // validate using the local type reference if URI matches the @id of this SJOT schema
-        sjot_validate(sjot, data, type.slice(h + 1));
-        return;
+        if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
-      } else {
+          // validate with type reference if URI matches the @id of this SJOT schema
+          var prop = type.slice(h + 1);
 
-        // TODO validate using the external URI type reference, load async
+          if (sjoot.hasOwnProperty(prop))
+            return sjot_validate(sjots, data, sjoot[prop], sjoot);
+          break;
+
+        }
 
       }
+
+      // TODO get external URI type reference when URI is a URL, load async and put in sjots array
 
       return;
 
@@ -136,7 +155,7 @@ function sjot_validate(sjot, data, type) {
           if (data.length !== type.length)
             throw "data.length!=type.length";
           for (var i = 0; i < data.length; i++)
-            sjot_validate(sjot, data[i], type[i]);
+            sjot_validate(sjots, data[i], type[i], sjot);
           return;
 
         } else if (typeof type === "string") {
@@ -150,7 +169,7 @@ function sjot_validate(sjot, data, type) {
             sjot_validate_bounds(data.length, type, i + 1);
 
             for (var item of data)
-              sjot_validate(sjot, item, itemtype);
+              sjot_validate(sjots, item, itemtype, sjot);
             return;
 
           } else if (type.endsWith("}")) {
@@ -164,7 +183,7 @@ function sjot_validate(sjot, data, type) {
             sjot_validate_bounds(data.length, type, i + 1);
 
             for (var item of data)
-              sjot_validate(sjot, item, itemtype);
+              sjot_validate(sjots, item, itemtype, sjot);
             return;
 
           }
@@ -179,8 +198,7 @@ function sjot_validate(sjot, data, type) {
         if (type === "object") {
 
           // validate this object using the embedded @sjot, if present
-          sjot_validate(sjot, data, "any");
-          return;
+          return sjot_validate(sjots, data, "any", sjot);
 
         }
 
@@ -196,17 +214,14 @@ function sjot_validate(sjot, data, type) {
           // put @extends properties into this type
           while (type.hasOwnProperty("@extends")) {
 
-            // TODO handle external type references URI#type
-
             var basetype = type["@extends"];
 
             type["@extends"] = undefined;
 
-            if (typeof basetype !== "string" || !basetype.startsWith("#"))
+            if (typeof basetype !== "string")
               break;
 
-            // local reference #type
-            var base = sjot[basetype.slice(1)];
+            var base = sjot_reftype(sjots, basetype, sjot);
 
             if (typeof base === "object") {
 
@@ -322,7 +337,7 @@ function sjot_validate(sjot, data, type) {
                 // validate required property
                 if (!data.hasOwnProperty(prop))
                   throw prop + " required";
-                sjot_validate(sjot, data[prop], type[prop]);
+                sjot_validate(sjots, data[prop], type[prop], sjot);
 
               } else {
 
@@ -331,7 +346,7 @@ function sjot_validate(sjot, data, type) {
                 // validate optional property when present or set default value when absent
                 if (data.hasOwnProperty(name)) {
 
-                  sjot_validate(sjot, data[name], type[prop]);
+                  sjot_validate(sjots, data[name], type[prop], sjot);
 
                 } else if (i < prop.length - 1) {
 
@@ -340,21 +355,8 @@ function sjot_validate(sjot, data, type) {
 
                   if (typeof proptype === "string") {
 
-                    if (proptype.startsWith("#")) {
-
-                      // TODO handle external type references URI#type
-
-                      // if proptype is a type reference, get its type from the schema
-                      while (proptype.startsWith("#")) {
-
-                        var prop = proptype.slice(1);
-
-                        if (sjot.hasOwnProperty(prop))
-                          proptype = sjot[prop];
-
-                      }
-
-                    }
+                    if (proptype.indexOf("#") !== -1)
+                      proptype = sjot_reftype(sjots, proptype, sjot);
 
                     switch (proptype) {
 
@@ -399,9 +401,9 @@ function sjot_validate(sjot, data, type) {
 
                     }
 
-		    // validate before assigning the default value
-		    sjot_validate(sjot, value, proptype);
-		    data[name] = value;
+                    // validate before assigning the default value
+                    sjot_validate(sjots, value, proptype, sjot);
+                    data[name] = value;
 
                   } else {
 
@@ -619,79 +621,79 @@ function sjot_validate(sjot, data, type) {
         if (type == "char") {
 
           if (data.length === 1)
-	    return;
+            return;
 
         } else {
 
           sjot_validate_bounds(data.length, type, 5);
-	  return;
+          return;
 
         }
 
       } else {
 
-	switch (type) {
+        switch (type) {
 
-	  case "base64":
+          case "base64":
 
-	    // check base64
-	    for (var i = 0; i < data.length; i++) {
+            // check base64
+            for (var i = 0; i < data.length; i++) {
 
-	      var c = data.charCodeAt(i);
+              var c = data.charCodeAt(i);
 
-	      if (c < 0x2B || (c > 0x2B && c < 0x2F) || (c > 0x39 && c < 0x41) || (c > 0x5A && c < 0x61) || c > 0x7A) {
+              if (c < 0x2B || (c > 0x2B && c < 0x2F) || (c > 0x39 && c < 0x41) || (c > 0x5A && c < 0x61) || c > 0x7A) {
 
-		while (c === 0x3D && ++i < data.length)
-		  c = data.charCodeAt(i);
+                while (c === 0x3D && ++i < data.length)
+                  c = data.charCodeAt(i);
 
-		if (i < data.length)
-		  throw "data!=base64";
+                if (i < data.length)
+                  throw "data!=base64";
 
-	      }
+              }
 
-	    }
+            }
 
-	    return;
+            return;
 
-	  case "hex":
+          case "hex":
 
-	    // check hex
-	    if (data.length % 2)
-	      throw "data!=hex";
+            // check hex
+            if (data.length % 2)
+              throw "data!=hex";
 
-	    for (var i = 0; i < data.length; i++) {
+            for (var i = 0; i < data.length; i++) {
 
-	      var c = data.charCodeAt(i);
+              var c = data.charCodeAt(i);
 
-	      if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
-		throw "data!=hex";
+              if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
+                throw "data!=hex";
 
-	    }
+            }
 
-	    return;
+            return;
 
-	  case "date":
+          case "date":
 
-	    // TODO check date
-	    return;
+            // TODO check date
+            return;
 
-	  case "time":
+          case "time":
 
-	    // TODO check time
-	    return;
+            // TODO check time
+            return;
 
-	  case "datetime":
+          case "datetime":
 
-	    // TODO check datetime
-	    return;
+            // TODO check datetime
+            return;
 
-	  case "duration":
+          case "duration":
 
-	    // check ISO 8601 duration
-	    if (/^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/.test(data))
-	      return;
+            // check ISO 8601 duration
+            if (/^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/.test(data))
+              return;
 
-	}
+        }
 
       }
 
@@ -751,6 +753,38 @@ function sjot_validate_bounds(len, type, i) {
       throw "len<" + n;
     if (len > m)
       throw "len>" + m;
+
+  }
+
+}
+
+function sjot_reftype(sjots, type, sjot) {
+
+  var h = type.indexOf("#");
+  var prop = type.slice(h + 1);
+
+  if (h <= 0) {
+
+    // local reference #type to non-id schema (permit just "type")
+    if (sjot.hasOwnProperty(prop))
+      return sjot[prop];
+
+  } else {
+
+    // reference URI#type
+    for (var sjoot of sjots) {
+
+      if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
+
+        if (sjoot.hasOwnProperty(prop))
+          return sjoot[prop];
+        return;
+
+      }
+
+    }
+
+    // TODO get external URI type reference when URI is a URL, load async and put in sjots array
 
   }
 
