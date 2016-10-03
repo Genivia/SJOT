@@ -31,9 +31,9 @@ Usage:
 
 sjot.js is fully functional but the current version has some limitations:
 
-- No @final check
-- No external type references "URI#type"
-- No uniqueness check for sets
+- No @final check yet
+- No external type references "URI#type" yet
+- No uniqueness check for sets yet
 - Needs improved error handling
 
 gSOAP JSON validation
@@ -46,3 +46,4 @@ Changelog
 
 - Oct 1, 2016: sjot.js 0.0.2 released
 - Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
+- Oct 3, 2016: sjot.js 0.1.1 fixes for minor issues

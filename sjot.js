@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.1.0
+ * sjot.js v0.1.1
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -34,7 +34,7 @@
 // - Implement @final
 // - Implement external type references "URI#type"
 // - Implement uniqueness check for sets
-// - Implement date, time, datetime, and duration validation
+// - Implement date, time, datetime validation
 // - Improve error handling
 // - Modularize and create npm
 
@@ -84,6 +84,7 @@ function sjot_validate(sjot, data, type) {
     }
 
     return;
+
   }
 
   if (typeof type === "string") {
@@ -120,7 +121,7 @@ function sjot_validate(sjot, data, type) {
 
     case "object":
 
-      if (data === null)
+      if (data === null || data === undefined)
         throw "data==null";
 
       if (Array.isArray(data)) {
@@ -252,10 +253,10 @@ function sjot_validate(sjot, data, type) {
 
           }
 
-          // check properties
+          // check object properties and property types
           for (var prop in type) {
 
-            if (prop.charCodeAt(0) === 0x40) {
+            if (prop.startsWith("@")) {
 
               switch (prop) {
 
@@ -309,7 +310,7 @@ function sjot_validate(sjot, data, type) {
 
               var i = -1;
               
-              // search for ? while ignoring \\?
+              // search for ? in property name while ignoring \\?
               do {
 
                 i = prop.indexOf("?", i + 1);
@@ -359,7 +360,7 @@ function sjot_validate(sjot, data, type) {
 
                       case "boolean":
 
-                        data[name] = (value === "true");
+                        value = (value === "true");
                         break;
 
                       case "number":
@@ -375,12 +376,10 @@ function sjot_validate(sjot, data, type) {
                       case "uint":
                       case "ulong":
 
-                        data[name] = Number.parseFloat(value);
+                        value = Number.parseFloat(value);
                         break;
 
                       default:
-
-                        data[name] = value;
 
                         // check proptype for numeric range and if so set number, not string
                         if (!proptype.startsWith("(")) {
@@ -389,7 +388,7 @@ function sjot_validate(sjot, data, type) {
 
                             if (proptype.charCodeAt(i) >= 0x30 && proptype.charCodeAt(i) <= 0x39) {
 
-                              data[name] = Number.parseFloat(value);
+                              value = Number.parseFloat(value);
                               break;
 
                             }
@@ -399,6 +398,10 @@ function sjot_validate(sjot, data, type) {
                         }
 
                     }
+
+		    // validate before assigning the default value
+		    sjot_validate(sjot, value, proptype);
+		    data[name] = value;
 
                   } else {
 
@@ -605,84 +608,90 @@ function sjot_validate(sjot, data, type) {
       if (typeof type !== "string")
         throw "SJOT format error in " + type;
 
-      if (type.startsWith("char")) {
+      if (type.startsWith("(")) {
+
+        // check regex with Unicode features enabled
+        if (RegExp("^" + type + "$", "u").test(data))
+          return;
+
+      } else if (type.startsWith("char")) {
 
         if (type == "char") {
 
-          if (data.length !== 1)
-            throw "data!=char";
+          if (data.length === 1)
+	    return;
 
         } else {
 
           sjot_validate_bounds(data.length, type, 5);
+	  return;
 
         }
 
-        return;
+      } else {
 
-      } else if (type === "base64") {
+	switch (type) {
 
-        // check base64
-        for (var i = 0; i < data.length; i++) {
+	  case "base64":
 
-          var c = data.charCodeAt(i);
+	    // check base64
+	    for (var i = 0; i < data.length; i++) {
 
-          if (c < 0x2B || (c > 0x2B && c < 0x2F) || (c > 0x39 && c < 0x41) || (c > 0x5A && c < 0x61) || c > 0x7A) {
+	      var c = data.charCodeAt(i);
 
-            while (c === 0x3D && ++i < data.length)
-              c = data.charCodeAt(i);
+	      if (c < 0x2B || (c > 0x2B && c < 0x2F) || (c > 0x39 && c < 0x41) || (c > 0x5A && c < 0x61) || c > 0x7A) {
 
-            if (i < data.length)
-              throw "data!=base64";
+		while (c === 0x3D && ++i < data.length)
+		  c = data.charCodeAt(i);
 
-          }
+		if (i < data.length)
+		  throw "data!=base64";
 
-        }
+	      }
 
-        return;
+	    }
 
-      } else if (type === "hex") {
+	    return;
 
-        // check hex
-        if (data.length % 2)
-          throw "data!=hex";
+	  case "hex":
 
-        for (var i = 0; i < data.length; i++) {
+	    // check hex
+	    if (data.length % 2)
+	      throw "data!=hex";
 
-          var c = data.charCodeAt(i);
+	    for (var i = 0; i < data.length; i++) {
 
-          if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
-            throw "data!=hex";
+	      var c = data.charCodeAt(i);
 
-        }
+	      if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
+		throw "data!=hex";
 
-        return;
+	    }
 
-      } else if (type === "date") {
+	    return;
 
-        // TODO check date
-        return;
+	  case "date":
 
-      } else if (type === "time") {
+	    // TODO check date
+	    return;
 
-        // TODO check time
-        return;
+	  case "time":
 
-      } else if (type === "datetime") {
+	    // TODO check time
+	    return;
 
-        // TODO check datetime
-        return;
+	  case "datetime":
 
-      } else if (type === "duration") {
+	    // TODO check datetime
+	    return;
 
-        // TODO check duration
-        return;
+	  case "duration":
 
-      } else if (type.charCodeAt(0) == 0x28) {
+	    // check ISO 8601 duration
+	    if (/^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/.test(data))
+	      return;
 
-        // check regex
-        if (RegExp("^" + type + "$").test(data))
-          return;
+	}
 
       }
 
@@ -691,6 +700,7 @@ function sjot_validate(sjot, data, type) {
     default:
 
       throw "SJOT format error in " + type;
+
   }
 
 }
