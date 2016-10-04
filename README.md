@@ -52,3 +52,4 @@ Changelog
 - Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
 - Oct 3, 2016: sjot.js 0.1.1 fixes for minor issues
 - Oct 3, 2016: sjot.js 0.1.2 fixes for minor issues
+- Oct 3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari

@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.1.2
+ * sjot.js v0.1.3
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -120,9 +120,9 @@ function sjot_validate(sjots, data, type, sjot) {
           // validate with type reference if URI matches the @id of this SJOT schema
           var prop = type.slice(h + 1);
 
-          if (sjoot.hasOwnProperty(prop))
-            return sjot_validate(sjots, data, sjoot[prop], sjoot);
-          break;
+          if (!sjoot.hasOwnProperty(prop))
+            break;
+          return sjot_validate(sjots, data, sjoot[prop], sjoot);
 
         }
 
@@ -612,8 +612,8 @@ function sjot_validate(sjots, data, type, sjot) {
 
       if (type.startsWith("(")) {
 
-        // check regex with Unicode features enabled
-        if (RegExp("^" + type + "$", "u").test(data))
+        // check regex
+        if (RegExp("^" + type + "$").test(data))
           return;
 
       } else if (type.startsWith("char")) {
