@@ -6,26 +6,36 @@
 
 <h2>JSON source</h2>
 
-This JSON object has an embedded SJOT schema with a @root type that describes its valid PersonDetails content precisely, such as the property types, which properties are optional (e.g.  tags?  and age?), default values for properties (e.g. id?999), inheritance (PersonDetails extends Person), and which properties should occur @all together (e.g. tags and phone should be used together or not at all):
+This JSON object has an embedded SJOT schema @sjot with a @root type that describes its valid PersonDetails content precisely, such as the property types, which properties are optional (e.g.  tags?  and age?), default values for properties (e.g. id?999), inheritance (PersonDetails extends Person), and which properties should occur @all together (e.g. tags and phone should be used together or not at all):
 
 <p id="json"></p>
 
-<h2>JS code to parse JSON and validate</h2>
+<h2>JS code to parse JSON and validate the data using the embedded @sjot</h2>
 
 <pre>
     var obj = JSON.parse(text);
 
-    if (SJOT.validate(obj))
+    try {
+      SJOT.validate(obj);
       document.getElementById("demo").innerHTML = obj.id + "&lt;br&gt;" + obj.name + "&lt;br&gt;" + obj.street + "&lt;br&gt;" + obj.phone;
-    else
-      document.getElementById("demo").innerHTML = "Object is invalid";
+    } catch (e) {
+      document.getElementById("demo").innerHTML = '&lt;pre&gt;' + e + '&lt;/pre&gt;';
+    }
 </pre>
 
-<h2>SJOT in JSON live test</h2>
+<h2>SJOT in JSON live validation test</h2>
 <p id="demo"></p>
 
-<h2>SJOT schema live test</h2>
+<h2>SJOT schema live valid JSON data test</h2>
 <p id="with"></p>
+
+<h2>SJOT schema live invalid JSON data test</h2>
+
+Invalid JSON data:
+
+<p id="invalid_json"></p>
+
+<p id="fail"></p>
 
 <script src="sjot.js"></script>
 
@@ -54,6 +64,14 @@ var text =
 '    "phone":  "555 1234567"\n' +
 '}';
 
+var invalid_text =
+'{\n' +
+'    "name":   "John Johnson",\n' +
+'    "street": "Oslo West 16",\n' +
+'    "tags":   2,\n' +
+'    "phone":  "555 1234567"\n' +
+'}';
+
 var schema =
 '{\n' + 
 '    "Person": {\n' +
@@ -70,24 +88,44 @@ var schema =
 '    }\n' +
 '}';
 
-document.getElementById("json").innerHTML =
-  "<pre>" + text + "</pre>";
+document.getElementById("json").innerHTML = "<pre>" + text + "</pre>";
 
 var obj = JSON.parse(text);
 
 // validate obj against embedded SJOT
-if (SJOT.validate(obj))
+try {
+  SJOT.validate(obj);
   document.getElementById("demo").innerHTML = obj.id + "<br>" + obj.name + "<br>" + obj.street + "<br>" + obj.phone;
-else
-  document.getElementById("demo").innerHTML = "Object is invalid";
+} catch (e) {
+  document.getElementById("demo").innerHTML = '<pre>' + e + '</pre>';
+}
 
-// validate obj against the schema person object type
-if (SJOT.validate(obj, "#PersonDetails", schema))
+// validate obj against the schema PersonDetails object type
+try {
+  SJOT.validate(obj, "#PersonDetails", schema);
   document.getElementById("with").innerHTML = obj.id + "<br>" + obj.name + "<br>" + obj.street + "<br>" + obj.phone;
-else
-  document.getElementById("with").innerHTML = "Object is invalid";
+} catch (e) {
+  document.getElementById("with").innerHTML = '<pre>' + e + '</pre>';
+}
+
+// validate an invalid obj against the schema PersonDetails object type
+obj = JSON.parse(invalid_text);
+
+try {
+  SJOT.validate(obj, "#PersonDetails", schema);
+  document.getElementById("fail").innerHTML = obj.id + "<br>" + obj.name + "<br>" + obj.street + "<br>" + obj.phone;
+} catch (e) {
+  document.getElementById("fail").innerHTML = '<pre>' + e + '</pre>';
+}
+
+document.getElementById("invalid_json").innerHTML = "<pre>" + invalid_text + "</pre>";
 
 </script>
+
+<br>
+<br>
+<br>
+<br>
 
 </body>
 </html>

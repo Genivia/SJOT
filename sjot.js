@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.1.5
+ * sjot.js v0.1.6
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -18,23 +18,48 @@
  *
  *  var obj = JSON.parse(text);
  *
- *  if (SJOT.validate(obj))
- *    ... // obj validated against the embedded @sjot schema (only if a @sjot is present)
+ *  // SJOT.valid(obj [, type [, schema ] ]) tests if the obj is valid:
  *
- *  if (SJOT.validate(obj, "#Data", schema))
- *    ... // obj validated against schema 
+ *  if (SJOT.valid(obj))
+ *    ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
  *
- *  if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
- *    ... // obj validated against schema type sometype from http://example.com/sjot.json
+ *  if (SJOT.valid(obj, "#Data", schema))
+ *    ... // OK: obj validated against schema
+ * 
+ *  if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
+ *    ... // OK: obj validated against schema type Data from http://example.com/sjot.json
+ *
+ *  // SJOT.validate(obj [, type [, schema ] ]) throws an exception with diagnostics
+ *
+ *  try {
+ *    SJOT.validate(obj, "#Data", schema);
+ *  } catch (e) {
+ *    window.alert(e); // FAIL: validation failed
+ *  }
  *
  *  // check if schema is compliant and correct (throws an exception otherwise):
  *  SJOT.check(schema);
- *
  */
 
 "use strict";
 
 class SJOT {
+
+  // valid(obj [, type [, schema ] ])
+  static valid(obj, type, schema) {
+
+    try {
+
+      return this.validate(obj, type, schema);
+
+    } catch (e) {
+
+      console.log(e); // report error
+      return false;
+
+    }
+
+  }
 
   // validate(obj [, type [, schema ] ])
   static validate(obj, type, schema) {
@@ -44,23 +69,21 @@ class SJOT {
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
 
-    if (type === undefined)
-      type = "any";
+    if (type === undefined || type === null) {
 
-    try {
-
-      if (Array.isArray(sjots))
-        sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "$", "" /*]*/);
+      if (sjots === undefined || sjots === null)
+        type = "any";
+      else if (Array.isArray(sjots))
+        type = sjots[0].hasOwnProperty('@root') ? sjots[0]['@root'] : sjots[Object.keys(sjots[0])[0]];
       else
-        sjot_validate([sjots], obj, type, sjots /*FAST[*/, "$", "" /*]*/);
-
-    } catch (e) {
-
-      console.log(e); // report error
-      // window.alert(e); // to display errors
-      return false;
+        type = sjots.hasOwnProperty('@root') ? sjots['@root'] : sjots[Object.keys(sjots)[0]];
 
     }
+
+    if (Array.isArray(sjots))
+      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "$", "" /*]*/);
+    else
+      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "$", "" /*]*/);
 
     return true;
 
@@ -91,8 +114,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
       var sjoot = data['@sjot'];
 
       if (Array.isArray(sjoot))
-
-        return sjot_validate(sjoot, data, sjoot[0].hasOwnProperty('@root') ? sjoot[0]['@root'] : sjoot[Object.keys(sjoot[0])[0]], sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot[0]}" /*]*/);
+        return sjot_validate(sjoot, data, sjoot[0].hasOwnProperty('@root') ? sjoot[0]['@root'] : sjoot[Object.keys(sjoot[0])[0]], sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*]*/);
       else
         return sjot_validate([sjoot], data, sjoot.hasOwnProperty('@root') ? sjoot['@root'] : sjoot[Object.keys(sjoot)[0]], sjoot/*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*]*/);
 
@@ -339,7 +361,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
                 // validate required property
                 if (!data.hasOwnProperty(prop))
-                  throw datapath + "." + prop + " is a required by " + typepath + "." + prop;
+                  throw datapath + "." + prop + " is required by " + typepath + "." + prop;
                 sjot_validate(sjots, data[prop], type[prop], sjot /*FAST[*/, datapath + "." + prop, typepath + "." + prop /*]*/);
                 if (isfinal)
                   props[prop] = null;
@@ -812,10 +834,10 @@ function sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/) {
     text = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
 
   if (typeof data === "string")
-    throw /*FAST[*/ datapath + /*]*/ " value \"" + data + "\" is not " + text + " " + type /*FAST[*/ + " defined by " + typepath /*]*/;
+    throw /*FAST[*/ datapath + /*]*/ " value \"" + data + "\" is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
   else if (typeof data === "number" || typeof data === "boolean" || typeof data === null)
-    throw /*FAST[*/ datapath + /*]*/ " value " + data + " is not " + text + " " + type /*FAST[*/ + " defined by " + typepath /*]*/;
+    throw /*FAST[*/ datapath + /*]*/ " value " + data + " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
   else
-    throw /*FAST[*/ datapath + /*]*/ " is not " + text + " " + type /*FAST[*/ + " defined by " + typepath /*]*/;
+    throw /*FAST[*/ datapath + /*]*/ " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
 
 }
