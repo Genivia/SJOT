@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.1.4
+ * sjot.js v0.1.5
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -12,23 +12,23 @@
  */
 
 /* 
- * Usage:
+ *  var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
  *
- * var obj = JSON.parse(text);
+ *  var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
  *
- * if (SJOT.validate(obj))
- *   ... // obj validated against the embedded @sjot schema (if any)
+ *  var obj = JSON.parse(text);
  *
- * var schema = '{ "sometype": { ... } }';
+ *  if (SJOT.validate(obj))
+ *    ... // obj validated against the embedded @sjot schema (only if a @sjot is present)
  *
- * if (SJOT.validate(obj, "#sometype", schema))
- *   ... // obj validated against schema type sometype
+ *  if (SJOT.validate(obj, "#Data", schema))
+ *    ... // obj validated against schema 
  *
- * if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
- *   ... // obj validated against schema type sometype from http://example.com/sjot.json
+ *  if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
+ *    ... // obj validated against schema type sometype from http://example.com/sjot.json
  *
- * // check if schema is compliant and correct (throws an exception otherwise):
- * SJOT.check(schema);
+ *  // check if schema is compliant and correct (throws an exception otherwise):
+ *  SJOT.check(schema);
  *
  */
 

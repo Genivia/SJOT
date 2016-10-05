@@ -56,7 +56,7 @@ var text =
 
 var schema =
 '{\n' + 
-'    "person": {\n' +
+'    "Person": {\n' +
 '        "id?999": "0..999",\n' +
 '        "name":   "string",\n' +
 '        "street": "string",\n' +
@@ -64,8 +64,8 @@ var schema =
 '        "phone?": "([- 0-9]+)",\n' +
 '        "@all":   [ [ "tags", "phone" ] ]\n' +
 '    },\n' +
-'    "personDetails": {\n' +
-'        "@extends": "#person",\n' +
+'    "PersonDetails": {\n' +
+'        "@extends": "#Person",\n' +
 '        "age?":     "0.."\n' +
 '    }\n' +
 '}';
@@ -82,7 +82,7 @@ else
   document.getElementById("demo").innerHTML = "Object is invalid";
 
 // validate obj against the schema person object type
-if (SJOT.validate(obj, "#personDetails", schema))
+if (SJOT.validate(obj, "#PersonDetails", schema))
   document.getElementById("with").innerHTML = obj.id + "<br>" + obj.name + "<br>" + obj.street + "<br>" + obj.phone;
 else
   document.getElementById("with").innerHTML = "Object is invalid";

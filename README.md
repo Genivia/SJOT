@@ -21,17 +21,19 @@ Read more at <http://genivia.com/sjot.html>
 JSON validation JS API
 ----------------------
 
-Usage:
+Example usage:
+
+    var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
+   
+    var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
 
     var obj = JSON.parse(text);
 
     if (SJOT.validate(obj))
-      ... // obj validated against the embedded @sjot schema (if any)
+      ... // obj validated against the embedded @sjot schema (only if a @sjot is present)
    
-    var schema = '{ "sometype": { ... } }';
-   
-    if (SJOT.validate(obj, "#sometype", schema))
-      ... // obj validated against schema type sometype
+    if (SJOT.validate(obj, "#Data", schema))
+      ... // obj validated against schema
    
     if (SJOT.validate(obj, "http://example.com/sjot.json#sometype"))
       ... // obj validated against schema type sometype from http://example.com/sjot.json
@@ -60,3 +62,4 @@ Changelog
 - Oct 3, 2016: sjot.js 0.1.2 fixes for minor issues
 - Oct 3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
 - Oct 4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues, remove `/*FAST[*/`...`/*]*/` parts to create faster validator by removing error report collection code
+- Oct 5, 2016: sjot.js 0.1.5 minor fixes
