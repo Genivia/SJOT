@@ -32,9 +32,9 @@ Usage:
     // check if schema is compliant and correct (throws an exception otherwise):
     SJOT.check(schema);
 
-sjot.js is fully functional but the current version has some limitations:
+sjot.js is fully functional to validate JSON data, but the current version has
+some limitations:
 
-- No @final check yet
 - No external type references "URI#type" yet (when URI is a URL of a schema to load)
 - No uniqueness check for sets yet
 - No `SJOT.check(schema)` yet
@@ -53,3 +53,4 @@ Changelog
 - Oct 3, 2016: sjot.js 0.1.1 fixes for minor issues
 - Oct 3, 2016: sjot.js 0.1.2 fixes for minor issues
 - Oct 3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
+- Oct 4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues, remove `/*FAST[*/`...`/*]*/` parts to create faster validator by removing error report collection code

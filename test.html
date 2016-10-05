@@ -34,8 +34,8 @@ This JSON object has an embedded SJOT schema with a @root type that describes it
 var text =
 '{\n' +
 '    "@sjot": {\n\n' +
-'        "@root": "#personDetails",\n\n' +
-'        "person": {\n' +
+'        "@root": "#PersonDetails",\n\n' +
+'        "Person": {\n' +
 '            "id?999": "0..999",\n' +
 '            "name":   "string",\n' +
 '            "street": "string",\n' +
@@ -43,8 +43,8 @@ var text =
 '            "phone?": "([- 0-9]+)",\n' +
 '            "@all":   [ [ "tags", "phone" ] ]\n' +
 '        },\n\n' +
-'        "personDetails": {\n' +
-'            "@extends": "#person",\n' +
+'        "PersonDetails": {\n' +
+'            "@extends": "#Person",\n' +
 '            "age?":     "0.."\n' +
 '        }\n\n' +
 '    },\n\n' +
