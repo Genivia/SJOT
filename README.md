@@ -16,7 +16,7 @@ have the look and feel of an object template and are readable and
 understandable by humans.  SJOT aims at quick JSON data validation with
 lightweight schemas and compact validators.
 
-Live demo at <http://genivia.com/test.html> (this demo is not interactive yet, but does execute a SJOT validator to validate example JSON data)
+Live demo at <http://genivia.com/js/test.html> (this demo is not interactive yet, but does execute a SJOT validator to validate example JSON data)
 
 Read more at <http://www.sjot.org>
 
