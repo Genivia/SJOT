@@ -2,17 +2,24 @@
 SJOT: Schemas for JSON Objects
 ==============================
 
-by Robert van Engelen, engelen@genivia.com
-
-More info:
-http://genivia.com/sjot.html
+by Robert van Engelen, Genivia Inc, <engelen@genivia.com>
 
 Released under the BSD3 license.
-
 Copyright (C) 2016, Robert van Engelen, Genivia Inc., All Rights Reserved.
 
-JSON validation API
--------------------
+What is SJOT?
+-------------
+
+Schemas for JSON Objects, or simply SJOT, is a much simpler alternative to JSON
+schema.  SJOT schemas are valid JSON, just like JSON schema.  But SJOT schemas
+have the look and feel of an object template and are readable and
+understandable by humans.  SJOT aims at quick JSON data validation with
+lightweight validators.
+
+Read more at <http://genivia.com/sjot.html>
+
+JSON validation JS API
+----------------------
 
 Usage:
 
@@ -38,12 +45,11 @@ some limitations:
 - No external type references "URI#type" yet (when URI is a URL of a schema to load)
 - No uniqueness check for sets yet
 - No `SJOT.check(schema)` yet
-- Needs improved error handling
 
-gSOAP JSON validation
----------------------
+JSON validation C/C++ API
+-------------------------
 
-sjot.c and sjot.cpp initial release expected in October 2016.
+sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
 
 Changelog
 ---------
