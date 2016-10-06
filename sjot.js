@@ -1,5 +1,5 @@
 /*!
- * sjot.js v0.1.6
+ * sjot.js v0.1.7
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -54,7 +54,7 @@ class SJOT {
 
     } catch (e) {
 
-      console.log(e); // report error
+      // console.log(e); // report error
       return false;
 
     }
@@ -65,6 +65,7 @@ class SJOT {
   static validate(obj, type, schema) {
 
     var sjots = schema;
+    var typepath = "";
 
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
@@ -74,16 +75,18 @@ class SJOT {
       if (sjots === undefined || sjots === null)
         type = "any";
       else if (Array.isArray(sjots))
-        type = sjots[0].hasOwnProperty('@root') ? sjots[0]['@root'] : sjots[Object.keys(sjots[0])[0]];
+        type = sjots[0].hasOwnProperty('@root') ? sjots[0]['@root'] : sjots[typepath = Object.keys(sjots[0])[0]];
+      else if (typeof sjots === "object")
+        type = sjots.hasOwnProperty('@root') ? sjots['@root'] : sjots[typepath = Object.keys(sjots)[0]];
       else
-        type = sjots.hasOwnProperty('@root') ? sjots['@root'] : sjots[Object.keys(sjots)[0]];
+        throw "SJOT schema expected but " + typeof sjots + " found";
 
     }
 
     if (Array.isArray(sjots))
-      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "$", "" /*]*/);
+      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "$", typepath /*]*/);
     else
-      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "$", "" /*]*/);
+      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "$", typepath /*]*/);
 
     return true;
 
@@ -97,7 +100,7 @@ class SJOT {
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
 
-    sjot_check(sjots); // TODO implement
+    // sjot_check(sjots); // TODO implement
 
   }
 
@@ -198,7 +201,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
             var i = type.lastIndexOf("[");
             var itemtype = type.slice(0, i);
 
-            sjot_validate_bounds(data.length, type, i + 1);
+            sjot_validate_bounds(data.length, type, i + 1 /*FAST[*/, datapath, typepath /*]*/);
 
             for (var j = 0; j < data.length; j++)
               sjot_validate(sjots, data[j], itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*]*/);
@@ -212,7 +215,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
             // TODO check uniqueness of array items, which must be primitive types
 
-            sjot_validate_bounds(data.length, type, i + 1);
+            sjot_validate_bounds(data.length, type, i + 1 /*FAST[*/, datapath, typepath /*]*/);
 
             for (var j = 0; j < data.length; j++)
               sjot_validate(sjots, data[j], itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*]*/);
@@ -222,7 +225,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
         }
 
-        sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
       } else {
 
@@ -238,7 +241,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
           // special case for JS (not JSON), check for Date object
           if (!data.constructor.name != "Date")
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         } else if (typeof type === "object") {
@@ -456,7 +459,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
         } else {
 
-          sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+          sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
         }
 
@@ -469,7 +472,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
       // validate a boolean value
       if (type === "boolean" || type === "atom")
         return;
-      sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
     case "number":
 
@@ -477,69 +480,68 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
       if (type === "number" || type === "float" || type === "double" || type === "atom")
         return;
       if (typeof type !== "string")
-        sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
       switch (type) {
 
         case "integer":
 
           if (!Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "byte":
 
           if (data < -128 || data > 127 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "short":
 
           if (data < -32768 || data > 32767 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "int":
 
           if (data < -2147483648 || data > 2147483647 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "long":
 
           if (data < -140737488355328 || data > 140737488355327 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "ubyte":
 
           if (data < 0 || data > 255 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "ushort":
 
           if (data < 0 || data > 65535 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "uint":
 
           if (data < 0 || data > 4294967295 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         case "ulong":
 
           if (data < 0 || data > 18446744073709551615 || !Number.isInteger(data))
-            sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
           return;
 
         default:
 
           // check numeric ranges n..m,n..,..m,<n..m>,<n..,..m>,n
-          var isinteger = Number.isInteger(data);
-
+          // TODO needs an integer check (if range is integer, value must be integer)
           for (var i = 0; i < type.length; i++) {
 
             var exclusive = false;
@@ -564,8 +566,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
                 // check ..m>
                 var m = Number.parseFloat(type.slice(i, k - 1));
 
-                if (isNaN(m) || Number.isInteger(m) != isinteger)
-                  sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+                if (isNaN(m))
+                  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
                 if (data < m)
                   return;
 
@@ -574,8 +576,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
                 // check ..m
                 var m = Number.parseFloat(type.slice(i, k));
 
-                if (isNaN(m) || Number.isInteger(m) != isinteger)
-                  sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+                if (isNaN(m))
+                  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
                 if (data <= m)
                   return;
 
@@ -588,16 +590,16 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
                 // check n.. and <n..
                 var n = Number.parseFloat(type.slice(i, j));
 
-                if (isNaN(n) || Number.isInteger(n) != isinteger)
-                  sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+                if (isNaN(n))
+                  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
                 if (data > n || (!exclusive && data == n))
                   return;
 
               } else {
 
                 var n = Number.parseFloat(type.slice(i, j));
-                if (isNaN(n) || Number.isInteger(n) != isinteger)
-                  sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+                if (isNaN(n))
+                  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
                 if (type.charCodeAt(k-1) == 0x3E) {
 
@@ -622,8 +624,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
               // check n
               var n = Number.parseFloat(type.slice(i, k));
 
-              if (isNaN(n) || Number.isInteger(n) != isinteger)
-                sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+              if (isNaN(n))
+                sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
               if (data == n)
                 return;
 
@@ -635,7 +637,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
       }
 
-      sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
     case "string":
 
@@ -643,7 +645,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
       if (type === "string" || type === "char[]" || type === "atom")
         return;
       if (typeof type !== "string")
-        sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
       if (type.startsWith("(")) {
 
@@ -660,8 +662,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
         } else {
 
-          sjot_validate_bounds(data.length, type, 5);
-          return;
+          return sjot_validate_bounds(data.length, type, 5 /*FAST[*/, datapath, typepath /*]*/);
 
         }
 
@@ -682,7 +683,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
                   c = data.charCodeAt(i);
 
                 if (i < data.length)
-                  sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+                  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
               }
 
@@ -694,14 +695,14 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
             // check hex
             if (data.length % 2)
-              sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+              sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
             for (var i = 0; i < data.length; i++) {
 
               var c = data.charCodeAt(i);
 
               if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
-                sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+                sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
             }
 
@@ -732,7 +733,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 
       }
 
-      sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/);
+      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*]*/);
 
     default:
 
@@ -743,7 +744,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*]
 }
 
 // check array/set/string bounds
-function sjot_validate_bounds(len, type, i) {
+function sjot_validate_bounds(len, type, i /*FAST[*/, datapath, typepath /*]*/) {
 
   var j = type.indexOf("]", i);
   var k = type.indexOf(",", i);
@@ -760,15 +761,7 @@ function sjot_validate_bounds(len, type, i) {
     var n = Number.parseInt(type.slice(i, j));
 
     if (len !== n)
-      throw "len!=" + n;
-
-  } else if (i + 1 == k) {
-
-    // check [,m]
-    var m = Number.parseInt(type.slice(i, k));
-
-    if (len > m)
-      throw "len>" + m;
+      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*]*/);
 
   } else if (k + 1 == j) {
 
@@ -776,7 +769,15 @@ function sjot_validate_bounds(len, type, i) {
     var n = Number.parseInt(type.slice(i, k));
 
     if (len < n)
-      throw "len<" + n;
+      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*]*/);
+
+  } else if (i == k) {
+
+    // check [,m]
+    var m = Number.parseInt(type.slice(k + 1, j));
+
+    if (len > m)
+      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*]*/);
 
   } else {
 
@@ -784,10 +785,8 @@ function sjot_validate_bounds(len, type, i) {
     var n = Number.parseInt(type.slice(i, k));
     var m = Number.parseInt(type.slice(k + 1, j));
 
-    if (len < n)
-      throw "len<" + n;
-    if (len > m)
-      throw "len>" + m;
+    if (len < n || len > m)
+      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*]*/);
 
   }
 
@@ -826,7 +825,7 @@ function sjot_reftype(sjots, type, sjot, typepath) {
 
 }
 
-function sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/) {
+function sjot_error(what, data, type /*FAST[*/, datapath, typepath /*]*/) {
 
   var text = "a";
   
@@ -834,10 +833,10 @@ function sjot_error(data, type /*FAST[*/, datapath, typepath /*]*/) {
     text = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
 
   if (typeof data === "string")
-    throw /*FAST[*/ datapath + /*]*/ " value \"" + data + "\" is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
+    throw /*FAST[*/ datapath + /*]*/ " " + what + " \"" + data + "\" is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
   else if (typeof data === "number" || typeof data === "boolean" || typeof data === null)
-    throw /*FAST[*/ datapath + /*]*/ " value " + data + " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
+    throw /*FAST[*/ datapath + /*]*/ " " + what + " " + data + " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
   else
-    throw /*FAST[*/ datapath + /*]*/ " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
+    throw /*FAST[*/ datapath + /*]*/ " " + what + " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*]*/;
 
 }

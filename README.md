@@ -16,7 +16,7 @@ have the look and feel of an object template and are readable and
 understandable by humans.  SJOT aims at quick JSON data validation with
 lightweight schemas and compact validators.
 
-Live demo at <http://genivia.com/js/test.html> (this demo is not interactive yet, but does execute a SJOT validator to validate example JSON data)
+Live demo at <http://genivia.com/get-sjot.html#demo>
 
 Read more at <http://www.sjot.org>
 
@@ -32,7 +32,7 @@ Example usage:
     var obj = JSON.parse(text);
 
 
-    // SJOT.valid(obj [, type [, schema ] ]) tests if the obj is valid:
+    // SJOT.valid(obj [, type [, schema ] ]) tests if obj is valid:
 
     if (SJOT.valid(obj))
       ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
@@ -44,7 +44,7 @@ Example usage:
       ... // OK: obj validated against schema type Data from http://example.com/sjot.json
 
 
-    // SJOT.validate(obj [, type [, schema ] ]) throws an exception with diagnostics:
+    // SJOT.validate(obj [, type [, schema ] ]) validates obj, if validation fails throws an exception with diagnostics:
 
     try {
       SJOT.validate(obj, "#Data", schema);
@@ -52,7 +52,7 @@ Example usage:
       window.alert(e); // validation failed
     }
 
-    // check if schema is compliant and correct, throws an exception with diagnostics:
+    // check if schema is compliant and correct, if not throws an exception with diagnostics:
     SJOT.check(schema);
 
 sjot.js is fully functional to validate JSON data, but the current version has
@@ -78,3 +78,4 @@ Changelog
 - Oct 4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues, remove `/*FAST[*/`...`/*]*/` parts to create faster validator by removing error report collection code
 - Oct 5, 2016: sjot.js 0.1.5 minor fixes
 - Oct 5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(obj)` returns true (valid) or false (invalid), `SJOT.validate(obj)` throws exception string with error details when validation fails
+- Oct 6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
