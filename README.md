@@ -18,13 +18,14 @@ lightweight schemas and compact validators.
 
 Live demo at <http://genivia.com/get-sjot.html#demo>
 
-Read more at <http://www.sjot.org>
+Read more at <http://sjot.org>
 
 JSON validation JS API
 ----------------------
 
 Example usage:
 
+~~~~{.js}
     var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
 
     var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
@@ -34,14 +35,14 @@ Example usage:
 
     // SJOT.valid(obj [, type [, schema ] ]) tests if obj is valid:
 
-    if (SJOT.valid(obj))
-      ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
-
     if (SJOT.valid(obj, "#Data", schema))
       ... // OK: obj validated against schema
 
     if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
       ... // OK: obj validated against schema type Data from http://example.com/sjot.json
+
+    if (SJOT.valid(obj))
+      ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
 
 
     // SJOT.validate(obj [, type [, schema ] ]) validates obj, if validation fails throws an exception with diagnostics:
@@ -59,6 +60,7 @@ Example usage:
     } catch (e) {
       window.alert(e); // FAIL: schema is not compliant or correct
     }
+~~~~
 
 sjot.js is fully functional to validate JSON data, but the current version has
 some limitations:
@@ -69,6 +71,12 @@ JSON validation C/C++ API
 -------------------------
 
 sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
+
+Feature wish list / nice to have
+--------------------------------
+
+- SJOT to JSON schema converter
+- JSON schema to SJOT converter
 
 Changelog
 ---------

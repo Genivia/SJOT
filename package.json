@@ -1,0 +1,26 @@
+{
+  "name": "sjot",
+  "version": "1.0.0",
+  "description": "Schemas for JSON Objects, or simply SJOT, is a much simpler alternative to JSON schema. SJOT aims at quick JSON data validation with lightweight schemas and compact validators.",
+  "main": "sjot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Genivia/SJOT.git"
+  },
+  "keywords": [
+    "JSON",
+    "schema",
+    "validation",
+    "lightweight",
+    "validator"
+  ],
+  "author": "Robert van Engelen",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/Genivia/SJOT/issues"
+  },
+  "homepage": "https://github.com/Genivia/SJOT#readme"
+}
