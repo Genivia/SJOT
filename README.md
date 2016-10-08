@@ -59,8 +59,6 @@ sjot.js is fully functional to validate JSON data, but the current version has
 some limitations:
 
 - No external type references "URI#type" yet (when URI is a URL of a schema to load)
-- No uniqueness check for sets yet
-- No `SJOT.check(schema)` yet
 
 JSON validation C/C++ API
 -------------------------
@@ -75,7 +73,9 @@ Changelog
 - Oct 3, 2016: sjot.js 0.1.1 fixes for minor issues
 - Oct 3, 2016: sjot.js 0.1.2 fixes for minor issues
 - Oct 3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
-- Oct 4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues, remove `/*FAST[*/`...`/*]*/` parts to create faster validator by removing error report collection code
+- Oct 4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues
 - Oct 5, 2016: sjot.js 0.1.5 minor fixes
 - Oct 5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(obj)` returns true (valid) or false (invalid), `SJOT.validate(obj)` throws exception string with error details when validation fails
 - Oct 6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
+- Oct 7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
+
