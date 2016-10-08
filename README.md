@@ -49,11 +49,16 @@ Example usage:
     try {
       SJOT.validate(obj, "#Data", schema);
     } catch (e) {
-      window.alert(e); // validation failed
+      window.alert(e); // FAIL: validation failed
     }
 
-    // check if schema is compliant and correct, if not throws an exception with diagnostics:
-    SJOT.check(schema);
+
+    // SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+    try {
+      SJOT.check(schema);
+    } catch (e) {
+      window.alert(e); // FAIL: schema is not compliant or correct
+    }
 
 sjot.js is fully functional to validate JSON data, but the current version has
 some limitations:
