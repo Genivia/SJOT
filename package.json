@@ -5,9 +5,9 @@
   "main": "sjot.js",
   "scripts": {
     "preversion": "npm test",
-    "version": "npm run dev/build.sh",
+    "version": "npm run build.sh",
     "postversion": "git push && git push -tags",
-    "test": "dev/test.sh"
+    "test": "test.sh"
   },
   "repository": {
     "type": "git",
