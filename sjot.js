@@ -1,5 +1,5 @@
 /*!
- * sjot.js v1.0.0
+ * sjot.js v1.0.1
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
@@ -8,7 +8,7 @@
  * http://genivia.com/sjot.html
  *
  * Released under the BSD3 license.
- * Copyright (C) 2016, Robert van Engelen, Genivia Inc., All Rights Reserved.
+ * Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
  */
 
 /* 
@@ -17,6 +17,7 @@
  *  var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
  *
  *  var obj = JSON.parse(text);
+ *
  *
  *  // SJOT.valid(obj [, type [, schema ] ]) tests if the obj is valid:
  *
@@ -29,6 +30,7 @@
  *  if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
  *    ... // OK: obj validated against schema type Data from http://example.com/sjot.json
  *
+ *
  *  // SJOT.validate(obj [, type [, schema ] ]) throws an exception with diagnostics
  *
  *  try {
@@ -37,7 +39,9 @@
  *    window.alert(e); // FAIL: validation failed
  *  }
  *
- *  // check if schema is compliant and correct (throws an exception otherwise):
+ *
+ *  // SJOT.check(schema) checks if schema is compliant and correct (throws an exception otherwise):
+ *
  *  try {
  *    SJOT.check(schema);
  *  } catch (e) {
@@ -79,9 +83,9 @@ class SJOT {
       if (sjots === undefined || sjots === null)
         type = "any";
       else if (Array.isArray(sjots))
-        type = sjots[0].hasOwnProperty('@root') ? sjots[0]['@root'] : sjots[typepath = Object.keys(sjots[0])[0]];
+        type = sjot_roottype(sjots[0]);
       else if (typeof sjots === "object")
-        type = sjots.hasOwnProperty('@root') ? sjots['@root'] : sjots[typepath = Object.keys(sjots)[0]];
+        type = sjot_roottype(sjots);
       else
         throw "SJOT schema expected but " + typeof sjots + " found";
 
@@ -132,9 +136,9 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
       var sjoot = data['@sjot'];
 
       if (Array.isArray(sjoot))
-        return sjot_validate(sjoot, data, sjoot[0].hasOwnProperty('@root') ? sjoot[0]['@root'] : sjoot[Object.keys(sjoot[0])[0]], sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*FAST]*/);
+        return sjot_validate(sjoot, data, sjot_roottype(sjoot[0]), sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*FAST]*/);
       else
-        return sjot_validate([sjoot], data, sjoot.hasOwnProperty('@root') ? sjoot['@root'] : sjoot[Object.keys(sjoot)[0]], sjoot/*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*FAST]*/);
+        return sjot_validate([sjoot], data, sjot_roottype(sjoot), sjoot/*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*FAST]*/);
 
     }
 
@@ -853,6 +857,19 @@ function sjot_extends(sjots, type, sjot, typepath) {
 
 }
 
+// get schema root type
+function sjot_roottype(sjot) {
+
+  if (sjot.hasOwnProperty('@root'))
+    return sjot['@root'];
+  for (var prop in sjot)
+    if (sjot.hasOwnProperty(prop) && !prop.startsWith("@"))
+      return sjot[prop];
+
+  throw "SJOT schema has no root type";
+
+}
+
 // get object from type reference 
 function sjot_reftype(sjots, type, sjot, typepath) {
 
@@ -1180,3 +1197,5 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
 }
 /*LEAN]*/
+
+module.exports = SJOT;
