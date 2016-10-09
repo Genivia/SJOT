@@ -1,4 +1,6 @@
 
+![Logo](https://www.genivia.com/images/sjot-logo-small.png)
+
 SJOT: Schemas for JSON Objects
 ==============================
 
@@ -30,47 +32,47 @@ JSON validation JS API
 Example usage:
 
 ~~~~{.js}
-var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
+    var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
 
-var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
+    var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
 
-var obj = JSON.parse(text);
-
-
-// SJOT.valid(obj [, type [, schema ] ]) tests if obj is valid:
-
-if (SJOT.valid(obj, "#Data", schema))
-  ... // OK: obj validated against schema
-
-if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
-  ... // OK: obj validated against schema type Data from http://example.com/sjot.json
-
-if (SJOT.valid(obj))
-  ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
+    var obj = JSON.parse(text);
 
 
-// SJOT.validate(obj [, type [, schema ] ]) validates obj, if validation fails throws an exception with diagnostics:
+    // SJOT.valid(obj [, type [, schema ] ]) tests if obj is valid:
 
-try {
-  SJOT.validate(obj, "#Data", schema);
-} catch (e) {
-  window.alert(e); // FAIL: validation failed
-}
+    if (SJOT.valid(obj, "#Data", schema))
+      ... // OK: obj validated against schema
+
+    if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
+      ... // OK: obj validated against schema type Data from http://example.com/sjot.json
+
+    if (SJOT.valid(obj))
+      ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
 
 
-// SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
-try {
-  SJOT.check(schema);
-} catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or correct
-}
+    // SJOT.validate(obj [, type [, schema ] ]) validates obj, if validation fails throws an exception with diagnostics:
+
+    try {
+      SJOT.validate(obj, "#Data", schema);
+    } catch (e) {
+      window.alert(e); // FAIL: validation failed
+    }
+
+
+    // SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+    try {
+      SJOT.check(schema);
+    } catch (e) {
+      window.alert(e); // FAIL: schema is not compliant or correct
+    }
 ~~~~
 
 sjot.js is fully functional to validate JSON data, but the current version has
 some limitations:
 
 - No external type references "URI#type" yet (where URI is a URL of a schema to load)
-- No regex property name "(regex)" matching yet.
+- No regex property name "(regex)" matching yet (but regex types are OK!).
 
 JSON validation C/C++ API
 -------------------------
@@ -96,4 +98,4 @@ Changelog
 - Oct 5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(obj)` returns true (valid) or false (invalid), `SJOT.validate(obj)` throws exception string with error details when validation fails
 - Oct 6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
 - Oct 7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
-
+- Oct 8, 2016: sjot.js 1.0.2 fixes for minor issues

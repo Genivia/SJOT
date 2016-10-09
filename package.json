@@ -22,5 +22,6 @@
   "bugs": {
     "url": "https://github.com/Genivia/SJOT/issues"
   },
-  "homepage": "https://github.com/Genivia/SJOT#readme"
+  "homepage": "https://github.com/Genivia/SJOT#readme",
+  "tonicExampleFilename": "example.js"
 }

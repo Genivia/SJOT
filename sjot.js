@@ -1,5 +1,5 @@
 /*!
- * sjot.js v1.0.1
+ * sjot.js v1.0.2
  * by Robert van Engelen, engelen@genivia.com
  *
  * SJOT: Schemas for JSON Objects
