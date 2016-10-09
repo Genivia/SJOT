@@ -1,52 +1,17 @@
-/*!
- * sjot.js v1.0.2
- * by Robert van Engelen, engelen@genivia.com
+/**
+ * A validator for "Schemas for JSON Objects", or simply SJOT.
+ * SJOT is a much simpler alternative to JSON schema.  SJOT schemas are valid
+ * JSON, just like JSON schema.  But SJOT schemas have the look and feel of an
+ * object template and are readable and understandable by humans.  SJOT aims at
+ * quick JSON data validation with lightweight schemas and compact validators.
  *
- * SJOT: Schemas for JSON Objects
- *
- * More info:
- * http://genivia.com/sjot.html
- *
- * Released under the BSD3 license.
- * Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
- */
-
-/* 
- *  var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
- *
- *  var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
- *
- *  var obj = JSON.parse(text);
- *
- *
- *  // SJOT.valid(obj [, type [, schema ] ]) tests if the obj is valid:
- *
- *  if (SJOT.valid(obj))
- *    ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
- *
- *  if (SJOT.valid(obj, "#Data", schema))
- *    ... // OK: obj validated against schema
- * 
- *  if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
- *    ... // OK: obj validated against schema type Data from http://example.com/sjot.json
- *
- *
- *  // SJOT.validate(obj [, type [, schema ] ]) throws an exception with diagnostics
- *
- *  try {
- *    SJOT.validate(obj, "#Data", schema);
- *  } catch (e) {
- *    window.alert(e); // FAIL: validation failed
- *  }
- *
- *
- *  // SJOT.check(schema) checks if schema is compliant and correct (throws an exception otherwise):
- *
- *  try {
- *    SJOT.check(schema);
- *  } catch (e) {
- *    window.alert(e); // FAIL: schema is not compliant or correct
- *  }
+ * @module      sjot
+ * @version     1.0.2
+ * @class       SJOT
+ * @author      Robert van Engelen, engelen@genivia.com
+ * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
+ * @license     BSD3
+ * @link        http://sjot.org
  */
 
 "use strict";
@@ -73,7 +38,6 @@ class SJOT {
   static validate(obj, type, schema) {
 
     var sjots = schema;
-    var typepath = "";
 
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
@@ -92,9 +56,9 @@ class SJOT {
     }
 
     if (Array.isArray(sjots))
-      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "$", typepath /*FAST]*/);
+      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "#", "" /*FAST]*/);
     else
-      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "$", typepath /*FAST]*/);
+      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "#", "" /*FAST]*/);
 
     return true;
 
@@ -136,9 +100,9 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
       var sjoot = data['@sjot'];
 
       if (Array.isArray(sjoot))
-        return sjot_validate(sjoot, data, sjot_roottype(sjoot[0]), sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*FAST]*/);
+        return sjot_validate(sjoot, data, sjot_roottype(sjoot[0]), sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
       else
-        return sjot_validate([sjoot], data, sjot_roottype(sjoot), sjoot/*FAST[*/, datapath, typepath + "{" + datapath + ".@sjot}" /*FAST]*/);
+        return sjot_validate([sjoot], data, sjot_roottype(sjoot), sjoot/*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
 
     }
 
@@ -158,7 +122,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         var prop = type.slice(h + 1);
 
         if (!sjot.hasOwnProperty(prop))
-          throw "SJOT schema has no type " + prop + " referenced by " + typepath + "/" + type;
+          throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
         return sjot_validate(sjots, data, sjot[prop], sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
 
       } else {
@@ -171,7 +135,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
             // validate with type reference if URI matches the @id of this SJOT schema
             if (!sjoot.hasOwnProperty(prop))
-              throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " + typepath + "/" + type;
+              throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
             return sjot_validate(sjots, data, sjoot[prop], sjoot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
 
           }
@@ -179,7 +143,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         }
 
         // TODO get external URI type reference when URI is a URL, load async and put in sjots array
-        throw "No " + prop + " referenced by " + typepath + "/" + type;
+        throw "No " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
 
         return;
 
@@ -200,7 +164,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
         if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !(itemtype.endsWith("]") || itemtype.endsWith("}"))) {
 
-          itemtype = sjot_reftype(sjots, itemtype, sjot, typepath);
+          itemtype = sjot_reftype(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/);
           if (typeof itemtype !== "string")
             sjot_error("value", data, itemtype /*FAST[*/, datapath, typepath /*FAST]*/);
 
@@ -226,7 +190,11 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
       if (data === null || data === undefined) {
 
-        throw /*FAST[*/ datapath + /*FAST]*/ " is " + data;
+        if (data === null && type === "null")
+          return;
+        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+
+        // FIXME throw /*FAST[*/ datapath + /*FAST]*/ " is " + data;
 
       } else if (Array.isArray(data)) {
 
@@ -266,7 +234,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
             if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !(itemtype.endsWith("]") || itemtype.endsWith("}"))) {
 
               // get referenced URI#name type
-              itemtype = sjot_reftype(sjots, itemtype, sjot, typepath);
+              itemtype = sjot_reftype(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/);
               if (typeof itemtype !== "string")
                 sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
 
@@ -312,7 +280,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
           // put @extends base properties into this object type
           if (type.hasOwnProperty('@extends'))
-            sjot_extends(sjots, type, sjot, typepath);
+            sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
 
           var isfinal = type.hasOwnProperty('@final') && type['@final'];
           var props = new Object;
@@ -372,8 +340,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
                 // validate required property
                 if (!data.hasOwnProperty(prop))
-                  throw datapath + "." + prop + " is required by " + typepath + "." + prop;
-                sjot_validate(sjots, data[prop], type[prop], sjot /*FAST[*/, datapath + "." + prop, typepath + "." + prop /*FAST]*/);
+                  throw datapath + "/" + prop + " is required by " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop;
+                sjot_validate(sjots, data[prop], type[prop], sjot /*FAST[*/, datapath + "/" + prop, typepath + "/" + prop /*FAST]*/);
                 if (isfinal)
                   props[prop] = null;
 
@@ -384,7 +352,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
                 // validate optional property when present or set default value when absent
                 if (data.hasOwnProperty(name)) {
 
-                  sjot_validate(sjots, data[name], type[prop], sjot /*FAST[*/, datapath + "." + name, typepath + "." + prop /*FAST]*/);
+                  sjot_validate(sjots, data[name], type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
 
                 } else if (i < prop.length - 1) {
 
@@ -396,9 +364,9 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
                     if (proptype.indexOf("#") !== -1 && !proptype.startsWith("(") && !(proptype.endsWith("]") || proptype.endsWith("}"))) {
 
                       // get referenced URI#name type
-                      proptype = sjot_reftype(sjots, proptype, sjot, typepath);
+                      proptype = sjot_reftype(sjots, proptype, sjot /*FAST[*/, typepath /*FAST]*/);
                       if (typeof proptype !== "string")
-                        sjot_error("value", data, proptype /*FAST[*/, datapath + "." + name, typepath + "." + prop /*FAST]*/);
+                        sjot_error("value", data, proptype /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
 
                     }
 
@@ -446,12 +414,12 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
                     }
 
                     // validate before assigning the default value
-                    sjot_validate(sjots, value, proptype, sjot /*FAST[*/, datapath + "." + name, typepath + "." + prop /*FAST]*/);
+                    sjot_validate(sjots, value, proptype, sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
                     data[name] = value;
 
                   } else {
 
-                    throw "SJOT schema format error in " + typepath + "/" + type;
+                    throw "SJOT schema format error in " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
 
                   }
 
@@ -469,7 +437,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
           if (isfinal)
             for (var prop in data)
               if (data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
-                throw "Extra property " + datapath + "." + prop + " in final object " + typepath;
+                throw "Extra property " + datapath + "/" + prop + " in final object " /*FAST[*/ + typepath /*FAST]*/;
 
         } else {
 
@@ -733,7 +701,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
     default:
 
-      throw "SJOT schema format error in " + typepath + "/" + type;
+      throw "SJOT schema format error in " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
 
   }
 
@@ -788,26 +756,31 @@ function sjot_validate_bounds(len, type, i /*FAST[*/, datapath, typepath /*FAST]
 
 }
 
-function sjot_extends(sjots, type, sjot, typepath) {
+// extends object types by recursively expanding base object types
+function sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
   // put @extends base properties into this object type
-  while (type.hasOwnProperty('@extends')) {
+  if (type.hasOwnProperty('@extends')) {
 
     var basetype = type['@extends'];
 
+    // mark visited/expanded
     type['@extends'] = undefined;
 
     if (basetype === undefined)
-      break;
+      return;
 
     if (typeof basetype !== "string")
-      throw("SJOT schema format error: " + typepath + ".@extends is not an object");
+      throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@extends is not an object";
 
     // get referenced URI#name base type
-    var base = sjot_reftype(sjots, basetype, sjot, typepath);
+    var base = sjot_reftype(sjots, basetype, sjot /*FAST[*/, typepath /*FAST]*/);
 
     if (typeof base !== "object")
-      throw("SJOT schema format error: " + typepath + ".@extends is not an object");
+      throw "SJOT schema format error: " /*FAST[*/+ typepath /*FAST]*/ + "/@extends is not an object";
+
+    // recursively expand
+    sjot_extends(sjots, base, sjot /*FAST[*/, typepath /*FAST]*/);
 
     for (var prop in base) {
 
@@ -817,15 +790,10 @@ function sjot_extends(sjots, type, sjot, typepath) {
 
           switch (prop) {
 
-            case "@extends":
-
-              type[prop] = base[prop];
-              break;
-
             case "@final":
 
               if (base[prop])
-                throw("SJOT schema format error: " + typepath + " extends " + basetype + " that is final");
+                throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " @extends " + basetype + " that is final";
               break;
 
             case "@one":
@@ -843,7 +811,7 @@ function sjot_extends(sjots, type, sjot, typepath) {
         } else {
 
           if (type.hasOwnProperty(prop))
-            throw("SJOT schema format error: " + typepath + "." + prop + " overriding of " + basetype + "." + prop + " is not permitted");
+            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " overriding of " + basetype + "/" + prop + " is not permitted";
 
           type[prop] = base[prop];
 
@@ -853,7 +821,7 @@ function sjot_extends(sjots, type, sjot, typepath) {
 
     }
 
-    }
+  }
 
 }
 
@@ -871,7 +839,7 @@ function sjot_roottype(sjot) {
 }
 
 // get object from type reference 
-function sjot_reftype(sjots, type, sjot, typepath) {
+function sjot_reftype(sjots, type, sjot /*FAST[*/, typepatha /*FAST]*/) {
 
   var h = type.indexOf("#");
   var prop = type.slice(h + 1);
@@ -880,7 +848,7 @@ function sjot_reftype(sjots, type, sjot, typepath) {
 
     // local reference #type to non-id schema (permit just "type")
     if (!sjot.hasOwnProperty(prop))
-      throw "SJOT schema has no type " + prop + " referenced by " + typepath + "/" + type;
+      throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath /*FAST]*/ + "/" + type;
     return sjot[prop];
 
   } else {
@@ -891,7 +859,7 @@ function sjot_reftype(sjots, type, sjot, typepath) {
       if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
         if (!sjoot.hasOwnProperty(prop))
-          throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " + typepath + "/" + type;
+          throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
         return sjoot[prop];
 
       }
@@ -907,33 +875,32 @@ function sjot_reftype(sjots, type, sjot, typepath) {
 // throw descriptive error message
 function sjot_error(what, data, type /*FAST[*/, datapath, typepath /*FAST]*/) {
 
-  var text = "a";
+  var a = typeof type !== "string" ? "a" : type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
+  var b = /*FAST[*/ typepath !== "" ? " required by " + typepath : /*FAST]*/ "";
   
-  if (typeof type === "string")
-    text = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
 
   if (typeof data === "string")
-    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " \"" + data + "\" is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*FAST]*/;
+    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " \"" + data + "\" is not " + a + " " + type + b;
   else if (typeof data === "number" || typeof data === "boolean" || typeof data === null)
-    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " " + data + " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*FAST]*/;
+    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " " + data + " is not " + a + " " + type + b;
   else
-    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " is not " + text + " " + type /*FAST[*/ + " required by " + typepath /*FAST]*/;
+    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " is not " + a + " " + type + b;
 
 }
 
 /*LEAN[*/
 // check schema compliance and correctness (an optional feature, can be removed for compact SJOT libraries)
-function sjot_check(sjots, prim, type, sjot, typepath) {
+function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
   switch (typeof type) {
 
     case "object":
 
       if (prim)
-        throw("SJOT schema format error: " + typepath + " is not a primitive type value");
+        throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
 
-      if (type === null)
-        throw("SJOT schema format error: " + typepath + " is null");
+      if (type === null || type === undefined)
+        throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is " + type;
 
       if (Array.isArray(type)) {
 
@@ -941,39 +908,39 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
           // check union
           for (var itemtype of type[0])
-            sjot_check(sjots, true, itemtype, sjot, typepath + "/" + itemtype);
+            sjot_check(sjots, true, itemtype, sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ itemtype);
 
         } else {
 
           // check tuple
           for (var i = 0; i < type.length; i++)
-            sjot_check(sjots, false, type[i], sjot, typepath + "[" + i + "]");
+            sjot_check(sjots, false, type[i], sjot, /*FAST[*/ typepath + /*FAST]*/ "[" + i + "]");
 
         }
 
       } else {
 
         // put @extends base properties into this object type
-        sjot_extends(sjots, type, sjot, typepath);
+        sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
 
         for (var prop in type) {
 
           if (prop === "@root") {
 
-            sjot_check(sjots, false, type[prop], sjot, typepath + ".@root");
+            sjot_check(sjots, false, type[prop], sjot, /*FAST[*/ typepath + /*FAST]*/ "/@root");
 
           } else if (prop === "@final") {
 
             // check @final is true or false
             if (typeof type[prop] !== "boolean")
-              throw("SJOT schema format error: " + typepath + ".@final is not true or false");
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@final is not true or false";
 
           } else if (prop === "@one" || prop === "@any" || prop === "@all") {
 
             var propsets = type[prop];
 
             if (!Array.isArray(propsets))
-              throw("SJOT schema format error: " + typepath + "." + prop + " is not an array of property sets");
+              throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
 
             // check if the propsets are disjoint
             var temp = new Object;
@@ -981,14 +948,14 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
             for (var propset of propsets) {
 
               if (!Array.isArray(propset))
-                throw("SJOT schema format error: " + typepath + "." + prop + " is not an array of property sets");
+                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
 
               for (var name of propset) {
 
                 if (typeof name !== "string" || name.startsWith("@"))
-                  throw("SJOT schema format error: " + typepath + "." + prop + " is not an array of property sets");
+                  throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
                 if (temp[name] === null)
-                  throw("SJOT schema format error: " + typepath + "." + prop + " propsets are not disjoint sets");
+                  throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets are not disjoint sets";
                 temp[name] = null;
 
               }
@@ -1017,7 +984,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
             for (var name in temp)
               if (temp[name] === null)
-                throw("SJOT schema format error: " + typepath + "." + prop + " propsets contains " + name + " that is not a property of this object");
+                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets contains " + name + " that is not a property of this object";
 
           } else if (!prop.startsWith("@")) {
 
@@ -1028,7 +995,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
               i = prop.indexOf("?", i + 1);
 
             // check property type (primitive=true when optional with a default value)
-            sjot_check(sjots, (i !== -1 && i < prop.length - 1), type[prop], sjot, typepath + "." + prop);
+            sjot_check(sjots, (i !== -1 && i < prop.length - 1), type[prop], sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ prop);
 
           }
 
@@ -1042,25 +1009,28 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
       if (type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
 
-        sjot_check(sjots, prim, sjot_reftype(sjots, type, sjot, typepath), sjot, typepath + "/" + type);
+        sjot_check(sjots,
+            prim,
+            sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/),
+            sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ type);
 
       } else if (type.endsWith("]")) {
 
         if (prim)
-          throw("SJOT schema format error: " + typepath + " is not a primitive type value");
+          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
 
         var i = type.lastIndexOf("[");
 
-        sjot_check(sjots, false, type.slice(0, i), sjot, typepath);
+        sjot_check(sjots, false, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
 
       } else if (type.endsWith("}")) {
 
         if (prim)
-          throw("SJOT schema format error: " + typepath + " is not a primitive type value");
+          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
 
         var i = type.lastIndexOf("{");
 
-        sjot_check(sjots, true, type.slice(0, i), sjot, typepath);
+        sjot_check(sjots, true, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
 
       } else {
 
@@ -1091,6 +1061,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
           case "char":
           case "object":
           case "array":
+          case "null":
             break;
 
           default:
@@ -1098,7 +1069,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
             if (type.startsWith("(")) {
 
               if (!type.endsWith(")"))
-                throw("SJOT schema format error: " + typepath + " " + type + " is not a valid regex");
+                throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " " + type + " is not a valid regex";
 
               try {
 
@@ -1106,7 +1077,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
               } catch (e) {
 
-                throw("SJOT schema format error: " + typepath + " " + type + " is not a valid regex: " + e);
+                throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a valid regex: " + e;
 
               }
 
@@ -1130,13 +1101,13 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
                     // check ..m>
                     if (isNaN(Number.parseFloat(type.slice(i, k - 1))))
-                      throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                   } else {
 
                     // check ..m
                     if (isNaN(Number.parseFloat(type.slice(i, k))))
-                      throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                   }
 
@@ -1146,24 +1117,24 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
                     // check n.. and <n..
                     if (isNaN(Number.parseFloat(type.slice(i, j))))
-                      throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                   } else {
 
                     if (isNaN(Number.parseFloat(type.slice(i, j))))
-                      throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     if (type.charCodeAt(k - 1) == 0x3E) {
 
                       // check n..m> and <n..m>
                       if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
-                        throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                        throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     } else {
 
                       // check n..m and <n..m
                       if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
-                        throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                        throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     }
 
@@ -1173,7 +1144,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
                   // check n
                   if (isNaN(Number.parseFloat(type.slice(i, k))))
-                    throw("SJOT schema format error: " + typepath + " " + type + " is not a type");
+                    throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                 }
 
@@ -1191,7 +1162,7 @@ function sjot_check(sjots, prim, type, sjot, typepath) {
 
     default:
 
-      throw("SJOT schema format error: " + typepath + " has unknown type " + type);
+      throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " has unknown type " + type;
 
   }
 
