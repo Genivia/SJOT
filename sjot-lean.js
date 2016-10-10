@@ -6,7 +6,7 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.0.2
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -82,7 +82,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
   if (type === "any") {
 
-    if (data.hasOwnProperty('@sjot')) {
+    if (typeof data === "object" && data !== null && data.hasOwnProperty('@sjot')) {
 
       // sjoot: validate this object using the embedded SJOT schema or schemas
       var sjoot = data['@sjot'];
@@ -319,7 +319,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
             } else {
 
               var i = prop.indexOf("?");
-              
+
               // search for ? in property name while ignoring \\?
               while (i > 0 && prop.charCodeAt(i - 1) === 0x5C)
                 i = prop.indexOf("?", i + 1);
@@ -645,9 +645,9 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
           case "hex":
 
-            // check hex
-            if (data.length % 2)
-              sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            // check hex (check length should be multiple of 2??)
+            // if (data.length % 2)
+              // sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
 
             for (var i = 0; i < data.length; i++) {
 
@@ -765,7 +765,7 @@ function sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
     var base = sjot_reftype(sjots, basetype, sjot /*FAST[*/, typepath /*FAST]*/);
 
     if (typeof base !== "object")
-      throw "SJOT schema format error: " /*FAST[*/+ typepath /*FAST]*/ + "/@extends is not an object";
+      throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@extends is not an object";
 
     // recursively expand
     sjot_extends(sjots, base, sjot /*FAST[*/, typepath /*FAST]*/);
@@ -826,8 +826,8 @@ function sjot_roottype(sjot) {
 
 }
 
-// get object from type reference 
-function sjot_reftype(sjots, type, sjot /*FAST[*/, typepatha /*FAST]*/) {
+// get object from type reference
+function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
   var h = type.indexOf("#");
   var prop = type.slice(h + 1);
@@ -837,7 +837,10 @@ function sjot_reftype(sjots, type, sjot /*FAST[*/, typepatha /*FAST]*/) {
     // local reference #type to non-id schema (permit just "type")
     if (!sjot.hasOwnProperty(prop))
       throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath /*FAST]*/ + "/" + type;
-    return sjot[prop];
+    type = sjot[prop];
+    if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+      throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + type + " spaghetti type references not permitted";
+    return type;
 
   } else {
 
@@ -848,7 +851,10 @@ function sjot_reftype(sjots, type, sjot /*FAST[*/, typepatha /*FAST]*/) {
 
         if (!sjoot.hasOwnProperty(prop))
           throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-        return sjoot[prop];
+        type = sjoot[prop];
+        if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+          throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + type + " spaghetti type references not permitted";
+        return type;
 
       }
 
@@ -865,11 +871,10 @@ function sjot_error(what, data, type /*FAST[*/, datapath, typepath /*FAST]*/) {
 
   var a = typeof type !== "string" ? "a" : type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
   var b = /*FAST[*/ typepath !== "" ? " required by " + typepath : /*FAST]*/ "";
-  
 
   if (typeof data === "string")
     throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " \"" + data + "\" is not " + a + " " + type + b;
-  else if (typeof data === "number" || typeof data === "boolean" || typeof data === null)
+  else if (typeof data === "number" || typeof data === "boolean" || data === null)
     throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " " + data + " is not " + a + " " + type + b;
   else
     throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " is not " + a + " " + type + b;

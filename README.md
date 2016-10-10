@@ -32,6 +32,9 @@ JSON validation JS API
 Example usage:
 
 ~~~~{.js}
+// <script src="sjot.js"></script>    add to web page to load sjot.js
+   var SJOT = require("sjot");   //   or use this with node.js
+
 var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
 
 var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
@@ -50,15 +53,12 @@ if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
 if (SJOT.valid(obj))
   ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
 
-
 // SJOT.validate(obj [, type [, schema ] ]) validates obj, if validation fails throws an exception with diagnostics:
-
 try {
   SJOT.validate(obj, "#Data", schema);
 } catch (e) {
   window.alert(e); // FAIL: validation failed
 }
-
 
 // SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
 try {
@@ -74,6 +74,12 @@ some limitations:
 - No external type references "URI#type" yet (where URI is a URL of a schema to load)
 - No regex property name "(regex)" matching yet (but regex types are OK!).
 
+Three alternative versions of sjot.js are included:
+
+- sjot-fast.js is optimized for speed but validation error messages are less informative
+- sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
+- sjot-mean.js is optimized for speed and size
+
 JSON validation C/C++ API
 -------------------------
 
@@ -88,15 +94,16 @@ Feature wish list / nice to have
 Changelog
 ---------
 
-- Oct 1, 2016: sjot.js 0.0.2 released
-- Oct 2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
-- Oct 3, 2016: sjot.js 0.1.1 fixes for minor issues
-- Oct 3, 2016: sjot.js 0.1.2 fixes for minor issues
-- Oct 3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
-- Oct 4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues
-- Oct 5, 2016: sjot.js 0.1.5 minor fixes
-- Oct 5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(obj)` returns true (valid) or false (invalid), `SJOT.validate(obj)` throws exception string with error details when validation fails
-- Oct 6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
-- Oct 7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
-- Oct 8, 2016: sjot.js 1.0.2 fixes for minor issues
-- Oct 9, 2016: sjot.js 1.0.3 fixes for minor issues
+- Oct  1, 2016: sjot.js 0.0.2 released
+- Oct  2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
+- Oct  3, 2016: sjot.js 0.1.1 fixes for minor issues
+- Oct  3, 2016: sjot.js 0.1.2 fixes for minor issues
+- Oct  3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
+- Oct  4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues
+- Oct  5, 2016: sjot.js 0.1.5 minor fixes
+- Oct  5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(obj)` returns true (valid) or false (invalid), `SJOT.validate(obj)` throws exception string with error details when validation fails
+- Oct  6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
+- Oct  7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
+- Oct  8, 2016: sjot.js 1.0.2 fixes for minor issues
+- Oct  9, 2016: sjot.js 1.0.4 fixes for minor issues
+- Oct 10, 2016: sjot.js 1.0.5 minor improvements

@@ -6,7 +6,7 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.0.2
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -82,7 +82,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
   if (type === "any") {
 
-    if (data.hasOwnProperty('@sjot')) {
+    if (typeof data === "object" && data !== null && data.hasOwnProperty('@sjot')) {
 
       // sjoot: validate this object using the embedded SJOT schema or schemas
       var sjoot = data['@sjot'];
@@ -319,7 +319,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             } else {
 
               var i = prop.indexOf("?");
-              
+
               // search for ? in property name while ignoring \\?
               while (i > 0 && prop.charCodeAt(i - 1) === 0x5C)
                 i = prop.indexOf("?", i + 1);
@@ -645,9 +645,9 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           case "hex":
 
-            // check hex
-            if (data.length % 2)
-              sjot_error("value", data, type /**/);
+            // check hex (check length should be multiple of 2??)
+            // if (data.length % 2)
+              // sjot_error("value", data, type /**/);
 
             for (var i = 0; i < data.length; i++) {
 
@@ -826,7 +826,7 @@ function sjot_roottype(sjot) {
 
 }
 
-// get object from type reference 
+// get object from type reference
 function sjot_reftype(sjots, type, sjot /**/) {
 
   var h = type.indexOf("#");
@@ -837,7 +837,10 @@ function sjot_reftype(sjots, type, sjot /**/) {
     // local reference #type to non-id schema (permit just "type")
     if (!sjot.hasOwnProperty(prop))
       throw "SJOT schema has no type " + prop + " referenced by " /**/ + "/" + type;
-    return sjot[prop];
+    type = sjot[prop];
+    if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+      throw "SJOT schema format error: " /**/ + type + " spaghetti type references not permitted";
+    return type;
 
   } else {
 
@@ -848,7 +851,10 @@ function sjot_reftype(sjots, type, sjot /**/) {
 
         if (!sjoot.hasOwnProperty(prop))
           throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /**/ + type;
-        return sjoot[prop];
+        type = sjoot[prop];
+        if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+          throw "SJOT schema format error: " /**/ + type + " spaghetti type references not permitted";
+        return type;
 
       }
 
@@ -865,11 +871,10 @@ function sjot_error(what, data, type /**/) {
 
   var a = typeof type !== "string" ? "a" : type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
   var b = /**/ "";
-  
 
   if (typeof data === "string")
     throw /**/ " " + what + " \"" + data + "\" is not " + a + " " + type + b;
-  else if (typeof data === "number" || typeof data === "boolean" || typeof data === null)
+  else if (typeof data === "number" || typeof data === "boolean" || data === null)
     throw /**/ " " + what + " " + data + " is not " + a + " " + type + b;
   else
     throw /**/ " " + what + " is not " + a + " " + type + b;

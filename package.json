@@ -6,7 +6,7 @@
   "scripts": {
     "preversion": "npm test",
     "version": "./build.sh",
-    "postversion": "git push && git push -tags",
+    "postversion": "git push && git push --tags",
     "test": "./test.sh"
   },
   "repository": {
