@@ -5,7 +5,7 @@ node_js:
   - "iojs"
 
 install:
-  - npm install
+  - npm install sjot
 
 script:
   - node travis-test.js
