@@ -105,7 +105,7 @@ Changelog
 - Oct  7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
 - Oct  8, 2016: sjot.js 1.0.2 fixes for minor issues
 - Oct  9, 2016: sjot.js 1.0.4 fixes for minor issues
-- Oct 10, 2016: sjot.js 1.0.5 minor improvements
+- Oct 10, 2016: sjot.js 1.1.0 fast, lean, and mean scripts included
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
