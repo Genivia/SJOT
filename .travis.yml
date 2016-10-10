@@ -8,4 +8,4 @@ install:
   - npm install
 
 script:
-  - node test.js
+  - node travis-test.js
