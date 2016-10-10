@@ -5,4 +5,4 @@ node_js:
   - "iojs"
 
 script:
-  - node travis-test.js
+  - node travis-test
