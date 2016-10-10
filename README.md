@@ -37,26 +37,24 @@ Example usage:
 // <script src="sjot.js"></script>    add this to your web page to load sjot.js
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
-var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
+var schema = { "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } };
 
-var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
+var data = { "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] };
 
-var obj = JSON.parse(text);
+// SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
 
-// SJOT.valid(obj [, type [, schema ] ]) tests if obj is valid:
+if (SJOT.valid(data, "#Data", schema))
+  ... // OK: data validated against schema
 
-if (SJOT.valid(obj, "#Data", schema))
-  ... // OK: obj validated against schema
+if (SJOT.valid(data, "http://example.com/sjot.json#Data"))
+  ... // OK: data validated against schema type Data from http://example.com/sjot.json
 
-if (SJOT.valid(obj, "http://example.com/sjot.json#Data"))
-  ... // OK: obj validated against schema type Data from http://example.com/sjot.json
+if (SJOT.valid(data))
+  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
 
-if (SJOT.valid(obj))
-  ... // OK: self-validated obj against its embedded @sjot schema (only if a @sjot is present in obj)
-
-// SJOT.validate(obj [, type [, schema ] ]) validates obj, if validation fails throws an exception with diagnostics:
+// SJOT.validate(data [, type [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
-  SJOT.validate(obj, "#Data", schema);
+  SJOT.validate(data, "#Data", schema);
 } catch (e) {
   window.alert(e); // FAIL: validation failed
 }
@@ -102,7 +100,7 @@ Changelog
 - Oct  3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
 - Oct  4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues
 - Oct  5, 2016: sjot.js 0.1.5 minor fixes
-- Oct  5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(obj)` returns true (valid) or false (invalid), `SJOT.validate(obj)` throws exception string with error details when validation fails
+- Oct  5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(data)` returns true (valid) or false (invalid), `SJOT.validate(data)` throws exception string with error details when validation fails
 - Oct  6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
 - Oct  7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
 - Oct  8, 2016: sjot.js 1.0.2 fixes for minor issues
