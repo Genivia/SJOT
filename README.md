@@ -1,5 +1,7 @@
 
-![Logo](https://www.genivia.com/images/sjot-logo.png)
+[![logo][logo-url]][sjot-url]
+
+[![npm version][npm-image]][npm-url] [![build status][travis-image]][travis-url]
 
 SJOT: Schemas for JSON Objects
 ==============================
@@ -31,16 +33,15 @@ JSON validation JS API
 
 Example usage:
 
-~~~~{.js}
-// <script src="sjot.js"></script>    add to web page to load sjot.js
-   var SJOT = require("sjot");   //   or use this with node.js
+```js
+// <script src="sjot.js"></script>    add this to your web page to load sjot.js
+var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
 var schema = '{ "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } }';
 
 var text = '{ "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] }';
 
 var obj = JSON.parse(text);
-
 
 // SJOT.valid(obj [, type [, schema ] ]) tests if obj is valid:
 
@@ -66,7 +67,7 @@ try {
 } catch (e) {
   window.alert(e); // FAIL: schema is not compliant or correct
 }
-~~~~
+```
 
 sjot.js is fully functional to validate JSON data, but the current version has
 some limitations:
@@ -107,3 +108,10 @@ Changelog
 - Oct  8, 2016: sjot.js 1.0.2 fixes for minor issues
 - Oct  9, 2016: sjot.js 1.0.4 fixes for minor issues
 - Oct 10, 2016: sjot.js 1.0.5 minor improvements
+
+[logo-url]: https://www.genivia.com/images/sjot-logo.png
+[sjot-url]: http://sjot.org
+[npm-image]: https://badge.fury.io/js/sjot.svg
+[npm-url]: https://www.npmjs.com/package/sjot
+[travis-image]: https://travis-ci.org/Genivia/SJOT.svg?branch=master
+[travis-url]: https://travis-ci.org/Genivia/SJOT
