@@ -16,14 +16,26 @@
 
 
 /*
- * Example usage
+   Usage
 
 // <script src="sjot.js"></script>    add this to your web page to load sjot.js
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
-var schema = { "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } };
+var schema = {
+  "Data": {
+    "name":    "string",        // string name
+    "v?1.0":   "number",        // optional v with default 1.0
+    "tags?":   "string{1,}",    // optional non-empty set of string tags
+    "package": { "id": "1..", "name": "char[1,]" }
+   }                            // package.id >= 1, non-empty package.name
+};
 
-var data = { "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] };
+var data = {
+    "name":    "SJOT",
+    "v":       1.1,
+    "tags":    [ "JSON", "SJOT" ],
+    "package": { "id": 1, "name": "sjot" }
+  };
 
 // SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
 
@@ -351,13 +363,28 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
               }
 
+            } else if (prop.startsWith("(")) {
+
+              // regex property name
+              var proptype = type[prop];
+              var matcher = RegExp("^" + prop + "$");
+
+              for (var name in data) {
+
+                if (data.hasOwnProperty(name) && matcher.test(name)) {
+
+                  sjot_validate(sjots, data[name], proptype, sjot /**/);
+                  if (isfinal)
+                    props[name] = null;
+
+                }
+
+              }
+
+
             } else {
 
               var i = prop.indexOf("?");
-
-              // search for ? in property name while ignoring \\?
-              while (i > 0 && prop.charCodeAt(i - 1) === 0x5C)
-                i = prop.indexOf("?", i + 1);
 
               if (i === -1) {
 

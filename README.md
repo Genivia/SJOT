@@ -6,8 +6,6 @@
 SJOT: Schemas for JSON Objects
 ==============================
 
-by Robert van Engelen, Genivia Inc, <engelen@genivia.com>
-
 Released under the BSD3 license.
 Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
 
@@ -31,15 +29,27 @@ Install:
 JSON validation JS API
 ----------------------
 
-Example usage:
+Usage:
 
 ```js
 // <script src="sjot.js"></script>    add this to your web page to load sjot.js
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
-var schema = { "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } };
+var schema = {
+  "Data": {
+    "name":    "string",        // string name
+    "v?1.0":   "number",        // optional v with default 1.0
+    "tags?":   "string{1,}",    // optional non-empty set of string tags
+    "package": { "id": "1..", "name": "char[1,]" }
+   }                            // package.id >= 1, non-empty package.name
+};
 
-var data = { "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] };
+var data = {
+    "name":    "SJOT",
+    "v":       1.1,
+    "tags":    [ "JSON", "SJOT" ],
+    "package": { "id": 1, "name": "sjot" }
+  };
 
 // SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
 
@@ -70,8 +80,7 @@ try {
 sjot.js is fully functional to validate JSON data, but the current version has
 some limitations:
 
-- No external type references "URI#type" yet (where URI is a URL of a schema to load)
-- No regex property name "(regex)" matching yet (but regex types are OK!).
+- For security reasons, no loading of external type references "URI#type" yet (where URI is a URL of a schema to load)
 
 Three alternative versions of sjot.js are included:
 
@@ -107,6 +116,7 @@ Changelog
 - Oct  9, 2016: sjot.js 1.0.4 fixes for minor issues
 - Oct 10, 2016: sjot.js 1.1.0 fast, lean, and mean scripts included
 - Oct 11, 2016: sjot.js 1.1.1 datetime RFC3339 validation fixed
+- Oct 12, 2016: sjot.js 1.2.0 regex property names added
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
