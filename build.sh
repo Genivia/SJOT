@@ -6,8 +6,6 @@ cd dev
 VERSION=`npm view sjot version`
 echo "Creating sjot $VERSION"
 
-cp -f ../dist/sjot.js bak/sjot.js
-
 # bump version and remove DEBUG[ ... DEBUG]
 sed -e "s/{VERSION}/$VERSION/" -e "s/DEBUG\[.*DEBUG\]//g" -e "/DEBUG\[/,/DEBUG\]/ d" < sjot.js > ../dist/sjot.js
 
