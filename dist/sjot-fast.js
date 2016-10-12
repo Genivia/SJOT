@@ -6,7 +6,7 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.1.0
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -109,6 +109,18 @@ class SJOT {
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
 
+    /*LEAN[*/
+    if (Array.isArray(sjots)) {
+
+      for (var i = 0; i < sjots.length; i++)
+        sjot_check(sjots, false, sjots[i], sjots[i], "[" + i + "]");
+
+    } else {
+
+      sjot_check([sjots], false, sjots, sjots, "");
+
+    }
+    /*LEAN]*/
 
   }
 
@@ -923,4 +935,283 @@ function sjot_error(what, data, type /**/) {
 
 }
 
+/*LEAN[*/
+// check schema compliance and correctness (an optional feature, can be removed for compact SJOT libraries)
+function sjot_check(sjots, prim, type, sjot /**/) {
+
+  switch (typeof type) {
+
+    case "object":
+
+      if (prim)
+        throw "SJOT schema format error: " /**/ + " is not a primitive type value";
+
+      if (type === null || type === undefined)
+        throw "SJOT schema format error: " /**/ + " is " + type;
+
+      if (Array.isArray(type)) {
+
+        if (type.length === 1 && Array.isArray(type[0])) {
+
+          // check union
+          for (var itemtype of type[0])
+            sjot_check(sjots, true, itemtype, sjot, /**/ itemtype);
+
+        } else {
+
+          // check tuple
+          for (var i = 0; i < type.length; i++)
+            sjot_check(sjots, false, type[i], sjot, /**/ "[" + i + "]");
+
+        }
+
+      } else {
+
+        // put @extends base properties into this object type
+        sjot_extends(sjots, type, sjot /**/);
+
+        for (var prop in type) {
+
+          if (prop === "@root") {
+
+            sjot_check(sjots, false, type[prop], sjot, /**/ "/@root");
+
+          } else if (prop === "@final") {
+
+            // check @final is true or false
+            if (typeof type[prop] !== "boolean")
+              throw "SJOT schema format error: " /**/ + "/@final is not true or false";
+
+          } else if (prop === "@one" || prop === "@any" || prop === "@all") {
+
+            var propsets = type[prop];
+
+            if (!Array.isArray(propsets))
+              throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
+
+            // check if the propsets are disjoint
+            var temp = new Object;
+
+            for (var propset of propsets) {
+
+              if (!Array.isArray(propset))
+                throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
+
+              for (var name of propset) {
+
+                if (typeof name !== "string" || name.startsWith("@"))
+                  throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
+                if (temp[name] === null)
+                  throw "SJOT schema format error: " /**/ + prop + " propsets are not disjoint sets";
+                temp[name] = null;
+
+              }
+
+            }
+
+            // check if propset properties are object type properties
+            for (var name in type) {
+
+              if (type.hasOwnProperty(name) && !name.startsWith("@")) {
+
+                var i = name.indexOf("?");
+
+                // search for ? in property name while ignoring \\?
+                while (i > 0 && name.charCodeAt(i - 1) === 0x5C)
+                  i = name.indexOf("?", i + 1);
+
+                if (i !== -1)
+                  name = name.slice(0, i);
+                if (temp.hasOwnProperty(name))
+                  temp[name] = true;
+
+              }
+
+            }
+
+            for (var name in temp)
+              if (temp[name] === null)
+                throw "SJOT schema format error: " /**/ + prop + " propsets contains " + name + " that is not a property of this object";
+
+          } else if (!prop.startsWith("@")) {
+
+            var i = prop.indexOf("?");
+
+            // search for ? in property name while ignoring \\?
+            while (i > 0 && prop.charCodeAt(i - 1) === 0x5C)
+              i = prop.indexOf("?", i + 1);
+
+            // check property type (primitive=true when optional with a default value)
+            sjot_check(sjots, (i !== -1 && i < prop.length - 1), type[prop], sjot, /**/ prop);
+
+          }
+
+        }
+
+      }
+
+      break;
+
+    case "string":
+
+      if (type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
+
+        type = sjot_reftype(sjots, type, sjot /**/);
+
+        return sjot_check(sjots, prim, type, sjot, /**/ type);
+
+      } else if (type.endsWith("]")) {
+
+        if (prim)
+          throw "SJOT schema format error: " /**/ + " is not a primitive type value";
+
+        var i = type.lastIndexOf("[");
+
+        return sjot_check(sjots, false, type.slice(0, i), sjot /**/);
+
+      } else if (type.endsWith("}")) {
+
+        if (prim)
+          throw "SJOT schema format error: " /**/ + " is not a primitive type value";
+
+        var i = type.lastIndexOf("{");
+
+        return sjot_check(sjots, true, type.slice(0, i), sjot /**/);
+
+      } else {
+
+        switch (type) {
+
+          case "any":
+          case "atom":
+          case "boolean":
+          case "byte":
+          case "short":
+          case "int":
+          case "long":
+          case "ubyte":
+          case "ushort":
+          case "uint":
+          case "ulong":
+          case "integer":
+          case "float":
+          case "double":
+          case "number":
+          case "string":
+          case "hex":
+          case "base64":
+          case "date":
+          case "time":
+          case "datetime":
+          case "duration":
+          case "char":
+          case "object":
+          case "array":
+          case "null":
+            break;
+
+          default:
+
+            if (type.startsWith("(")) {
+
+              if (!type.endsWith(")"))
+                throw "SJOT schema format error: " /**/ + " " + type + " is not a valid regex";
+
+              try {
+
+                RegExp(type);
+
+              } catch (e) {
+
+                throw "SJOT schema format error: " /**/ + type + " is not a valid regex: " + e;
+
+              }
+
+            } else {
+
+              // check numeric range
+              for (var i = 0; i < type.length; i++) {
+
+                if (type.charCodeAt(i) == 0x3C)
+                  i++;
+
+                var j = type.indexOf("..", i);
+                var k = type.indexOf(",", i);
+
+                if (k == -1)
+                  k = type.length;
+
+                if (i == j) {
+
+                  if (type.charCodeAt(k - 1) == 0x3E) {
+
+                    // check ..m>
+                    if (isNaN(Number.parseFloat(type.slice(i, k - 1))))
+                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                  } else {
+
+                    // check ..m
+                    if (isNaN(Number.parseFloat(type.slice(i, k))))
+                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                  }
+
+                } else if (j < k) {
+
+                  if (j + 2 == k) {
+
+                    // check n.. and <n..
+                    if (isNaN(Number.parseFloat(type.slice(i, j))))
+                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                  } else {
+
+                    if (isNaN(Number.parseFloat(type.slice(i, j))))
+                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                    if (type.charCodeAt(k - 1) == 0x3E) {
+
+                      // check n..m> and <n..m>
+                      if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
+                        throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                    } else {
+
+                      // check n..m and <n..m
+                      if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
+                        throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                    }
+
+                  }
+
+                } else {
+
+                  // check n
+                  if (isNaN(Number.parseFloat(type.slice(i, k))))
+                    throw "SJOT schema format error: " /**/ + type + " is not a type";
+
+                }
+
+                i = k;
+
+              }
+
+            }
+
+        }
+
+      }
+
+      break;
+
+    default:
+
+      throw "SJOT schema format error: " /**/ + " has unknown type " + type;
+
+  }
+
+}
+/*LEAN]*/
 
