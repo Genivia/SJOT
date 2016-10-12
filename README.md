@@ -106,6 +106,7 @@ Changelog
 - Oct  8, 2016: sjot.js 1.0.2 fixes for minor issues
 - Oct  9, 2016: sjot.js 1.0.4 fixes for minor issues
 - Oct 10, 2016: sjot.js 1.1.0 fast, lean, and mean scripts included
+- Oct 11, 2016: sjot.js 1.1.1 datetime RFC3339 validation fixed
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

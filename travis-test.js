@@ -6,12 +6,49 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.0.4
+ * @version     1.1.0
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
  * @license     BSD3
  * @link        http://sjot.org
+ */
+
+
+/*
+ * Example usage
+
+// <script src="sjot.js"></script>    add this to your web page to load sjot.js
+var SJOT = require("sjot");     //    or use the npm sjot package for node.js
+
+var schema = { "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } };
+
+var data = { "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] };
+
+// SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
+
+if (SJOT.valid(data, "#Data", schema))
+  ... // OK: data validated against schema
+
+if (SJOT.valid(data, "http://example.com/sjot.json#Data"))
+  ... // OK: data validated against schema type Data from http://example.com/sjot.json
+
+if (SJOT.valid(data))
+  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
+
+// SJOT.validate(data [, type [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
+try {
+  SJOT.validate(data, "#Data", schema);
+} catch (e) {
+  window.alert(e); // FAIL: validation failed
+}
+
+// SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+try {
+  SJOT.check(schema);
+} catch (e) {
+  window.alert(e); // FAIL: schema is not compliant or correct
+}
  */
 
 "use strict";
@@ -27,7 +64,7 @@ class SJOT {
 
     } catch (e) {
 
-      // console.log(e); // report error
+      /*LOG[*/ console.log(e); // report error /*LOG]*/
       return false;
 
     }
@@ -193,8 +230,6 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         if (data === null && type === "null")
           return;
         sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
-        // FIXME throw /*FAST[*/ datapath + /*FAST]*/ " is " + data;
 
       } else if (Array.isArray(data)) {
 
@@ -674,24 +709,31 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
           case "date":
 
-            // TODO check date
-            return;
+            // check RFC3999 date part
+            if (/^\d{4}-\d{2}-\d{2}$/.test(data))
+              return;
+            break;
 
           case "time":
 
-            // TODO check time
-            return;
+            // check RFC3999 time part
+            if (/^\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$/.test(data))
+              return;
+            break;
 
           case "datetime":
 
-            // TODO check datetime
-            return;
+            // check RFC3999 datetime
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$/.test(data))
+              return;
+            break;
 
           case "duration":
 
             // check ISO 8601 duration
             if (/^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/.test(data))
               return;
+            break;
 
         }
 
@@ -1176,20 +1218,100 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
 var schema =
 {
+  "@note": "SJOT schema test types",
+  "@root": "#Data",
   "Data": {
-    "id":    "string",
-    "v":     "number",
-    "tags?": "string{1,}"
-  }
+    "any":          "any",
+    "atom":         "atom",
+    "boolean":      "boolean",
+    "byte":         "byte",
+    "short":        "short",
+    "int":          "int",
+    "long":         "long",
+    "ubyte":        "ubyte",
+    "ushort":       "ushort",
+    "uint":         "uint",
+    "ulong":        "ulong",
+    "integer":      "integer",
+    "float":        "float",
+    "double":       "double",
+    "number":       "number",
+    "n,m":          "-999,-1,0,1,999",
+    "n..m":         "-10..10",
+    "<n..m>":       "<-10..10>",
+    "string":       "string",
+    "base64":       "base64",
+    "hex":          "hex",
+    "date":         "date",
+    "time":         "time",
+    "datetime":     "datetime",
+    "duration":     "duration",
+    "char":         "char",
+    "char[1,10]":   "char[1,10]",
+    "regex":        "(regex)",
+    "string[]":     "string[]",
+    "string[1,10]": "string[1,10]",
+    "string{}":     "string{}",
+    "string{1,10}": "string{1,10}",
+    "#ref":         "#ref",
+    "object":       "object",
+    "array":        "array",
+    "null":         "null",
+    "obj":          { "optional?": "string" },
+    "tuple":        [ "string", "number" ],
+    "union":        [[ "string", "number" ]]
+  },
+  "Derived": {
+    "@extends": "#Data",
+    "@final":   true,
+    "extra":    "any"
+  },
+  "ref": "boolean"
 };
 
-var obj =
+var data =
 {
-  "id":   "SJOT",
-  "v":    1.0,
-  "tags": [ "JSON", "SJOT" ]
+  "any":          { "some": "data" },
+  "atom":         true,
+  "boolean":      false,
+  "byte":         127,
+  "short":        32767,
+  "int":          2147483647,
+  "long":         140737488355327,
+  "ubyte":        255,
+  "ushort":       65535,
+  "uint":         4294967295,
+  "ulong":        18446744073709551615,
+  "integer":      123,
+  "float":        123.456,
+  "double":       123.456789,
+  "number":       999,
+  "n,m":          -999,
+  "n..m":         -10,
+  "<n..m>":       -9,
+  "string":       "string",
+  "base64":       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+  "hex":          "0123456789abcdefABCDEF",
+  "date":         "1929-12-31",
+  "time":         "23:59:59",
+  "datetime":     "1929-12-31T23:59:59",
+  "duration":     "PT0S",
+  "char":         "c",
+  "char[1,10]":   "char[1,10]",
+  "regex":        "regex",
+  "string[]":     [ "string1", "string2", "string3" ],
+  "string[1,10]": [ "string1", "string2", "string3" ],
+  "string{}":     [ "string1", "string2", "string3" ],
+  "string{1,10}": [ "string1", "string2", "string3" ],
+  "#ref":         true,
+  "object":       { "some": "data" },
+  "array":        [ 1, "a", null, true ],
+  "null":         null,
+  "obj":          { },
+  "tuple":        [ "string", 123 ],
+  "union":        123
 };
 
 SJOT.check(schema);
-SJOT.validate(obj, null, schema);
+SJOT.validate(data, null, schema);
 console.log("OK!");

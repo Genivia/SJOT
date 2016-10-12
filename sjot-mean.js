@@ -6,12 +6,49 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.0.4
+ * @version     1.1.0
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
  * @license     BSD3
  * @link        http://sjot.org
+ */
+
+
+/*
+ * Example usage
+
+// <script src="sjot.js"></script>    add this to your web page to load sjot.js
+var SJOT = require("sjot");     //    or use the npm sjot package for node.js
+
+var schema = { "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } };
+
+var data = { "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] };
+
+// SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
+
+if (SJOT.valid(data, "#Data", schema))
+  ... // OK: data validated against schema
+
+if (SJOT.valid(data, "http://example.com/sjot.json#Data"))
+  ... // OK: data validated against schema type Data from http://example.com/sjot.json
+
+if (SJOT.valid(data))
+  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
+
+// SJOT.validate(data [, type [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
+try {
+  SJOT.validate(data, "#Data", schema);
+} catch (e) {
+  window.alert(e); // FAIL: validation failed
+}
+
+// SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+try {
+  SJOT.check(schema);
+} catch (e) {
+  window.alert(e); // FAIL: schema is not compliant or correct
+}
  */
 
 "use strict";
@@ -27,7 +64,7 @@ class SJOT {
 
     } catch (e) {
 
-      // console.log(e); // report error
+      /*LOG[*/ console.log(e); // report error /*LOG]*/
       return false;
 
     }
@@ -181,8 +218,6 @@ function sjot_validate(sjots, data, type, sjot /**/) {
         if (data === null && type === "null")
           return;
         sjot_error("value", data, type /**/);
-
-        // FIXME throw /**/ " is " + data;
 
       } else if (Array.isArray(data)) {
 
@@ -662,24 +697,31 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           case "date":
 
-            // TODO check date
-            return;
+            // check RFC3999 date part
+            if (/^\d{4}-\d{2}-\d{2}$/.test(data))
+              return;
+            break;
 
           case "time":
 
-            // TODO check time
-            return;
+            // check RFC3999 time part
+            if (/^\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$/.test(data))
+              return;
+            break;
 
           case "datetime":
 
-            // TODO check datetime
-            return;
+            // check RFC3999 datetime
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$/.test(data))
+              return;
+            break;
 
           case "duration":
 
             // check ISO 8601 duration
             if (/^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/.test(data))
               return;
+            break;
 
         }
 

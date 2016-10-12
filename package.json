@@ -6,7 +6,7 @@
   "scripts": {
     "preversion": "npm test",
     "version": "./build.sh",
-    "postversion": "git push && git push --tags",
+    "postversion": "git commit && git push && git push --tags",
     "test": "./test.sh"
   },
   "repository": {
@@ -15,10 +15,12 @@
   },
   "keywords": [
     "JSON",
+    "lightweight",
     "schema",
     "validation",
-    "lightweight",
-    "validator"
+    "compact",
+    "validator",
+    "library"
   ],
   "author": "Robert van Engelen",
   "license": "BSD-3-Clause",
