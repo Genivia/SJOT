@@ -6,12 +6,6 @@
 SJOT: Schemas for JSON Objects
 ==============================
 
-Released under the BSD3 license.
-Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
-
-What is SJOT?
--------------
-
 Schemas for JSON Objects, or simply SJOT, is a much simpler alternative to JSON
 schema.  SJOT schemas are valid JSON, just like JSON schema.  But SJOT schemas
 have the look and feel of an object template and are readable and
@@ -25,6 +19,9 @@ Read more at <http://sjot.org>
 Install:
 
     npm install sjot
+
+Released under the BSD3 license.
+Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
 
 JSON validation JS API
 ----------------------
