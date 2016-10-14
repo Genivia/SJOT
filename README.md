@@ -37,7 +37,7 @@ var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
 var schema = {
   "Data": {
-    "name":    "string",        // string name
+    "name":    "string",        // required name of type string
     "v?1.0":   "number",        // optional v with default 1.0
     "tags?":   "string{1,}",    // optional non-empty set of string tags
     "package": { "id": "1..", "name": "char[1,]" }
@@ -117,6 +117,7 @@ Changelog
 - Oct 10, 2016: sjot.js 1.1.0 fast, lean, and mean scripts included
 - Oct 11, 2016: sjot.js 1.1.1 datetime RFC3339 validation fixed
 - Oct 12, 2016: sjot.js 1.2.0 regex property names added
+- Oct 13, 2016: sjot.js 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

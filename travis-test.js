@@ -6,7 +6,7 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.1.0
+ * @version     1.1.2
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -16,14 +16,26 @@
 
 
 /*
- * Example usage
+   Usage
 
 // <script src="sjot.js"></script>    add this to your web page to load sjot.js
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
-var schema = { "Data": { "id": "string", "v": "number", "tags?": "string{1,}" } };
+var schema = {
+  "Data": {
+    "name":    "string",        // string name
+    "v?1.0":   "number",        // optional v with default 1.0
+    "tags?":   "string{1,}",    // optional non-empty set of string tags
+    "package": { "id": "1..", "name": "char[1,]" }
+   }                            // package.id >= 1, non-empty package.name
+};
 
-var data = { "id": "SJOT", "v": 1.0, "tags": [ "JSON", "SJOT" ] };
+var data = {
+    "name":    "SJOT",
+    "v":       1.1,
+    "tags":    [ "JSON", "SJOT" ],
+    "package": { "id": 1, "name": "sjot" }
+  };
 
 // SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
 
@@ -113,11 +125,11 @@ class SJOT {
     if (Array.isArray(sjots)) {
 
       for (var i = 0; i < sjots.length; i++)
-        sjot_check(sjots, false, sjots[i], sjots[i], "[" + i + "]");
+        sjot_check(sjots, true, false, sjots[i], sjots[i], "[" + i + "]");
 
     } else {
 
-      sjot_check([sjots], false, sjots, sjots, "");
+      sjot_check([sjots], true, false, sjots, sjots, "");
 
     }
     /*LEAN]*/
@@ -363,13 +375,28 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
               }
 
+            } else if (prop.startsWith("(")) {
+
+              // regex property name
+              var proptype = type[prop];
+              var matcher = RegExp("^" + prop + "$");
+
+              for (var name in data) {
+
+                if (data.hasOwnProperty(name) && matcher.test(name)) {
+
+                  sjot_validate(sjots, data[name], proptype, sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
+                  if (isfinal)
+                    props[name] = null;
+
+                }
+
+              }
+
+
             } else {
 
               var i = prop.indexOf("?");
-
-              // search for ? in property name while ignoring \\?
-              while (i > 0 && prop.charCodeAt(i - 1) === 0x5C)
-                i = prop.indexOf("?", i + 1);
 
               if (i === -1) {
 
@@ -937,7 +964,7 @@ function sjot_error(what, data, type /*FAST[*/, datapath, typepath /*FAST]*/) {
 
 /*LEAN[*/
 // check schema compliance and correctness (an optional feature, can be removed for compact SJOT libraries)
-function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
+function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
   switch (typeof type) {
 
@@ -955,13 +982,13 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
           // check union
           for (var itemtype of type[0])
-            sjot_check(sjots, true, itemtype, sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ itemtype);
+            sjot_check(sjots, false, true, itemtype, sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ itemtype);
 
         } else {
 
           // check tuple
           for (var i = 0; i < type.length; i++)
-            sjot_check(sjots, false, type[i], sjot, /*FAST[*/ typepath + /*FAST]*/ "[" + i + "]");
+            sjot_check(sjots, false, false, type[i], sjot, /*FAST[*/ typepath + /*FAST]*/ "[" + i + "]");
 
         }
 
@@ -974,7 +1001,27 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
           if (prop === "@root") {
 
-            sjot_check(sjots, false, type[prop], sjot, /*FAST[*/ typepath + /*FAST]*/ "/@root");
+            if (!root)
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object";
+            sjot_check(sjots, false, false, type[prop], sjot, /*FAST[*/ typepath + /*FAST]*/ "/@root");
+
+          } else if (prop === "@id") {
+
+            // check @id is a string
+            if (!root)
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object";
+            if (typeof type[prop] !== "string")
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is not a string";
+
+          } else if (prop === "@note") {
+
+            // check @note is a string
+            if (typeof type[prop] !== "string")
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is not a string";
+
+          } else if (prop === "@extends") {
+
+            // has undefined value (by sjot_extends)
 
           } else if (prop === "@final") {
 
@@ -999,7 +1046,7 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
               for (var name of propset) {
 
-                if (typeof name !== "string" || name.startsWith("@"))
+                if (typeof name !== "string" || name.startsWith("@") || name.startsWith("("))
                   throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
                 if (temp[name] === null)
                   throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets are not disjoint sets";
@@ -1014,16 +1061,23 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
               if (type.hasOwnProperty(name) && !name.startsWith("@")) {
 
-                var i = name.indexOf("?");
+                if (name.startsWith("(")) {
 
-                // search for ? in property name while ignoring \\?
-                while (i > 0 && name.charCodeAt(i - 1) === 0x5C)
-                  i = name.indexOf("?", i + 1);
+                  var matcher = RegExp("^" + name + "$");
+                  for (var tempname in temp)
+                    if (temp.hasOwnProperty(tempname) && matcher.test(tempname))
+                      temp[tempname] = true;
 
-                if (i !== -1)
-                  name = name.slice(0, i);
-                if (temp.hasOwnProperty(name))
-                  temp[name] = true;
+                } else {
+
+                  var i = name.indexOf("?");
+
+                  if (i !== -1)
+                    name = name.slice(0, i);
+                  if (temp.hasOwnProperty(name))
+                    temp[name] = true;
+
+                }
 
               }
 
@@ -1033,16 +1087,33 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
               if (temp[name] === null)
                 throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets contains " + name + " that is not a property of this object";
 
-          } else if (!prop.startsWith("@")) {
+          } else if (prop.startsWith("(")) {
+
+            // check if valid regex property name
+            if (!prop.endsWith(")"))
+              throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not a valid regex";
+
+            try {
+
+              RegExp(prop);
+
+            } catch (e) {
+
+              throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not a valid regex: " + e;
+
+            }
+
+          } else if (root && prop.endsWith("]") || prop.endsWith("}")) {
+
+            // property names cannot end in a "]" or a "}" (users should use a regex in this case!)
+            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " type name ends with a ] or a } (use a regex for this property name instead)";
+
+          } else {
 
             var i = prop.indexOf("?");
 
-            // search for ? in property name while ignoring \\?
-            while (i > 0 && prop.charCodeAt(i - 1) === 0x5C)
-              i = prop.indexOf("?", i + 1);
-
             // check property type (primitive=true when optional with a default value)
-            sjot_check(sjots, (i !== -1 && i < prop.length - 1), type[prop], sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ prop);
+            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ prop);
 
           }
 
@@ -1058,7 +1129,7 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
         type = sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
 
-        return sjot_check(sjots, prim, type, sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ type);
+        return sjot_check(sjots, false, prim, type, sjot, /*FAST[*/ typepath + "/" + /*FAST]*/ type);
 
       } else if (type.endsWith("]")) {
 
@@ -1067,7 +1138,7 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
         var i = type.lastIndexOf("[");
 
-        return sjot_check(sjots, false, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
+        return sjot_check(sjots, false, false, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
 
       } else if (type.endsWith("}")) {
 
@@ -1076,7 +1147,7 @@ function sjot_check(sjots, prim, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
         var i = type.lastIndexOf("{");
 
-        return sjot_check(sjots, true, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
+        return sjot_check(sjots, false, true, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
 
       } else {
 
@@ -1247,17 +1318,17 @@ var schema =
     "datetime":     "datetime",
     "duration":     "duration",
     "char":         "char",
-    "char[1,10]":   "char[1,10]",
+    "char10":       "char[1,10]",
     "regex":        "(regex)",
-    "string[]":     "string[]",
-    "string[1,10]": "string[1,10]",
-    "string{}":     "string{}",
-    "string{1,10}": "string{1,10}",
+    "strings":      "string[]",
+    "strings10":    "string[1,10]",
+    "stringset":    "string{}",
+    "stringset10":  "string{1,10}",
     "#ref":         "#ref",
     "object":       "object",
     "array":        "array",
     "null":         "null",
-    "obj":          { "optional?": "string" },
+    "obj":          { "optional?": "string", "[a]": "number", "(\\w+)": "number" },
     "tuple":        [ "string", "number" ],
     "union":        [[ "string", "number" ]]
   },
@@ -1297,17 +1368,17 @@ var data =
   "datetime":     "1929-12-31T23:59:59",
   "duration":     "PT0S",
   "char":         "c",
-  "char[1,10]":   "char[1,10]",
+  "char10":       "char[1,10]",
   "regex":        "regex",
-  "string[]":     [ "string1", "string2", "string3" ],
-  "string[1,10]": [ "string1", "string2", "string3" ],
-  "string{}":     [ "string1", "string2", "string3" ],
-  "string{1,10}": [ "string1", "string2", "string3" ],
+  "strings":      [ "string1", "string2", "string3" ],
+  "strings10":    [ "string1", "string2", "string3" ],
+  "stringset":    [ "string1", "string2", "string3" ],
+  "stringset10":  [ "string1", "string2", "string3" ],
   "#ref":         true,
   "object":       { "some": "data" },
   "array":        [ 1, "a", null, true ],
   "null":         null,
-  "obj":          { },
+  "obj":          { "[a]": 0, "a": 1, "b": 2 },
   "tuple":        [ "string", 123 ],
   "union":        123
 };

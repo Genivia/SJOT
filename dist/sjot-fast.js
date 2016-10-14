@@ -6,7 +6,7 @@
  * quick JSON data validation with lightweight schemas and compact validators.
  *
  * @module      sjot
- * @version     1.1.2
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -23,7 +23,7 @@ var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
 var schema = {
   "Data": {
-    "name":    "string",        // string name
+    "name":    "string",        // required name of type string
     "v?1.0":   "number",        // optional v with default 1.0
     "tags?":   "string{1,}",    // optional non-empty set of string tags
     "package": { "id": "1..", "name": "char[1,]" }
@@ -588,9 +588,10 @@ function sjot_validate(sjots, data, type, sjot /**/) {
           // may not reject non-integers in e.g. "1.0" or non-floats in e.g. "1" because JS numbers are floats
           for (var i = 0; i < type.length; i++) {
 
+            var isfloat = !Number.isInteger(data);
             var exclusive = false;
 
-            if (type.charCodeAt(i) == 0x3C) {
+            if (type.charCodeAt(i) === 0x3C) {
 
               exclusive = true;
               i++;
@@ -600,49 +601,76 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             var j = type.indexOf("..", i);
             var k = type.indexOf(",", i);
 
-            if (k == -1)
+            if (k === -1)
               k = type.length;
 
-            if (i == j) {
+            if (i === j) {
 
-              if (type.charCodeAt(k-1) == 0x3E) {
+              // check if ..m is integer, error if data is not integer
+              if (isfloat) {
+
+                var p = type.indexOf(".", j + 2);
+                if (p === -1 || p >= k)
+                  break;
+
+              }
+
+              if (type.charCodeAt(k - 1) === 0x3E) {
 
                 // check ..m>
-                if (data < Number.parseFloat(type.slice(i, k - 1)))
+                if (data < Number.parseFloat(type.slice(j + 2, k - 1)))
                   return;
 
               } else {
 
                 // check ..m
-                if (data <= Number.parseFloat(type.slice(i, k)))
+                if (data <= Number.parseFloat(type.slice(j + 2, k)))
                   return;
 
               }
 
-            } else if (j < k) {
+            } else if (j < k && j !== -1) {
 
-              if (j + 2 == k) {
+              // check if n.. is integer, error if data is not integer
+              if (isfloat) {
+
+                var p = type.indexOf(".", i);
+                if (p === -1 || p >= j)
+                  break;
+
+              }
+
+              if (j + 2 === k) {
 
                 // check n.. and <n..
                 var n = Number.parseFloat(type.slice(i, j));
 
-                if (data > n || (!exclusive && data == n))
+                if (data > n || (!exclusive && data === n))
                   return;
 
               } else {
 
+                // check if n.. is integer, error if data is not integer
+                if (isfloat) {
+
+                  var p = type.indexOf(".", j + 2);
+                  if (p === -1 || p >= k)
+                    break;
+
+                }
+
                 var n = Number.parseFloat(type.slice(i, j));
 
-                if (type.charCodeAt(k-1) == 0x3E) {
+                if (type.charCodeAt(k - 1) === 0x3E) {
 
                   // check n..m> and <n..m>
-                  if ((data > n || (!exclusive && data == n)) && data < Number.parseFloat(type.slice(j + 2, k - 1)))
+                  if ((data > n || (!exclusive && data === n)) && data < Number.parseFloat(type.slice(j + 2, k - 1)))
                     return;
 
                 } else {
 
                   // check n..m and <n..m
-                  if ((data > n || (!exclusive && data == n)) && data <= Number.parseFloat(type.slice(j + 2, k)))
+                  if ((data > n || (!exclusive && data === n)) && data <= Number.parseFloat(type.slice(j + 2, k)))
                     return;
 
                 }
@@ -651,8 +679,17 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             } else {
 
+              // check if n is integer, error if data is not integer
+              if (isfloat) {
+
+                var p = type.indexOf(".", i);
+                if (p === -1 || p >= k)
+                  break;
+
+              }
+
               // check n
-              if (data == Number.parseFloat(type.slice(i, k)))
+              if (data === Number.parseFloat(type.slice(i, k)))
                 return;
 
             }
@@ -681,7 +718,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
       } else if (type.startsWith("char")) {
 
-        if (type == "char") {
+        if (type === "char") {
 
           if (data.length === 1)
             return;
@@ -783,9 +820,9 @@ function sjot_validate_bounds(len, type, i /**/) {
   var k = type.indexOf(",", i);
 
   // return if no bounds or [] or {}
-  if (j == -1)
+  if (j === -1)
     j = type.indexOf("}", i);
-  if (j == -1 || i == j)
+  if (j === -1 || i === j)
     return;
 
   if (k === -1)
@@ -796,7 +833,7 @@ function sjot_validate_bounds(len, type, i /**/) {
     if (len !== n)
       sjot_error("length", len, type /**/);
 
-  } else if (k + 1 == j) {
+  } else if (k + 1 === j) {
 
     // check [n,]
     var n = Number.parseInt(type.slice(i, k));
@@ -804,7 +841,7 @@ function sjot_validate_bounds(len, type, i /**/) {
     if (len < n)
       sjot_error("length", len, type /**/);
 
-  } else if (i == k) {
+  } else if (i === k) {
 
     // check [,m]
     var m = Number.parseInt(type.slice(k + 1, j));
@@ -1203,34 +1240,34 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
               // check numeric range
               for (var i = 0; i < type.length; i++) {
 
-                if (type.charCodeAt(i) == 0x3C)
+                if (type.charCodeAt(i) === 0x3C)
                   i++;
 
                 var j = type.indexOf("..", i);
                 var k = type.indexOf(",", i);
 
-                if (k == -1)
+                if (k === -1)
                   k = type.length;
 
-                if (i == j) {
+                if (i === j) {
 
-                  if (type.charCodeAt(k - 1) == 0x3E) {
+                  if (type.charCodeAt(k - 1) === 0x3E) {
 
                     // check ..m>
-                    if (isNaN(Number.parseFloat(type.slice(i, k - 1))))
+                    if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
                       throw "SJOT schema format error: " /**/ + type + " is not a type";
 
                   } else {
 
                     // check ..m
-                    if (isNaN(Number.parseFloat(type.slice(i, k))))
+                    if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
                       throw "SJOT schema format error: " /**/ + type + " is not a type";
 
                   }
 
-                } else if (j < k) {
+                } else if (j < k && j !== -1 ) {
 
-                  if (j + 2 == k) {
+                  if (j + 2 === k) {
 
                     // check n.. and <n..
                     if (isNaN(Number.parseFloat(type.slice(i, j))))
@@ -1241,7 +1278,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
                     if (isNaN(Number.parseFloat(type.slice(i, j))))
                       throw "SJOT schema format error: " /**/ + type + " is not a type";
 
-                    if (type.charCodeAt(k - 1) == 0x3E) {
+                    if (type.charCodeAt(k - 1) === 0x3E) {
 
                       // check n..m> and <n..m>
                       if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
