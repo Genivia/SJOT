@@ -6,7 +6,7 @@
 SJOT: Schemas for JSON Objects
 ==============================
 
-Schemas for JSON Objects, or simply SJOT, is a much simpler alternative to JSON
+Schemas for JSON Objects, or simply SJOT, is a more compact alternative to JSON
 schema.  SJOT schemas are valid JSON, just like JSON schema.  But SJOT schemas
 have the look and feel of an object template and are readable and
 understandable by humans.  SJOT aims at quick JSON data validation with
