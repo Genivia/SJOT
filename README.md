@@ -7,12 +7,12 @@ SJOT: Schemas for JSON Objects
 ==============================
 
 Schemas for JSON Objects, or simply SJOT, is a more compact alternative to JSON
-schema.  SJOT schemas are valid JSON, just like JSON schema.  But SJOT schemas
-have the look and feel of an object template and are readable and
-understandable by humans.  SJOT aims at quick JSON data validation with
-lightweight schemas and compact validators.
+schema.  SJOT schemas are valid JSON, just like JSON schema.  SJOT schemas
+have the look and feel of an object template and are more easy to read and
+understand.  SJOT aims at fast JSON data validation with lightweight schemas
+and compact validators.
 
-Live demo at <http://genivia.com/get-sjot.html#demo>
+Live validator and converter at <https://genivia.com/get-sjot.html#demo>
 
 Read more at <http://sjot.org>
 
@@ -115,6 +115,7 @@ Changelog
 - Oct 11, 2016: sjot.js 1.1.1 datetime RFC3339 validation fixed
 - Oct 12, 2016: sjot.js 1.2.0 regex property names added
 - Oct 13, 2016: sjot.js 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
+- Oct 18, 2016: sjot.js 1.2.2 fix for SJOT.check #type cycling and "null" type
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

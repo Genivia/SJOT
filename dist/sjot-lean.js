@@ -2,11 +2,12 @@
  * A validator for "Schemas for JSON Objects", or simply SJOT.
  * SJOT is a much simpler alternative to JSON schema.  SJOT schemas are valid
  * JSON, just like JSON schema.  But SJOT schemas have the look and feel of an
- * object template and are readable and understandable by humans.  SJOT aims at
+ * object template and are more easy to read and understand.  SJOT aims at
  * quick JSON data validation with lightweight schemas and compact validators.
+ * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.0
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -190,30 +191,17 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
   }
 
-  // check unions (can be very expensive to validate because of trial-and-error)
+  // check unions
   if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
 
     // validate data against type union [[ type, type, ... ]]
     for (var itemtype of type[0]) {
 
-      // check if itemtype is primitive
-      if (typeof itemtype === "string") {
+      try {
 
-        if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !(itemtype.endsWith("]") || itemtype.endsWith("}"))) {
+        return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, datapath, typepath + "/" + itemtype /*FAST]*/);
 
-          itemtype = sjot_reftype(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/);
-          if (typeof itemtype !== "string")
-            sjot_error("value", data, itemtype /*FAST[*/, datapath, typepath /*FAST]*/);
-
-        }
-
-        try {
-
-          return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, datapath, typepath + "/" + itemtype /*FAST]*/);
-
-        } catch (e) { }
-
-      }
+      } catch (e) { }
 
     }
 
@@ -422,6 +410,12 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
                     switch (proptype) {
 
+                      case "null":
+
+                        if (value === "null")
+                          value = null;
+                        break;
+
                       case "boolean":
 
                         value = (value === "true");
@@ -598,6 +592,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
               if (isfloat) {
 
                 var p = type.indexOf(".", j + 2);
+
                 if (p === -1 || p >= k)
                   break;
 
@@ -623,6 +618,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
               if (isfloat) {
 
                 var p = type.indexOf(".", i);
+
                 if (p === -1 || p >= j)
                   break;
 
@@ -638,10 +634,11 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
               } else {
 
-                // check if n.. is integer, error if data is not integer
+                // check if ..m is integer, error if data is not integer
                 if (isfloat) {
 
                   var p = type.indexOf(".", j + 2);
+
                   if (p === -1 || p >= k)
                     break;
 
@@ -671,6 +668,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
               if (isfloat) {
 
                 var p = type.indexOf(".", i);
+
                 if (p === -1 || p >= k)
                   break;
 
@@ -724,40 +722,16 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
           case "base64":
 
             // check base64
-            for (var i = 0; i < data.length; i++) {
-
-              var c = data.charCodeAt(i);
-
-              if (c < 0x2B || (c > 0x2B && c < 0x2F) || (c > 0x39 && c < 0x41) || (c > 0x5A && c < 0x61) || c > 0x7A) {
-
-                while (c === 0x3D && ++i < data.length)
-                  c = data.charCodeAt(i);
-
-                if (i < data.length)
-                  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
-              }
-
-            }
-
-            return;
+            if (/^[0-9A-Za-z+\/]*=?=?$/.test(data))
+              return;
+            break;
 
           case "hex":
 
-            // check hex (check length should be multiple of 2??)
-            // if (data.length % 2)
-              // sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
-            for (var i = 0; i < data.length; i++) {
-
-              var c = data.charCodeAt(i);
-
-              if (c < 0x30 || (c > 0x39 && c < 0x41) || (c > 0x46 && c < 0x61) || c > 0x66)
-                sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
-            }
-
-            return;
+            // check hex
+            if (/^[0-9A-Fa-f]*$/.test(data))
+              return;
+            break;
 
           case "date":
 
@@ -783,7 +757,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
           case "duration":
 
             // check ISO 8601 duration
-            if (/^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/.test(data))
+            if (/^-?P(-?[0-9,.]*Y)?(-?[0-9,.]*M)?(-?[0-9,.]*W)?(-?[0-9,.]*D)?(T(-?[0-9,.]*H)?(-?[0-9,.]*M)?(-?[0-9,.]*S)?)?$/.test(data))
               return;
             break;
 
