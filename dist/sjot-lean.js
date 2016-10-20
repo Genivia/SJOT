@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.1
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -195,13 +195,18 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
   if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
 
     // validate data against type union [[ type, type, ... ]]
+    var union = [];
+
     for (var itemtype of type[0]) {
 
       try {
 
         return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, datapath, typepath + "/" + itemtype /*FAST]*/);
 
-      } catch (e) { }
+      } catch (e) {
+      
+
+      }
 
     }
 

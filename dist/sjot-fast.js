@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.1
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -207,13 +207,21 @@ function sjot_validate(sjots, data, type, sjot /**/) {
   if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
 
     // validate data against type union [[ type, type, ... ]]
+    var union = [];
+
     for (var itemtype of type[0]) {
 
       try {
 
         return sjot_validate(sjots, data, itemtype, sjot /**/);
 
-      } catch (e) { }
+      } catch (e) {
+      
+        /*LEAN[*/
+        sjot_check_union(sjots, itemtype, sjot /**/, union);
+        /*LEAN]*/
+
+      }
 
     }
 
@@ -992,8 +1000,14 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
         if (type.length === 1 && Array.isArray(type[0])) {
 
           // check union
-          for (var itemtype of type[0])
-            sjot_check(sjots, false, true, itemtype, sjot, /**/ itemtype);
+          var union = [];
+
+          for (var itemtype of type[0]) {
+
+            sjot_check(sjots, false, false, itemtype, sjot /**/);
+            sjot_check_union(sjots, itemtype, sjot /**/, union);
+
+          }
 
         } else {
 
@@ -1308,6 +1322,212 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
       throw "SJOT schema format error: " /**/ + " has unknown type " + type;
 
+  }
+
+}
+
+function sjot_check_union(sjots, type, sjot /**/, union) {
+
+  var n = 1;
+
+  if (typeof type === "string") {
+
+    var i = type.length;
+
+    while (i > 0) {
+
+      if (type.charCodeAt(i - 1) === 0x5D)
+        i = type.lastIndexOf("[", i - 1);
+      else if (type.charCodeAt(i - 1) === 0x7D)
+        i = type.lastIndexOf("{", i - 1);
+      else
+        break;
+      n++;
+
+    }
+
+    type = type.slice(0, i);
+
+    if (type.indexOf("#") !== -1 && !type.startsWith("(")) {
+
+      type = sjot_reftype(sjots, type, sjot /**/);
+
+      i = type.length;
+
+      while (i > 0) {
+
+        if (type.charCodeAt(i - 1) === 0x5D)
+          i = type.lastIndexOf("[", i - 1);
+        else if (type.charCodeAt(i - 1) === 0x7D)
+          i = type.lastIndexOf("{", i - 1);
+        else
+          break;
+        n++;
+
+      }
+
+    }
+
+
+    if (type === "char" && n > 0) {
+
+      type = "string";
+      n--;
+
+    } else if (type === "array") {
+
+      type = "any";
+      n++;
+
+    }
+
+  } else if (type === "array" || Array.isArray(type)) {
+
+    type = "any";
+    n++;
+
+  }
+
+  if (union[0] !== undefined && n >= union[0])
+    throw "SJOT schema format error: " /**/ + " union requires distinct types";
+
+  if (union[n] === undefined)
+    union[n] = { n: false, b: false, x: false, s: false, o: false };
+
+  if (typeof type === "string") {
+
+    switch (type) {
+
+      case "null":
+
+        if (union[n].n)
+          throw "SJOT schema format error: " /**/ + " union has multiple null types";
+        union[n].n = true;
+        break;
+
+      case "boolean":
+
+        if (union[n].b)
+          throw "SJOT schema format error: " /**/ + " union has multiple boolean types";
+        union[n].b = true;
+        break;
+
+      case "byte":
+      case "short":
+      case "int":
+      case "long":
+      case "ubyte":
+      case "ushort":
+      case "uint":
+      case "ulong":
+      case "integer":
+      case "float":
+      case "double":
+      case "number":
+
+        if (n > 1 && union[n].x)
+          throw "SJOT schema format error: " /**/ + " union has multiple numeric array types";
+        union[n].x = true;
+        break;
+
+      case "string":
+      case "hex":
+      case "base64":
+      case "date":
+      case "time":
+      case "datetime":
+      case "duration":
+      case "char":
+
+        if (n > 1 && union[n].s)
+          throw "SJOT schema format error: " /**/ + " union has multiple string array types";
+        union[n].s = true;
+        break;
+
+      case "any":
+
+        for (var i = n; i < union.length; i++)
+          if (union[i] !== undefined && (union[i].n || union[i].b || union[i].x || union[i].s || union[i].o))
+            throw "SJOT schema format error: " /**/ + " union requires distinct types";
+        union[0] = n;
+        break;
+
+      case "atom":
+
+        if (union[n].b || union[n].x || union[n].s)
+          throw "SJOT schema format error: " /**/ + " union has multiple atomic types";
+        union[n].b = true;
+        union[n].x = true;
+        union[n].s = true;
+        break;
+
+      case "object":
+
+        if (union[n].o)
+          throw "SJOT schema format error: " /**/ + " union has multiple object types";
+        union[n].o = true;
+        break;
+
+      default:
+
+        if (type.startsWith("(")) {
+
+          if (n > 1 && union[n].s)
+            throw "SJOT schema format error: " /**/ + " union has multiple string array types";
+          union[n].s = true;
+
+        } else {
+
+          if (n > 1 && union[n].x)
+            throw "SJOT schema format error: " /**/ + " union has multiple numeric array types";
+          union[n].x = true;
+
+        }
+
+    }
+
+  } else if (typeof type === "object") {
+
+    if (union[n].o === true)
+      throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+
+    var empty = false;
+
+    if (union[n].o === false) {
+
+      empty = true;
+      union[n].o = {};
+
+    }
+
+    for (var prop in type) {
+
+      if (type.hasOwnProperty(prop)) {
+
+        if (prop.startsWith("(")) {
+
+          if (!empty)
+            throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+          union[n].o = true;
+          break;
+
+        } else {
+
+          var i = prop.indexOf("?");
+
+          if (i !== -1)
+            prop = prop.slice(0, i);
+          console.log(prop);
+          if (union[n].o.hasOwnProperty(prop))
+            throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+          union[n].o[prop] = true;
+
+        }
+
+      }
+
+    }
+    
   }
 
 }

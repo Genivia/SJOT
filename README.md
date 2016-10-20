@@ -116,6 +116,7 @@ Changelog
 - Oct 12, 2016: sjot.js 1.2.0 regex property names added
 - Oct 13, 2016: sjot.js 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
 - Oct 18, 2016: sjot.js 1.2.2 fix for SJOT.check #type cycling and "null" type
+- Oct 19, 2016: sjot.js 1.2.3 updated union SJOT.check and validation rules
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
