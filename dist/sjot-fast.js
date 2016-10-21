@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.2
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -247,9 +247,11 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
         if (Array.isArray(type)) {
 
-          // validate a tuple
-          if (data.length !== type.length)
+          // validate a tuple and extend it if necessary
+          if (data.length > type.length)
             throw /**/ ".length=" + type.length;
+	  for (var i = data.length; i < type.length; i++)
+	    data[i] = sjot_default("null", sjots, null, type[i], sjot /**/);
           for (var i = 0; i < data.length; i++)
             sjot_validate(sjots, data[i], type[i], sjot /**/);
           return;
@@ -414,6 +416,9 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
                 } else if (i < prop.length - 1) {
 
+		  data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot /**/);
+                  sjot_validate(sjots, data[name], type[prop], sjot /**/);
+		  /*
                   var value = prop.slice(i + 1);
                   var proptype = type[prop];
 
@@ -422,9 +427,10 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                     if (proptype.indexOf("#") !== -1 && !proptype.startsWith("(") && !(proptype.endsWith("]") || proptype.endsWith("}"))) {
 
                       // get referenced URI#name type
-                      proptype = sjot_reftype(sjots, proptype, sjot /**/);
-                      if (typeof proptype !== "string")
-                        sjot_error("value", data, proptype /**/);
+                      */ // proptype = sjot_reftype(sjots, proptype, sjot /**/);
+                      // if (typeof proptype !== "string")
+                        // sjot_error("value", data, proptype /**/);
+		  /*
 
                     }
 
@@ -478,14 +484,14 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                     }
 
                     // validate before assigning the default value
-                    sjot_validate(sjots, value, proptype, sjot /**/);
-                    data[name] = value;
+                    */ // sjot_validate(sjots, value, proptype, sjot /**/);
+                    /* data[name] = value;
 
                   } else {
 
-                    throw "SJOT schema format error in " /**/ + type;
+                    */ //throw "SJOT schema format error in " /**/ + type;
 
-                  }
+                  // }
 
                 }
 
@@ -963,6 +969,78 @@ function sjot_reftype(sjots, type, sjot /**/) {
     // TODO get external URI type reference when URI is a URL, load async and put in sjots array
 
   }
+
+}
+
+function sjot_default(value, sjots, data, type, sjot /**/) {
+
+  if (typeof type === "string") {
+
+    if (type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
+
+      // get referenced URI#name type
+      type = sjot_reftype(sjots, type, sjot /**/);
+      if (typeof proptype !== "string")
+	sjot_error("value", data, type /**/);
+
+    }
+
+    switch (type) {
+
+      case "null":
+
+	return null;
+
+      case "boolean":
+
+	return (value === "true");
+
+      case "number":
+      case "float":
+      case "double":
+      case "integer":
+      case "byte":
+      case "short":
+      case "int":
+      case "long":
+      case "ubyte":
+      case "ushort":
+      case "uint":
+      case "ulong":
+
+	if (value === "null")
+	  return 0;
+	else
+	  return Number.parseFloat(value);
+
+      default:
+
+	// check type for numeric range and if so set number, not string
+	if (!type.startsWith("(")) {
+
+	  for (var i = 0; i < type.length; i++) {
+
+	    if (type.charCodeAt(i) >= 0x30 && type.charCodeAt(i) <= 0x39) {
+
+	      if (value === "null")
+		return 0;
+	      else
+		return Number.parseFloat(value);
+
+	    }
+
+	  }
+
+	}
+
+	if (value === "null")
+	  return "";
+
+    }
+
+  }
+
+  return value;
 
 }
 

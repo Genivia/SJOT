@@ -93,8 +93,10 @@ sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
 Feature wish list / nice to have
 --------------------------------
 
-- SJOT to JSON schema converter
-- JSON schema to SJOT converter
+- SJOT to JSON schema converter (see our beta converter at <https://genivia.com/get-sjot.html#demo>)
+- JSON schema to SJOT converter (work in progres)
+- Performance improvements (our currrent focus is on accuracy)
+- Random JSON data generator from SJOT schemas for testing
 
 Changelog
 ---------
@@ -117,6 +119,7 @@ Changelog
 - Oct 13, 2016: sjot.js 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
 - Oct 18, 2016: sjot.js 1.2.2 fix for SJOT.check #type cycling and "null" type
 - Oct 19, 2016: sjot.js 1.2.3 updated union SJOT.check and validation rules
+- Oct 20, 2016: sjot.js 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
