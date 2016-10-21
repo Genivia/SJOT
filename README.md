@@ -76,16 +76,23 @@ try {
 }
 ```
 
-sjot.js is fully functional to validate JSON data, but the current version has
-some limitations:
-
-- For security reasons, no loading of external type references "URI#type" yet (where URI is a URL of a schema to load)
+Notes
+-----
 
 Three alternative versions of sjot.js are included:
 
 - sjot-fast.js is optimized for speed but validation error messages are less informative
 - sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
 - sjot-mean.js is optimized for speed and size
+
+dev/sjot2js.js is a SJOT to JSON schema converter that will eventually be
+integrated into the SJOT class. Visit <https://genivia.com/get-sjot.html#demo>
+to use the converter.
+
+sjot.js is fully functional to validate JSON data, but the current version has
+some limitations:
+
+- For security reasons, no loading of external type references "URI#type" yet (where URI is a URL of a schema to load)
 
 JSON validation C/C++ API
 -------------------------
@@ -95,7 +102,6 @@ sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
 Feature wish list / nice to have
 --------------------------------
 
-- SJOT to JSON schema converter (see our beta converter at <https://genivia.com/get-sjot.html#demo>)
 - JSON schema to SJOT converter (work in progres)
 - Performance improvements (our currrent focus is on accuracy)
 - Random JSON data generator from SJOT schemas for testing
@@ -122,6 +128,7 @@ Changelog
 - Oct 18, 2016: sjot.js 1.2.2 fix for SJOT.check #type cycling and "null" type
 - Oct 19, 2016: sjot.js 1.2.3 updated union SJOT.check and validation rules
 - Oct 20, 2016: sjot.js 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
+- Oct 21, 2016: sjot.js 1.2.5 improvements and dev/sjot2js.js added
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
