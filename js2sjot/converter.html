@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <title>SJOT to JSON Schema Convter</title>
+  </head>
+  <body>
+    <script src="js2sjot.js"></script>
+
+
+    <textarea id="jsonSchema" cols=80 rows=15 placeholder="JSON Schema"></textarea>
+
+    <textarea id="sjot" cols=80 rows=15 placeholder="SJOT"></textarea>
+
+    <button type=button onclick="convert()">Convert SJOT to JSON Schema</button>
+
+
+    <script>
+      function convert() {
+        var js = document.getElementById("jsonSchema").value;
+        var converted = JS2SJOT.toSJOT(js);
+        document.getElementById("sjot").value = JSON.stringify(converted, null, 2);
+      }
+    </script>
+  </body>
+</html>
