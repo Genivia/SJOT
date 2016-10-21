@@ -17,7 +17,8 @@ Work in progress.
   - Keywords: "minItems", "maxItems", "uniqueItems", "items", "additionalItems"
 
 ### Keywords
-- "types" being an array of simple types
+- "type"
+- "enum"
 - "$ref"
   - Currently only JSON path references for now.
 - "title"
@@ -31,12 +32,10 @@ Work in progress.
 ## In progress
 
 ### General
-- Options for different JSON Schema versions. Currently only version 4.
+- Options for different JSON Schema versions. Currently only supports version 4.
 
 ### Keywords
 - "id" and "$ref" to ids
-- "enum"
-  - Currently only implemented (naively) for "string" type
 - "allOf"
 - "anyOf"
 - "oneOf"

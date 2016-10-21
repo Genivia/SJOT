@@ -1,3 +1,5 @@
+/* jshint sub:true */
+
 /*
   A converter from JSON schemas to SJOT schemas.
 */
@@ -21,17 +23,17 @@ class JS2SJOT {
   }
 }
 
-module.exports = JS2SJOT;
+//module.exports = JS2SJOT;
 
 var js_2sjot = function(js, version) {
   var sjot = {};
 
-  js_2sjot_go(js, js, "@root", sjot, sjot, false);
+  toSJOT(js, js, "@root", sjot, sjot, false);
 
   if (js.hasOwnProperty("definitions")) {
     for (var defProp in js["definitions"]) {
       if (js["definitions"].hasOwnProperty(defProp)) {
-        var t = js_2sjot_go(js, js["definitions"][defProp],
+        var t = toSJOT(js, js["definitions"][defProp],
                     defProp,
                     sjot, sjot,
                     false);
@@ -42,7 +44,7 @@ var js_2sjot = function(js, version) {
   return sjot;
 };
 
-var js_ref2sjot = function(ref) {
+var getSJOTTypeFromReference = function(ref) {
   var h = ref.indexOf("#");
   if (h === -1) {
     /* TODO: no # */
@@ -58,7 +60,7 @@ var js_ref2sjot = function(ref) {
   }
 };
 
-var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, optional) {
+var toSJOT = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, optional) {
   var propName, typeName;
 
   var opt = (optional === undefined) ? true : optional;
@@ -72,8 +74,8 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
   }
 
   if (jsNode.hasOwnProperty("enum")) {
-    propName = getPropName(jsRoot, jsNode, jPropName, opt);
-    typeName = getType(jsRoot, jsNode, jPropName, sjotRoot);
+    propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+    typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
 
     if (sjotNode !== undefined)
       sjotNode[propName] = typeName;
@@ -84,15 +86,15 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
   if (jsNode.hasOwnProperty("type")) {
     if (Array.isArray(jsNode["type"])) {
       /* array of primitive types */
-      propName = getPropName(jsRoot, jsNode, jPropName, opt);
-      typeName = getType(jsRoot, jsNode, jPropName, sjotRoot);
+      propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+      typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
     }
     else {
       /* single type */
       switch (jsNode["type"]) {
         case "object":
-          propName = getPropName(jsRoot, jsNode, jPropName, opt);
-          typeName = getType(jsRoot, jsNode,
+          propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+          typeName = getSJOTTypeFromNode(jsRoot, jsNode,
                              (jPropName === "@root") ? "root" : jPropName,
                              sjotRoot);
 
@@ -104,10 +106,10 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
             var ref = typeName.substring(1);
             /* FIXME: this fixes additionalProperties in a
               nested object, but does it break anything else? */
-            ref = makeUnconflictingName(ref, sjotRoot);
+            ref = getUnconflictingSJOTType(ref, sjotRoot);
             sjotRoot[ref] = {};
 
-            addNotes(jsNode, sjotRoot[ref], false);
+            addNotesToNode(jsNode, sjotRoot[ref], false);
 
             /* recursively add properties to the reference */
             if (jsNode.hasOwnProperty("properties")) {
@@ -118,7 +120,7 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
                                  (jsNode["required"].indexOf(objProp) != -1)) {
                     propOpt = false;
                   }
-                  var t = js_2sjot_go(jsRoot, jsNode["properties"][objProp],
+                  var t = toSJOT(jsRoot, jsNode["properties"][objProp],
                               objProp,
                               sjotRoot, sjotRoot[ref],
                               propOpt);
@@ -145,11 +147,11 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
               for (var pattProp in jsNode["patternProperties"]) {
                 if (jsNode["patternProperties"].hasOwnProperty(pattProp)) {
                   console.log("adding " + pattProp + " to ref " + ref);
-                  propName = getRegex(pattProp);
-                  var t = js_2sjot_go(jsRoot, jsNode["patternProperties"][pattProp],
-                              propName,
-                              sjotRoot, sjotRoot[ref],
-                              false);
+                  propName = getSJOTRegexType(pattProp);
+                  toSJOT(jsRoot, jsNode["patternProperties"][pattProp],
+                         propName,
+                         sjotRoot, sjotRoot[ref],
+                         false);
                 }
               }
             }
@@ -170,34 +172,34 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
           } /* end typeName.startsWith("#") */
 
           return typeName;
-        break; /* end case "object" */
+        /* end case "object" */
 
         case "array":
           if (jsNode.hasOwnProperty("items") &&
               !Array.isArray(jsNode["items"]) &&
             jsNode["items"].hasOwnProperty("type")) {
-                propName = getPropName(jsRoot, jsNode["items"], jPropName, opt);
+                propName = getSJOTPropertyFromNode(jsRoot, jsNode["items"], jPropName, opt);
                 if (jsNode["items"]["type"] === "object") {
-                  typeName = js_2sjot_go(jsRoot, jsNode["items"],
+                  typeName = toSJOT(jsRoot, jsNode["items"],
                               jPropName,
                               sjotRoot, sjotNode,
                               opt);
                   /* nasty fix but it works */
-                  typeName += getArraySuffix(jsNode);
+                  typeName += getSJOTArraySuffixFromNode(jsNode);
                 }
                 else {
-                  typeName = getType(jsRoot, jsNode, jPropName, sjotRoot);
+                  typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
                 }
           }
           else {
-            propName = getPropName(jsRoot, jsNode, jPropName, opt);
-            typeName = getType(jsRoot, jsNode, jPropName, sjotRoot);
+            propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+            typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
           }
         break; /* end case "array" */
 
         default:
-          propName = getPropName(jsRoot, jsNode, jPropName, opt);
-          typeName = getType(jsRoot, jsNode, undefined, sjotRoot);
+          propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+          typeName = getSJOTTypeFromNode(jsRoot, jsNode, undefined, sjotRoot);
         break;
       } /* end switch(jsNode["type"])  */
     } /* end single type */
@@ -208,8 +210,8 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
     return typeName;
   } /* end jsNode has property "type" */
   else if (jsNode.hasOwnProperty("$ref")) {
-    propName = getPropName(jsRoot, jsNode, jPropName, opt);
-    typeName = js_ref2sjot(jsNode["$ref"]);
+    propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+    typeName = getSJOTTypeFromReference(jsNode["$ref"]);
 
     if (sjotNode !== undefined)
       sjotNode[propName] = typeName;
@@ -218,14 +220,14 @@ var js_2sjot_go = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, option
   }
 };
 
-var getPropName = function(jsRoot, jsNode, jPropName, optional) {
+var getSJOTPropertyFromNode = function(jsRoot, jsNode, jPropName, optional) {
   var s = jPropName;
   if (optional) {
     var node;
     if (jsNode.hasOwnProperty("$ref")) {
       /* grab the ref leaf's default value */
       /* FIXME: do we want to grab the first default value we see? */
-      node = resolveJSONPointer(jsRoot, jsRoot, jsNode["$ref"])
+      node = resolveJSONPointer(jsRoot, jsRoot, jsNode["$ref"]);
     }
     else {
       node = jsNode;
@@ -261,51 +263,21 @@ var resolveJSONPointer = function(jsRoot, jsNode, ptr) {
   if (jsNode.hasOwnProperty("$ref"))
     return resolveJSONPointer(jsRoot, jsRoot, jsNode["$ref"]);
   return jsNode;
-}
+};
 
-var getType = function(jsRoot, jsNode, jPropName, sjotRoot) {
+var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
   if (jPropName === "(.*)") {
     jPropName = "addProps"; /* renaming "additionalProperties" */
   }
 
   /* enum types */
   if (jsNode.hasOwnProperty("enum")) {
-    var types = [];
-    if (jsNode.hasOwnProperty("type")) {
-      types = jsNode["type"];
-      if (typeof(types) == "string") {
-        types = [ types ];
-      }
-    }
-
-    /* remove default value not in the enum */
-    if (jsNode.hasOwnProperty("default")) {
-      if (jsNode["enum"].indexOf(jsNode["default"]) === -1) {
-        delete jsNode["default"];
-      }
-    }
-    /*
-      FIXME:
-      This doesn't account for other schema requirements.
-      For example,
-       "type": "integer",
-       "minimum": 5,
-       "enum": [ 1 ]
-      will let 1 through because it's an integer.
-      Possibly make multiple versions of function for different primitive types?
-      Possibly make getEnumRegex take a general filter function?
-    */
-    /*
-      FIXME: this is only the case for strings
-      every other type or combo, convert to SJOT union
-      with regex/references after filtering by types.
-    */
-    return getEnumRegex(jsNode["enum"], types);
+    return getSJOTEnumTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
   }
 
   /* get the reference type */
   if (jsNode.hasOwnProperty("$ref")) {
-    return js_ref2sjot(jsNode["$ref"]);
+    return getSJOTTypeFromReference(jsNode["$ref"]);
   }
 
   /* no specified type */
@@ -319,10 +291,10 @@ var getType = function(jsRoot, jsNode, jPropName, sjotRoot) {
     /* single type */
     switch(jsNode["type"]) {
       case "object":
-        s = getObjectType(jsNode, jPropName, sjotRoot);
+        s = getSJOTObjectTypeFromNode(jsNode, jPropName, sjotRoot);
       break;
       case "array":
-        s = getArrayType(jsNode);
+        s = getSJOTArrayTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
       break;
       case "boolean":
         /* falls through */
@@ -330,13 +302,13 @@ var getType = function(jsRoot, jsNode, jPropName, sjotRoot) {
         s = jsNode["type"];
       break;
       case "number":
-        var isFloat = true;
-        /* falls through */
+        s = getSJOTNumberTypeFromNode(jsNode, false);
+        break;
       case "integer":
-        s = getIntegerType(jsNode, isFloat);
+        s = getSJOTNumberTypeFromNode(jsNode, true);
       break;
       case "string":
-        s = getStringType(jsNode);
+        s = getSJOTStringTypeFromNode(jsNode, sjotRoot);
       break;
       default:
         s = jsNode["type"];
@@ -345,17 +317,107 @@ var getType = function(jsRoot, jsNode, jPropName, sjotRoot) {
   else {
     /* array of SIMPLE types -> SJOT union of simple types */
     s = [];
-    var sInside = [];
+    var types = [];
     for (var ti = 0; ti < jsNode["type"].length; ti++) {
-      sInside.push(getType(jsRoot, { "type": jsNode["type"][ti] }, jPropName, sjotRoot));
+      types.push(getSJOTTypeFromNode(jsRoot, { "type": jsNode["type"][ti] }, jPropName, sjotRoot));
     }
-    s.push(sInside);
+    s.push(types);
   }
 
   return s;
 };
 
-var getArrayType = function(jsNode) {
+var getSJOTEnumTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
+  var enums = jsNode["enum"];
+
+  /* remove default value not in the enum */
+  if (jsNode.hasOwnProperty("default")) {
+    if (enums.indexOf(jsNode["default"]) === -1) {
+      delete jsNode["default"];
+    }
+  }
+
+  /* turn JSON schema in enum array into SJOT union */
+  /*
+    Values can be ANY type. Validation succeeds only
+    with the EXACT literal object given.
+
+    Type of object -> SJOT representation
+    -------------------------------------
+    string -> "(s)"
+    number/integer -> "n..n"
+    null -> "null"
+    boolean -> "boolean" (FIXME: how to specifiy true/false?)
+    array -> "<type_of_array>" + "array suffix" (like normal)
+    object -> "#reference" where reference is a reference to a root schema
+
+    Note that given objects are literal and not in JSON Schema format.
+    Thus, we will convert the values of the object's properties recursively
+    using the same format as above, with all properties required (no changes
+    needed to the property names).
+  */
+  var union = [];
+  var types = [];
+  if (jPropName === "@root") jPropName = "root";
+  for (var i = 0; i < enums.length; i++) {
+    var t = getSJOTTypeFromLiteralObject(jsRoot, enums[i],
+                                jPropName + "_enum",
+                                sjotRoot);
+    console.log(t);
+    types.push(t);
+  }
+  union.push(types);
+  return union;
+};
+
+var getSJOTTypeFromLiteralObject = function(jsRoot, object, jPropName, sjotRoot) {
+  if (object === null)
+    return "null";
+
+  if (Array.isArray(object)) {
+    /* TODO: */
+    return "";
+  }
+
+  switch (typeof(object)) {
+    case "boolean":
+      return "boolean"; /* FIXME: how to represent a single true/false? */
+    case "string":
+      return getSJOTRegexType(object, true);
+    case "number":
+      /* falls through */
+    case "integer":
+      return getSJOTNumberType(object, object, false, false, false);
+    case "object":
+      if (!Object.keys(object).length)
+        return {};
+
+      /* make a reference */
+      if (jPropName === "@root") jPropName = "root";
+      jPropName += "";
+      var ref = getUnconflictingSJOTType(jPropName, sjotRoot);
+      sjotRoot[ref] = {};
+
+      /* recursively convert literal property values to SJOT types */
+      for (var objProp in object) {
+        if (object.hasOwnProperty(objProp)) {
+          var name = jPropName + "_" + objProp;
+          console.log("doing object: " + objProp);
+          console.log(object[objProp]);
+          var t = getSJOTTypeFromLiteralObject(jsRoot, object[objProp],
+                                               name,
+                                               sjotRoot);
+          sjotRoot[ref][objProp] = t;
+        }
+      }
+
+      return "#" + ref;
+    default:
+      return object;
+  }
+};
+
+var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
   var s;
   /* FIXME: JSON schema arrays have additionalItems: true by default.
   in the sjot2js conveter this isnt upheld
@@ -376,10 +438,9 @@ var getArrayType = function(jsNode) {
         */
         s = [];
         for (var i = 0; i < jsNode["items"].length; i++) {
-          var t = js_2sjot_go(jsRoot, jsNode["items"][i], jPropName, sjotRoot, undefined);
+          var t = toSJOT(jsRoot, jsNode["items"][i], jPropName, sjotRoot, undefined);
           s.push(t);
         }
-        break;
       }
       else {
         /*
@@ -389,28 +450,29 @@ var getArrayType = function(jsNode) {
           any[sizeOfTuple,] for now.
         */
         s = "any[" + jsNode["items"].length + ",]";
-        break;
       }
     }
     else {
-      s = getType(jsRoot, jsNode["items"], jPropName, sjotRoot);
+      s = getSJOTTypeFromNode(jsRoot, jsNode["items"], jPropName, sjotRoot);
     }
   }
   else {
     s = "any";
   }
-  s += getArraySuffix(jsNode);
+  s += getSJOTArraySuffixFromNode(jsNode);
   return s;
-}
+};
 
-var getArraySuffix = function(jsNode) {
-  var s = "";
-  var minItems = jsNode["minItems"];
-  var maxItems = jsNode["maxItems"];
-  var unique = jsNode["uniqueItems"];
+var getSJOTArraySuffixFromNode = function(jsNode) {
+  return getSJOTArraySuffix(jsNode["minItems"],
+                            jsNode["maxItems"],
+                            jsNode["uniqueItems"]);
+};
+
+var getSJOTArraySuffix = function(minItems, maxItems, unique) {
   var l = unique ? "{" : "[";
   var r = unique ? "}" : "]";
-  s += l;
+  var s = l;
   if (minItems !== undefined) {
     s += minItems;
   }
@@ -422,9 +484,9 @@ var getArraySuffix = function(jsNode) {
   }
   s += r;
   return s;
-}
+};
 
-var getObjectType = function(jsNode, jPropName, sjotRoot) {
+var getSJOTObjectTypeFromNode = function(jsNode, jPropName, sjotRoot) {
   var s;
   var hasTitle = jsNode.hasOwnProperty("title");
   var hasProperties = jsNode.hasOwnProperty("properties");
@@ -443,23 +505,23 @@ var getObjectType = function(jsNode, jPropName, sjotRoot) {
     if (s === jPropName) {
       s += "_type";
     }
-    s = makeUnconflictingName(s, sjotRoot);
+    s = getUnconflictingSJOTType(s, sjotRoot);
     s = "#" + s;
   }
   return s;
-}
+};
 
-var getIntegerType = function(jsNode, isFloat) {
+var getSJOTNumberTypeFromNode = function(jsNode, isInteger) {
   var s = "";
   var min, max;
   var xMin, xMax;
   if (jsNode.hasOwnProperty("minimum")) {
     min = jsNode["minimum"];
-    if (isFloat) min = min.toFixed(1);
+    if (!isInteger) min = min.toFixed(1);
   }
   if (jsNode.hasOwnProperty("maximum")) {
     max = jsNode["maximum"];
-    if (isFloat) max = max.toFixed(1);
+    if (!isInteger) max = max.toFixed(1);
   }
   if (jsNode.hasOwnProperty("exclusiveMinimum") &&
         jsNode["exclusiveMinimum"] === true) {
@@ -469,6 +531,12 @@ var getIntegerType = function(jsNode, isFloat) {
         jsNode["exclusiveMaximum"] === true) {
     xMax = true;
   }
+
+  return getSJOTNumberType(min, max, xMin, xMax, isInteger);
+};
+
+var getSJOTNumberType = function(min, max, xMin, xMax, isInteger) {
+  var s = "";
   if (min !== undefined || max !== undefined) {
     if (xMin !== undefined) s += "<";
     if (min !== undefined) s += min;
@@ -477,12 +545,15 @@ var getIntegerType = function(jsNode, isFloat) {
     if (xMax !== undefined) s += ">";
   }
   else {
-    s = jsNode["type"];
+    if (isInteger)
+      s = "integer";
+    else
+      s = "number";
   }
   return s;
-}
+};
 
-var getStringType = function(jsNode) {
+var getSJOTStringTypeFromNode = function(jsNode, sjotRoot) {
   var s;
   /* converting format */
   if (jsNode.hasOwnProperty("format")) {
@@ -511,7 +582,7 @@ var getStringType = function(jsNode) {
     }
   }
   else if (jsNode.hasOwnProperty("pattern")) {
-    s = getRegex(jsNode["pattern"]);
+    s = getSJOTRegexType(jsNode["pattern"]);
   }
   else {
     var minL, maxL;
@@ -521,65 +592,42 @@ var getStringType = function(jsNode) {
     if (jsNode.hasOwnProperty("maxLength")) {
       maxL = jsNode["maxLength"];
     }
-    if (minL !== undefined  || maxL !== undefined) {
-      s = "char[";
-      if (minL !== undefined)
-        s += minL;
-      s += ",";
-      if (maxL !== undefined)
-        s += maxL;
-      s += "]";
-    }
-    else {
-      s = jsNode["type"];
-    }
+    s = getSJOTStringType(minL, maxL);
   }
   return s;
-}
+};
 
-var getRegex = function(r) {
+var getSJOTStringType = function(minL, maxL) {
+  var s = "";
+  if (minL !== undefined  || maxL !== undefined) {
+    s = "char[";
+    if (minL !== undefined)
+      s += minL;
+    s += ",";
+    if (maxL !== undefined)
+      s += maxL;
+    s += "]";
+  }
+  else {
+    s = "string";
+  }
+  return s;
+};
+
+var getSJOTRegexType = function(r, doEscape) {
   var start = 0, end = r.length;
   if (r[0] === "^")
     start++;
   if (r[r.length - 1] === "$")
     end--;
   r = r.substring(start, end);
+  /* escape special chars */
+  if (doEscape)
+    r = r.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   return "(" + r + ")";
 };
 
-var getEnumRegex = function(enumArray, filterByTypesArray) {
-  var regex = "(";
-  if (enumArray.length) {
-    if (filterByTypesArray && filterByTypesArray.length) {
-      enumArray = enumArray.filter(function(e, i, a) {
-        for (var j = 0; j < filterByTypesArray.length; j++) {
-          if (typeof(e) === filterByTypesArray[j]) {
-            return true;
-          }
-          if (filterByTypesArray[j] === "integer") {
-            if (typeof(e) === "number" &&
-                Math.floor(e) === e) {
-              return true;
-            }
-          }
-        }
-        return false;
-      });
-    }
-    for (var i = 0; i < enumArray.length-1; i++) {
-      var r = enumArray[i];
-      /* escape special chars */
-      r = r.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-      regex += r + "|";
-    }
-    if (enumArray.length)
-      regex += enumArray[enumArray.length-1];
-  }
-  regex += ")";
-  return regex;
-};
-
-var addNotes = function(jsNode, sjotNode, withTitle) {
+var addNotesToNode = function(jsNode, sjotNode, withTitle) {
   var notes = "";
   if (withTitle) {
     if (jsNode.hasOwnProperty("title")) {
@@ -597,7 +645,7 @@ var addNotes = function(jsNode, sjotNode, withTitle) {
   }
 };
 
-var makeUnconflictingName = function(s, sjotRoot) {
+var getUnconflictingSJOTType = function(s, sjotRoot) {
   var count = 0;
   var prop = count ? s + "_" + count : s;
   while (sjotRoot.hasOwnProperty(prop)) {
