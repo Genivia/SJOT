@@ -12,6 +12,8 @@ have the look and feel of an object template and are more easy to read and
 understand.  SJOT aims at fast JSON data validation with lightweight schemas
 and compact validators.
 
+SJOT schemas convert to JSON schema draft v4 without loss of schema details.
+
 Live validator and converter at <https://genivia.com/get-sjot.html#demo>
 
 Read more at <http://sjot.org>
