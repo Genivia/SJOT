@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.4
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -195,7 +195,6 @@ function sjot_validate(sjots, data, type, sjot /**/) {
   if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
 
     // validate data against type union [[ type, type, ... ]]
-    var union = [];
 
     for (var itemtype of type[0]) {
 
@@ -233,9 +232,6 @@ function sjot_validate(sjots, data, type, sjot /**/) {
         if (Array.isArray(type)) {
 
           // validate a tuple
-          // TODO allow padding of incomplete tuples with nulls?
-          // for (var i = data.length; i < type.length; i++)
-            // data[i] = null;
           if (data.length != type.length)
             throw /**/ " length " + type.length;
 
@@ -332,47 +328,46 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             sjot_extends(sjots, type, sjot /**/);
 
           var isfinal = type.hasOwnProperty('@final') && type['@final'];
-          var props = new Object;
+          var props = {};
 
           // check object properties and property types
           for (var prop in type) {
 
             if (prop.startsWith("@")) {
 
+              var proptype = type[prop];
+
               switch (prop) {
 
                 case "@one":
 
-                  for (var propset of type[prop]) {
-
+                  for (var propset of proptype)
                     if (propset.reduce( function (sum, prop) { return sum + data.hasOwnProperty(prop); }, 0) !== 1)
                       throw datapath + " requires one of " + propset;
-
-                  }
-
                   break;
 
                 case "@any":
 
-                  for (var propset of type[prop]) {
-
+                  for (var propset of proptype)
                     if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
                       throw datapath + " requires any of" + propset;
-
-                  }
-
                   break;
 
                 case "@all":
 
-                  for (var propset of type[prop]) {
-
+                  for (var propset of proptype)
                     if (propset.some(function (prop) { return data.hasOwnProperty(prop); }) &&
                         !propset.every(function (prop) { return data.hasOwnProperty(prop); }))
                       throw datapath + " requires all or none of " + propset;
+                  break;
 
-                  }
+                case "@dep":
 
+                  for (var name in proptype)
+                    if (data.hasOwnProperty(name) &&
+                        (typeof proptype[name] !== "string" || !data.hasOwnProperty(proptype[name])) &&
+                        (typeof proptype[name] !== "object" || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
+                      throw datapath + "/" + name + " requires " + proptype[name];
                   break;
 
               }
@@ -414,7 +409,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                 var name = prop.slice(0, i);
 
                 // validate optional property when present or set default value when absent
-                if (data.hasOwnProperty(name)) {
+                if (data.hasOwnProperty(name) && data[name] !== null && data[name] !== undefined) {
 
                   sjot_validate(sjots, data[name], type[prop], sjot /**/);
 
@@ -422,6 +417,10 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
                   data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot /**/);
                   sjot_validate(sjots, data[name], type[prop], sjot /**/);
+                } else {
+
+                  delete data[name];
+
                 }
 
                 if (isfinal)
@@ -452,6 +451,8 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
       // validate a boolean value
       if (type === "boolean" || type === "atom")
+        return;
+      if ((data && type === "true") || (!data && type === "false"))
         return;
       sjot_error("value", data, type /**/);
 
@@ -830,6 +831,36 @@ function sjot_extends(sjots, type, sjot /**/) {
                 type[prop] = base[prop];
               break;
 
+            case "@dep":
+
+              if (!type.hasOwnProperty("@dep"))
+                type[prop] = {};
+
+              for (var name in base[prop]) {
+
+                if (base[prop].hasOwnProperty(name)) {
+
+                  if (type[prop].hasOwnProperty(name)) {
+
+                    if (typeof type[prop][name] === "string")
+                      type[prop][name] = [type[prop][name]];
+                    if (typeof base[prop][name] === "string")
+                      type[prop][name] = type[prop][name].concat([base[prop][name]]);
+                    else
+                      type[prop][name] = type[prop][name].concat(base[prop][name]);
+
+                  } else {
+
+                    type[prop][name] = base[prop][name];
+
+                  }
+
+                }
+
+              }
+
+              break;
+
           }
 
         } else {
@@ -918,6 +949,8 @@ function sjot_default(value, sjots, data, type, sjot /**/) {
       return null;
 
     case "boolean":
+    case "true":
+    case "false":
 
       return (value === "true");
 
@@ -967,7 +1000,13 @@ function sjot_default(value, sjots, data, type, sjot /**/) {
 // throw descriptive error message
 function sjot_error(what, data, type /**/) {
 
-  var a = typeof type !== "string" ? "a" : type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
+  var a = "a";
+
+  if (Array.isArray(type))
+    a = type.length === 1 && Array.isArray(type[0]) ? "one of" : "a tuple of";
+  else if (typeof type === "string")
+    a = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type"
+
   var b = /**/ "";
 
   if (typeof data === "string")

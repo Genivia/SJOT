@@ -104,7 +104,10 @@ function sjot_2js(sjots, root, version, type, sjot) {
 
           for (var itemtype of type[0])
             union.push(sjot_2js(sjots, false, version, itemtype, sjot));
-          return { anyOf: union };
+          if (version >= 4)
+            return { anyOf: union };
+          else
+            return union;
 
         } else {
 
@@ -238,6 +241,8 @@ function sjot_2js(sjots, root, version, type, sjot) {
                 switch (proptype) {
 
                   case "boolean":
+                  case "true":
+                  case "false":
 
                     value = (value === "true");
                     break;
@@ -335,6 +340,8 @@ function sjot_2js(sjots, root, version, type, sjot) {
             obj.allOf = all;
         }
 
+        if (type.hasOwnProperty("@dep"))
+          obj.dependencies = type["@dep"];
         if (type.hasOwnProperty("@final") && type["@final"])
           obj.additionalProperties = false;
 
@@ -378,6 +385,11 @@ function sjot_2js(sjots, root, version, type, sjot) {
           case "null":
 
             return { type: type };
+
+          case "true":
+          case "false":
+
+            return { type: "boolean", enum: [ type ] };
 
           case "any":
             

@@ -129,6 +129,7 @@ Changelog
 - Oct 19, 2016: sjot.js 1.2.3 updated union SJOT.check and validation rules
 - Oct 20, 2016: sjot.js 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
 - Oct 21, 2016: sjot.js 1.2.5 improvements and dev/sjot2js.js added
+- Oct 22, 2016: sjot.js 1.2.6 added new `@dep` constraints and new built-in "true" and "false" types
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
