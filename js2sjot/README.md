@@ -12,7 +12,7 @@ Work in progress.
 - "string"
   - Keywords: "minLength", "maxLength", "pattern"
 - "object"
-  - Keywords: "required", "properties", "additionalProperties", "additionalProperties"
+  - Keywords: "required", "properties", "additionalProperties", "additionalProperties", "dependencies" (property dependencies only)
 - "array"
   - Keywords: "minItems", "maxItems", "uniqueItems", "items", "additionalItems"
 
