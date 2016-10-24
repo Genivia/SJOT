@@ -61,12 +61,13 @@ var getSJOTTypeFromReference = function(ref) {
 };
 
 var toSJOT = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, optional) {
-  var opt = (optional === undefined) ? true : optional;
-
   var typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-  var propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
 
-  sjotNode[propName] = typeName;
+  if (sjotNode !== undefined) {
+    var opt = (optional === undefined) ? true : optional;
+    var propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+    sjotNode[propName] = typeName;
+  }
 
   return typeName;
 };
@@ -297,9 +298,10 @@ var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
       if (maxItems !== undefined)
         len = maxItems;
       for (var i = 0; i < len; i++) {
-        toSJOT(jsRoot, jsNode["items"][i],
-               jPropName,
-               sjotRoot, s[i]);
+        var t = toSJOT(jsRoot, jsNode["items"][i],
+                       jPropName,
+                       sjotRoot, undefined);
+        s.push(t);
       }
       return [ s ];
     }
