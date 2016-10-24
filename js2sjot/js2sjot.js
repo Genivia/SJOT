@@ -315,15 +315,15 @@ var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
       */
     }
   }
-  else {
-    if (jsNode["items"]["type"] === "object") {
-      if (jsNode["items"].hasOwnProperty("title")) {
-        jPropName = jsNode["items"]["title"];
-      }
-      else {
-        if (jPropName === "@root") jPropName = "root";
-        jPropName += "_type";
-      }
+  else if (jsNode.hasOwnProperty("items")) {
+    if (jsNode["items"].hasOwnProperty("enum") ||
+             (jsNode["items"].hasOwnProperty("type") &&
+             jsNode["items"]["type"] === "object")) {
+               if (jsNode["items"].hasOwnProperty("title"))
+                 jPropName = jsNode["items"]["title"];
+               else
+                 if (jPropName === "@root") jPropName = "root";
+      jPropName += "_type";
       var ref = getUnconflictingSJOTType(jPropName, sjotRoot);
       toSJOT(jsRoot, jsNode["items"],
              ref,
