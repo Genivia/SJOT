@@ -61,158 +61,15 @@ var getSJOTTypeFromReference = function(ref) {
 };
 
 var toSJOT = function(jsRoot, jsNode, jPropName, sjotRoot, sjotNode, optional) {
-  var propName, typeName;
+  var typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
 
-  var opt = (optional === undefined) ? true : optional;
-
-  /* TODO: fix this */
-  if (jsNode.hasOwnProperty("id")) {
-    if (typeof(jsNode["id"]) == "string") {
-      if (sjotNode !== undefined)
-        sjotNode["@id"] = jsNode["id"];
-    }
+  if (sjotNode !== undefined) {
+    var opt = (optional === undefined) ? true : optional;
+    var propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
+    sjotNode[propName] = typeName;
   }
 
-  if (jsNode.hasOwnProperty("type") && !jsNode.hasOwnProperty("enum")) {
-    if (Array.isArray(jsNode["type"])) {
-      /* array of primitive types */
-      propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
-      typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-    }
-    else {
-      /* single type */
-      switch (jsNode["type"]) {
-        case "object":
-          propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
-          typeName = getSJOTTypeFromNode(jsRoot, jsNode,
-                             (jPropName === "@root") ? "root" : jPropName,
-                             sjotRoot);
-
-          if (sjotNode !== undefined)
-            sjotNode[propName] = typeName;
-
-          if (typeName.startsWith("#")) {
-            /* make type on SJOT root to reference */
-            var ref = typeName.substring(1);
-            ref = getUnconflictingSJOTType(ref, sjotRoot);
-            sjotRoot[ref] = {};
-
-            addNotesToNode(jsNode, sjotRoot[ref], false);
-
-            /* recursively add properties to the reference */
-            if (jsNode.hasOwnProperty("properties")) {
-              for (var objProp in jsNode["properties"]) {
-                if (jsNode["properties"].hasOwnProperty(objProp)) {
-                  var propOpt = true;
-                  if ((jsNode.hasOwnProperty("required")) &&
-                                 (jsNode["required"].indexOf(objProp) != -1)) {
-                    propOpt = false;
-                  }
-                  toSJOT(jsRoot, jsNode["properties"][objProp],
-                         objProp,
-                         sjotRoot, sjotRoot[ref],
-                         propOpt);
-                }
-              }
-            }
-
-
-            /* add explicit additionalProperties to patternProperties,
-             to be converted to SJOT in next step */
-            if (jsNode.hasOwnProperty("additionalProperties")) {
-              if (typeof(jsNode["additionalProperties"]) === "boolean") {
-                sjotNode["@final"] = !jsNode["additionalProperties"];
-              }
-              else {
-                if (!jsNode.hasOwnProperty("patternProperties"))
-                  jsNode["patternProperties"] = {};
-                jsNode["patternProperties"][".*"] = jsNode["additionalProperties"];
-              }
-            }
-
-            /* recursively convert patternProperties with regex prop name */
-            if (jsNode.hasOwnProperty("patternProperties")) {
-              for (var pattProp in jsNode["patternProperties"]) {
-                if (jsNode["patternProperties"].hasOwnProperty(pattProp)) {
-                  propName = getSJOTRegexType(pattProp);
-                  toSJOT(jsRoot, jsNode["patternProperties"][pattProp],
-                         propName,
-                         sjotRoot, sjotRoot[ref],
-                         false);
-                }
-              }
-            }
-
-            /* add dependencies */
-            if (jsNode.hasOwnProperty("dependencies")) {
-              sjotRoot[ref]["@dep"] = {};
-              for (var dep in jsNode["dependencies"]) {
-                if (jsNode["dependencies"].hasOwnProperty(dep)) {
-                  if (Array.isArray(jsNode["dependencies"][dep])) {
-                    sjotRoot[ref]["@dep"][dep] = jsNode["dependencies"][dep];
-                  }
-                  else {
-                    /* NOTE: schema dependencies not supported by SJOT */
-                  }
-                }
-              }
-            }
-
-          } /* end typeName.startsWith("#") */
-
-          return typeName;
-        /* end case "object" */
-
-        case "array":
-          if (jsNode.hasOwnProperty("items") &&
-              !Array.isArray(jsNode["items"]) &&
-            jsNode["items"].hasOwnProperty("type")) {
-                propName = getSJOTPropertyFromNode(jsRoot, jsNode["items"],
-                                                   jPropName, opt);
-                if (jsNode["items"]["type"] === "object") {
-                  typeName = toSJOT(jsRoot, jsNode["items"],
-                                    jPropName,
-                                    sjotRoot, sjotNode,
-                                    opt);
-                  /* nasty fix but it works */
-                  typeName += getSJOTArraySuffixFromNode(jsNode);
-                }
-                else {
-                  typeName = getSJOTTypeFromNode(jsRoot, jsNode,
-                                                 jPropName,
-                                                 sjotRoot);
-                }
-          }
-          else {
-            propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
-            typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-          }
-        break; /* end case "array" */
-
-        default:
-          propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
-          typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-        break;
-      } /* end switch(jsNode["type"])  */
-    } /* end single type */
-
-    if (sjotNode !== undefined)
-      sjotNode[propName] = typeName;
-
-    return typeName;
-  } /* end jsNode has property "type" */
-  else {
-    propName = getSJOTPropertyFromNode(jsRoot, jsNode, jPropName, opt);
-    if (jsNode.hasOwnProperty("$ref"))
-      typeName = getSJOTTypeFromReference(jsNode["$ref"]);
-    else
-      typeName = getSJOTTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-
-    if (sjotNode !== undefined)
-      sjotNode[propName] = typeName;
-
-    return typeName;
-  }
+  return typeName;
 };
 
 var getSJOTPropertyFromNode = function(jsRoot, jsNode, jPropName, optional) {
@@ -220,16 +77,21 @@ var getSJOTPropertyFromNode = function(jsRoot, jsNode, jPropName, optional) {
   if (optional) {
     var node;
     if (jsNode.hasOwnProperty("$ref")) {
-      /* grab the ref leaf's default value */
+      /* get the ref leaf for it's default value */
       /* FIXME: do we want to grab the first default value we see? */
       node = resolveJSONPointer(jsRoot, jsRoot, jsNode["$ref"]);
     }
     else {
       node = jsNode;
+      if (jsNode["type"] === "array" &&
+          !Array.isArray(jsNode["items"]) &&
+          jsNode["items"].hasOwnProperty("type")) {
+        return getSJOTPropertyFromNode(jsRoot, jsNode["items"],
+                                       jPropName,
+                                       optional);
+      }
     }
-    if (jPropName != "@root") {
-      s += "?";
-    }
+    s += "?";
     if (node.hasOwnProperty("default")) {
       var def = node["default"];
       if (def === "")
@@ -241,6 +103,9 @@ var getSJOTPropertyFromNode = function(jsRoot, jsNode, jPropName, optional) {
 };
 
 var resolveJSONPointer = function(jsRoot, jsNode, ptr) {
+  if (ptr.startsWith('http://')) { /* FIXME: sloppy */
+    return jsNode;
+  }
   var endIndex = ptr.indexOf('/');
   var nextProp;
   if (endIndex === -1) {
@@ -260,24 +125,27 @@ var resolveJSONPointer = function(jsRoot, jsNode, ptr) {
   return jsNode;
 };
 
-var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
-  if (jPropName === "(.*)") {
-    jPropName = "addProps"; /* renaming "additionalProperties" */
-  }
+var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot)  {
+  /* renaming "additionalProperties" */
+  if (jPropName === "(.*)")
+    jPropName = "addProps";
 
   /* enum types */
-  if (jsNode.hasOwnProperty("enum")) {
+  if (jsNode.hasOwnProperty("enum"))
     return getSJOTEnumTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-  }
 
   /* get the reference type */
-  if (jsNode.hasOwnProperty("$ref")) {
+  if (jsNode.hasOwnProperty("$ref"))
     return getSJOTTypeFromReference(jsNode["$ref"]);
-  }
 
   /* no specified type */
   if (!jsNode.hasOwnProperty("type")) {
-    return "any";
+    if (jsNode.hasOwnProperty("properties"))
+      jsNode["type"] = "object";
+    else if (jsNode.hasOwnProperty("items"))
+      jsNode["type"] = "array";
+    else
+      return "any";
   }
 
   /* normal type case */
@@ -286,15 +154,10 @@ var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
     /* single type */
     switch(jsNode["type"]) {
       case "object":
-        s = getSJOTObjectTypeFromNode(jsNode, jPropName, sjotRoot);
+        s = getSJOTObjectTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
       break;
       case "array":
         s = getSJOTArrayTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
-      break;
-      case "boolean":
-        /* falls through */
-      case "null":
-        s = jsNode["type"];
       break;
       case "number":
         s = getSJOTNumberTypeFromNode(jsNode, false);
@@ -395,10 +258,7 @@ var getSJOTTypeFromLiteralObject = function(jsRoot, object, jPropName, sjotRoot)
         return {};
 
       /* make a reference */
-      if (jPropName === "@root") jPropName = "root";
-      jPropName += "";
-      var ref = getUnconflictingSJOTType(jPropName, sjotRoot);
-      sjotRoot[ref] = {};
+      var obj = {};
 
       /* recursively convert literal property values to SJOT types */
       for (var objProp in object) {
@@ -407,11 +267,10 @@ var getSJOTTypeFromLiteralObject = function(jsRoot, object, jPropName, sjotRoot)
           var t = getSJOTTypeFromLiteralObject(jsRoot, object[objProp],
                                                name,
                                                sjotRoot);
-          sjotRoot[ref][objProp] = t;
+          obj[objProp] = t;
         }
       }
-
-      return "#" + ref;
+      return obj;
     default:
       return object;
   }
@@ -426,36 +285,51 @@ var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
   if (additionalItems === true)
     additionalItems = {};
 
-  if (jsNode.hasOwnProperty("items")) {
-    if (Array.isArray(jsNode["items"])) {
-      var maxItems = jsNode["maxItems"];
-      var len = jsNode["items"].length;
+  if (Array.isArray(jsNode["items"])) {
+    var maxItems = jsNode["maxItems"];
+    var len = jsNode["items"].length;
 
-      if ((additionalItems && maxItems <= len) ||
-          (!additionalItems &&
-            (((maxItems === undefined || maxItems <= len)) ||
-             (maxItems !== undefined) && maxItems === len))) {
-        /* make a tuple */
-        s = [];
-        if (maxItems !== undefined)
-          len = maxItems;
-        for (var i = 0; i < len; i++) {
-          var t = toSJOT(jsRoot, jsNode["items"][i],
-                         jPropName,
-                         sjotRoot, undefined);
-          s.push(t);
-        }
-        return [ s ];
+    if ((additionalItems && maxItems <= len) ||
+        (!additionalItems &&
+          (((maxItems === undefined || maxItems <= len)) ||
+           (maxItems !== undefined) && maxItems === len))) {
+      /* make a tuple */
+      s = [];
+      if (maxItems !== undefined)
+        len = maxItems;
+      for (var i = 0; i < len; i++) {
+        var t = toSJOT(jsRoot, jsNode["items"][i],
+                       jPropName,
+                       sjotRoot, undefined);
+        s.push(t);
+      }
+      return [ s ];
+    }
+    else {
+      /*
+        NOTE:
+        Since tuples can't have additional items
+        in SJOT the same way they can in JSON Schema, we'll map an
+        an extensible tuple onto
+        any[minItems,maxItems] for now (by letting this fall through).
+      */
+    }
+  }
+  else {
+    if (jsNode["items"]["type"] === "object") {
+      if (jsNode["items"].hasOwnProperty("title")) {
+        jPropName = jsNode["items"]["title"];
       }
       else {
-        /*
-          NOTE:
-          Since tuples can't have additional items
-          in SJOT the same way they can in JSON Schema, we'll map an
-          an extensible tuple onto
-          any[minItems,maxItems] for now (by letting this fall through).
-        */
+        if (jPropName === "@root") jPropName = "root";
+        jPropName += "_type";
       }
+      var ref = getUnconflictingSJOTType(jPropName, sjotRoot);
+      toSJOT(jsRoot, jsNode["items"],
+             ref,
+             sjotRoot, sjotRoot,
+             false);
+      s = "#" + ref;
     }
     else {
       s = getSJOTTypeFromNode(jsRoot, jsNode["items"],
@@ -494,24 +368,70 @@ var getSJOTArraySuffix = function(minItems, maxItems, unique) {
   return s;
 };
 
-var getSJOTObjectTypeFromNode = function(jsNode, jPropName, sjotRoot) {
-  var s;
-  var isSimpleObject = !jsNode.hasOwnProperty("title") &&
-                       !jsNode.hasOwnProperty("properties") &&
-                       !jsNode.hasOwnProperty("patternProperties") &&
-                       !jsNode.hasOwnProperty("additionalProperties");
-  if (isSimpleObject) {
-    s = "object";
-  }
-  else {
-    s = (jsNode["title"] || jPropName);
-    if (s === jPropName) {
-      s += "_type";
+var getSJOTObjectTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
+  var obj = {};
+
+  addNotesToNode(jsNode, obj, false);
+
+  /* recursively add properties to the reference */
+  if (jsNode.hasOwnProperty("properties")) {
+    for (var objProp in jsNode["properties"]) {
+      if (jsNode["properties"].hasOwnProperty(objProp)) {
+        var propOpt = true;
+        if ((jsNode.hasOwnProperty("required")) &&
+                       (jsNode["required"].indexOf(objProp) != -1)) {
+          propOpt = false;
+        }
+        toSJOT(jsRoot, jsNode["properties"][objProp],
+               objProp,
+               sjotRoot, obj,
+               propOpt);
+      }
     }
-    s = getUnconflictingSJOTType(s, sjotRoot);
-    s = "#" + s;
   }
-  return s;
+
+  /* add explicit additionalProperties to patternProperties,
+   to be converted to SJOT in next step */
+  if (jsNode.hasOwnProperty("additionalProperties")) {
+    if (typeof(jsNode["additionalProperties"]) === "boolean") {
+      obj["@final"] = !jsNode["additionalProperties"];
+    }
+    else {
+      if (!jsNode.hasOwnProperty("patternProperties"))
+        jsNode["patternProperties"] = {};
+      jsNode["patternProperties"][".*"] = jsNode["additionalProperties"];
+    }
+  }
+
+  /* recursively convert patternProperties with regex prop name */
+  if (jsNode.hasOwnProperty("patternProperties")) {
+    for (var pattProp in jsNode["patternProperties"]) {
+      if (jsNode["patternProperties"].hasOwnProperty(pattProp)) {
+        var propName = getSJOTRegexType(pattProp);
+        toSJOT(jsRoot, jsNode["patternProperties"][pattProp],
+               propName,
+               sjotRoot, obj,
+               false);
+      }
+    }
+  }
+
+  /* add dependencies */
+  if (jsNode.hasOwnProperty("dependencies")) {
+    obj["@dep"] = {};
+    for (var dep in jsNode["dependencies"]) {
+      if (jsNode["dependencies"].hasOwnProperty(dep)) {
+        if (Array.isArray(jsNode["dependencies"][dep])) {
+          obj["@dep"][dep] = jsNode["dependencies"][dep];
+        }
+        else {
+          /* NOTE: schema dependencies not supported by SJOT */
+        }
+      }
+    }
+  }
+
+  return obj;
 };
 
 var getSJOTNumberTypeFromNode = function(jsNode, isInteger) {
