@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.4
+ * @version     1.2.5
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -106,9 +106,9 @@ class SJOT {
     }
 
     if (Array.isArray(sjots))
-      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "#", "" /*FAST]*/);
+      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "#", "#" /*FAST]*/);
     else
-      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "#", "" /*FAST]*/);
+      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "#", "#" /*FAST]*/);
 
     return true;
 
@@ -130,7 +130,7 @@ class SJOT {
 
     } else {
 
-      sjot_check([sjots], true, false, sjots, sjots, "");
+      sjot_check([sjots], true, false, sjots, sjots, "#");
 
     }
     /*LEAN]*/
@@ -207,7 +207,9 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
   if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
 
     // validate data against type union [[ type, type, ... ]]
+    /*LEAN[*/
     var union = [];
+    /*LEAN]*/
 
     for (var itemtype of type[0]) {
 
@@ -218,6 +220,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
       } catch (e) {
       
         /*LEAN[*/
+        // TODO consider alternative quick checks that are faster?
         sjot_check_union(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/, union);
         /*LEAN]*/
 
@@ -248,9 +251,6 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         if (Array.isArray(type)) {
 
           // validate a tuple
-          // TODO allow padding of incomplete tuples with nulls?
-          // for (var i = data.length; i < type.length; i++)
-            // data[i] = null;
           if (data.length != type.length)
             throw /*FAST[*/ datapath + /*FAST]*/ " tuple length " + data.length + " is not the required " + /*FAST[*/ typepath + /*FAST]*/ " length " + type.length;
 
@@ -347,47 +347,46 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
             sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
 
           var isfinal = type.hasOwnProperty('@final') && type['@final'];
-          var props = new Object;
+          var props = {};
 
           // check object properties and property types
           for (var prop in type) {
 
             if (prop.startsWith("@")) {
 
+              var proptype = type[prop];
+
               switch (prop) {
 
                 case "@one":
 
-                  for (var propset of type[prop]) {
-
+                  for (var propset of proptype)
                     if (propset.reduce( function (sum, prop) { return sum + data.hasOwnProperty(prop); }, 0) !== 1)
                       throw datapath + " requires one of " + propset;
-
-                  }
-
                   break;
 
                 case "@any":
 
-                  for (var propset of type[prop]) {
-
+                  for (var propset of proptype)
                     if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
                       throw datapath + " requires any of" + propset;
-
-                  }
-
                   break;
 
                 case "@all":
 
-                  for (var propset of type[prop]) {
-
+                  for (var propset of proptype)
                     if (propset.some(function (prop) { return data.hasOwnProperty(prop); }) &&
                         !propset.every(function (prop) { return data.hasOwnProperty(prop); }))
                       throw datapath + " requires all or none of " + propset;
+                  break;
 
-                  }
+                case "@dep":
 
+                  for (var name in proptype)
+                    if (data.hasOwnProperty(name) &&
+                        (typeof proptype[name] !== "string" || !data.hasOwnProperty(proptype[name])) &&
+                        (typeof proptype[name] !== "object" || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
+                      throw datapath + "/" + name + " requires " + proptype[name];
                   break;
 
               }
@@ -429,7 +428,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
                 var name = prop.slice(0, i);
 
                 // validate optional property when present or set default value when absent
-                if (data.hasOwnProperty(name)) {
+                if (data.hasOwnProperty(name) && data[name] !== null && data[name] !== undefined) {
 
                   sjot_validate(sjots, data[name], type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
 
@@ -437,6 +436,10 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
                   data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
                   sjot_validate(sjots, data[name], type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
+                } else {
+
+                  delete data[name];
+
                 }
 
                 if (isfinal)
@@ -467,6 +470,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
       // validate a boolean value
       if (type === "boolean" || type === "atom")
+        return;
+      if ((data && type === "true") || (!data && type === "false"))
         return;
       sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
 
@@ -845,6 +850,36 @@ function sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
                 type[prop] = base[prop];
               break;
 
+            case "@dep":
+
+              if (!type.hasOwnProperty("@dep"))
+                type[prop] = {};
+
+              for (var name in base[prop]) {
+
+                if (base[prop].hasOwnProperty(name)) {
+
+                  if (type[prop].hasOwnProperty(name)) {
+
+                    if (typeof type[prop][name] === "string")
+                      type[prop][name] = [type[prop][name]];
+                    if (typeof base[prop][name] === "string")
+                      type[prop][name] = type[prop][name].concat([base[prop][name]]);
+                    else
+                      type[prop][name] = type[prop][name].concat(base[prop][name]);
+
+                  } else {
+
+                    type[prop][name] = base[prop][name];
+
+                  }
+
+                }
+
+              }
+
+              break;
+
           }
 
         } else {
@@ -933,6 +968,8 @@ function sjot_default(value, sjots, data, type, sjot /*FAST[*/, datapath, typepa
       return null;
 
     case "boolean":
+    case "true":
+    case "false":
 
       return (value === "true");
 
@@ -982,7 +1019,13 @@ function sjot_default(value, sjots, data, type, sjot /*FAST[*/, datapath, typepa
 // throw descriptive error message
 function sjot_error(what, data, type /*FAST[*/, datapath, typepath /*FAST]*/) {
 
-  var a = typeof type !== "string" ? "a" : type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type";
+  var a = "a";
+
+  if (Array.isArray(type))
+    a = type.length === 1 && Array.isArray(type[0]) ? "one of" : "a tuple of";
+  else if (typeof type === "string")
+    a = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type"
+
   var b = /*FAST[*/ typepath !== "" ? " required by " + typepath : /*FAST]*/ "";
 
   if (typeof data === "string")
@@ -1067,28 +1110,49 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
             if (typeof type[prop] !== "boolean")
               throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@final is not true or false";
 
-          } else if (prop === "@one" || prop === "@any" || prop === "@all") {
+          } else if (prop === "@one" || prop === "@any" || prop === "@all" || prop === "@dep") {
 
             var propsets = type[prop];
+            var temp = {};
 
-            if (!Array.isArray(propsets))
-              throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
-
-            // check if the propsets are disjoint
-            var temp = new Object;
-
-            for (var propset of propsets) {
-
-              if (!Array.isArray(propset))
+            if (prop !== "@dep") {
+              
+              if (!Array.isArray(propsets))
                 throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
 
-              for (var name of propset) {
+              // check if the propsets are disjoint
+              for (var propset of propsets) {
 
-                if (typeof name !== "string" || name.startsWith("@") || name.startsWith("("))
+                if (!Array.isArray(propset))
                   throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
-                if (temp[name] === null)
-                  throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets are not disjoint sets";
-                temp[name] = null;
+
+                for (var name of propset) {
+
+                  if (typeof name !== "string" || name.startsWith("@") || name.startsWith("("))
+                    throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
+                  if (temp[name] === false)
+                    throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets are not disjoint sets";
+                  temp[name] = false;
+
+                }
+
+              }
+
+            } else {
+
+              for (var name in propsets) {
+
+                if (propsets.hasOwnProperty(name)) {
+
+                  temp[name] = false;
+                  if (typeof propsets[name] === "string")
+                    temp[propsets[name]] = false;
+                  else if (Array.isArray(propsets[name]))
+                    propsets[name].forEach(function (prop) { temp[prop] = false; });
+                  else
+                    throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " malformed dependencies";
+
+                }
 
               }
 
@@ -1106,12 +1170,9 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
                     if (temp.hasOwnProperty(tempname) && matcher.test(tempname))
                       temp[tempname] = true;
 
-                } else {
+                } else if (name.endsWith("?")) {
 
-                  var i = name.indexOf("?");
-
-                  if (i !== -1)
-                    name = name.slice(0, i);
+                  name = name.slice(0, name.length - 1);
                   if (temp.hasOwnProperty(name))
                     temp[name] = true;
 
@@ -1122,8 +1183,8 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
             }
 
             for (var name in temp)
-              if (temp[name] === null)
-                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets contains " + name + " that is not a property of this object";
+              if (temp[name] === false)
+                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " propsets contains " + name + " that is not an optional property of this object";
 
           } else if (prop.startsWith("(")) {
 
@@ -1221,6 +1282,8 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
           case "datetime":
           case "duration":
           case "char":
+          case "true":
+          case "false":
           case "null":
 
             break;
@@ -1426,6 +1489,8 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
         break;
 
       case "boolean":
+      case "true":
+      case "false":
 
         if (union[n].b)
           throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple boolean types";

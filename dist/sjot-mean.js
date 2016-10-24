@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.5
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -56,11 +56,11 @@ try {
   window.alert(e); // FAIL: validation failed
 }
 
-// SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+// SJOT.check(schema) checks if schema is compliant and correct and has satisfiable constraints (does not reject all data), if the check fails throws an exception with diagnostics:
 try {
   SJOT.check(schema);
 } catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or correct
+  window.alert(e); // FAIL: schema is not compliant or is not satisfiable
 }
  */
 

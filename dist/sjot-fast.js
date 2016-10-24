@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.5
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -56,11 +56,11 @@ try {
   window.alert(e); // FAIL: validation failed
 }
 
-// SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+// SJOT.check(schema) checks if schema is compliant and correct and has satisfiable constraints (does not reject all data), if the check fails throws an exception with diagnostics:
 try {
   SJOT.check(schema);
 } catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or correct
+  window.alert(e); // FAIL: schema is not compliant or is not satisfiable
 }
  */
 
@@ -1218,6 +1218,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
         }
 
+
       }
 
       break;
@@ -1320,8 +1321,14 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
               // TODO perhaps use a regex in this loop to improve performance?
               for (var i = 0; i < type.length; i++) {
 
-                if (type.charCodeAt(i) === 0x3C)
+                var e = false;
+
+                if (type.charCodeAt(i) === 0x3C) {
+
+                  e = true;
                   i++;
+
+                }
 
                 var j = type.indexOf("..", i);
                 var k = type.indexOf(",", i);
@@ -1355,22 +1362,31 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
                   } else {
 
-                    if (isNaN(Number.parseFloat(type.slice(i, j))))
+                    var n, m;
+
+                    n = Number.parseFloat(type.slice(i, j));
+                    if (isNaN(n))
                       throw "SJOT schema format error: " /**/ + type + " is not a type";
 
                     if (type.charCodeAt(k - 1) === 0x3E) {
 
                       // check n..m> and <n..m>
-                      if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
+                      e = true;
+                      m = Number.parseFloat(type.slice(j + 2, k - 1));
+                      if (isNaN(m))
                         throw "SJOT schema format error: " /**/ + type + " is not a type";
 
                     } else {
 
                       // check n..m and <n..m
-                      if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
+                      m = Number.parseFloat(type.slice(j + 2, k));
+                      if (isNaN(m))
                         throw "SJOT schema format error: " /**/ + type + " is not a type";
 
                     }
+
+                    if (n > m || (e && n === m))
+                      throw "SJOT schema format error: " /**/ + type + " has empty range " + n + ".." + m;
 
                   }
 
@@ -1492,8 +1508,8 @@ function sjot_check_union(sjots, type, sjot /**/, union) {
       case "true":
       case "false":
 
-        if (union[n].b)
-          throw "SJOT schema format error: " /**/ + " union has multiple boolean types";
+        if (n > 1 && union[n].b)
+          throw "SJOT schema format error: " /**/ + " union has multiple boolean array types";
         union[n].b = true;
         break;
 
@@ -1616,5 +1632,6 @@ function sjot_check_union(sjots, type, sjot /**/, union) {
   }
 
 }
+
 /*LEAN]*/
 
