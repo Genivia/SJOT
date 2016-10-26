@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.5
+ * @version     1.2.6
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -56,11 +56,11 @@ try {
   window.alert(e); // FAIL: validation failed
 }
 
-// SJOT.check(schema) checks if schema is compliant and correct, if not throws an exception with diagnostics:
+// SJOT.check(schema) checks if schema is compliant and correct and has satisfiable constraints (does not reject all data), if the check fails throws an exception with diagnostics:
 try {
   SJOT.check(schema);
 } catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or correct
+  window.alert(e); // FAIL: schema is not compliant or is not satisfiable
 }
  */
 
@@ -1218,6 +1218,15 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
         }
 
+        /*FAST[*/
+        if (!sjot_check_satisfiable(
+              type.hasOwnProperty("@one") ? type["@one"] : [],
+              type.hasOwnProperty("@any") ? type["@any"] : [],
+              type.hasOwnProperty("@all") ? type["@all"] : [],
+              type.hasOwnProperty("@dep") ? type["@dep"] : {}))
+          throw "SJOT schema format error: " + typepath + " has non-satisfiable constraints and rejects all data";
+        /*FAST]*/
+
       }
 
       break;
@@ -1320,8 +1329,14 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
               // TODO perhaps use a regex in this loop to improve performance?
               for (var i = 0; i < type.length; i++) {
 
-                if (type.charCodeAt(i) === 0x3C)
+                var e = false;
+
+                if (type.charCodeAt(i) === 0x3C) {
+
+                  e = true;
                   i++;
+
+                }
 
                 var j = type.indexOf("..", i);
                 var k = type.indexOf(",", i);
@@ -1355,22 +1370,31 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
                   } else {
 
-                    if (isNaN(Number.parseFloat(type.slice(i, j))))
+                    var n, m;
+
+                    n = Number.parseFloat(type.slice(i, j));
+                    if (isNaN(n))
                       throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     if (type.charCodeAt(k - 1) === 0x3E) {
 
                       // check n..m> and <n..m>
-                      if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
+                      e = true;
+                      m = Number.parseFloat(type.slice(j + 2, k - 1));
+                      if (isNaN(m))
                         throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     } else {
 
                       // check n..m and <n..m
-                      if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
+                      m = Number.parseFloat(type.slice(j + 2, k));
+                      if (isNaN(m))
                         throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     }
+
+                    if (n > m || (e && n === m))
+                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " has empty range " + n + ".." + m;
 
                   }
 
@@ -1492,8 +1516,8 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
       case "true":
       case "false":
 
-        if (union[n].b)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple boolean types";
+        if (n > 1 && union[n].b)
+          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple boolean array types";
         union[n].b = true;
         break;
 
@@ -1616,6 +1640,65 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
   }
 
 }
+
+/*FAST[*/
+// SJOT schema model checker: check if constraints are satisfiable, takes 2^n time to test n distinct variables in constraints
+// returns true if the model is satisfiable
+// returns false when the schema for this object rejects all data, 
+// cuts off and returns true when over 20 distinct variables from @one, @any, @all, @dep are collected per object
+function sjot_check_satisfiable(one, any, all, dep) {
+
+  var bits = {};
+
+  one.forEach(function (props) { props.forEach(function (prop) { bits[prop] = false; }); });
+  any.forEach(function (props) { props.forEach(function (prop) { bits[prop] = false; }); });
+  all.forEach(function (props) { props.forEach(function (prop) { bits[prop] = false; }); });
+
+  for (var prop in dep) {
+
+    bits[prop] = false;
+    if (typeof dep[prop] === "string")
+      bits[dep[prop]] = false;
+    else
+      dep[prop].forEach(function (prop) { bits[prop] = false; });
+
+  }
+
+  var keys = Object.keys(bits);
+  var n = keys.length;
+
+  if (n < 2 || n > 20)
+    return true;
+
+  var pow2 = 1 << n;
+
+  loop: for (var k = 0; k < pow2; k++) {
+
+    for (var i = 0; i < n; i++)
+      bits[keys[i]] = (k & 1 << i) !== 0;
+
+    for (var props of one)
+      if (props.reduce(function (sum, prop) { return sum + bits[prop]; }, 0) !== 1)
+        continue loop;
+    for (var props of any)
+      if (!props.some(function (prop) { return bits[prop]; }))
+        continue loop;
+    for (var props of all)
+      if (props.some(function (prop) { return bits[prop]; }) && !props.every(function (prop) { return bits[prop]; }))
+        continue loop;
+    for (var prop in dep)
+      if (dep.hasOwnProperty(prop) &&
+          (typeof dep[prop] !== "string" || !bits[dep[prop]]) &&
+          (typeof dep[prop] !== "object" || !bits[prop].every(function (prop) { return bits[prop]; })))
+        continue loop;
+    return true;
+
+  }
+
+  return false;
+
+}
+/*FAST]*/
 /*LEAN]*/
 
 

@@ -14,6 +14,10 @@ and compact validators.
 
 SJOT schemas convert to JSON schema draft v4 without loss of schema details.
 
+The `SJOT.check()` API runs a schema checker that verifies schema
+satisfiability, so you do not have to worry about schemas with conflicting
+one/any/all/dep constraints that reject all data.
+
 Live validator and converter at <https://genivia.com/get-sjot.html#demo>
 
 Read more at <http://sjot.org>
@@ -68,7 +72,7 @@ try {
   window.alert(e); // FAIL: validation failed
 }
 
-// SJOT.check(schema) checks if schema is compliant and correct and has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
+// SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
 try {
   SJOT.check(schema);
 } catch (e) {
@@ -85,14 +89,14 @@ Three alternative versions of sjot.js are included:
 - sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
 - sjot-mean.js is optimized for speed and size
 
-dev/sjot2js.js is a SJOT to JSON schema converter that will eventually be
-integrated into the SJOT class. Visit <https://genivia.com/get-sjot.html#demo>
+dev/sjot2js.js is a SJOT to JSON schema converter API that will eventually be
+added into the SJOT class.  Visit <https://genivia.com/get-sjot.html#demo>
 to use the converter.
 
 sjot.js is fully functional to validate JSON data, with some limitations:
 
 - For security reasons, no loading of external type references "URI#type" yet (where URI is a URL of a schema to load)
-- The SJOT model checker checks schema satisfiability per object type for up to 20 distinct properties collected from @one, @any, @all, and @dep from that object type. The model checker stays silent for over 20 properties (the model satisfiability problem is NP-complete).
+- The SJOT model checker `SJOT.check()` checks schema satisfiability per object type for up to 20 distinct properties collected from the @one, @any, @all, and @dep of that object type. The model checker stays silent for over 20 properties (the model satisfiability problem is NP-complete).
 
 JSON validation C/C++ API
 -------------------------
@@ -130,7 +134,8 @@ Changelog
 - Oct 20, 2016: sjot.js 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
 - Oct 21, 2016: sjot.js 1.2.5 improvements and dev/sjot2js.js added
 - Oct 22, 2016: sjot.js 1.2.6 added new `@dep` constraints and new built-in "true" and "false" types
-- Oct 24, 2016: sjot.js 1.2.7 added SJOT schema model checker to `SJOT.check()` that warns for non-satisfiable schemas that reject all data
+- Oct 24, 2016: sjot.js 1.2.7 added SJOT schema model checker to `SJOT.check()` that checks for non-satisfiable schemas which reject all data
+- Oct 25, 2016: sjot.js 1.2.8 minor updates
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

@@ -1,9 +1,9 @@
 /**
  * A validator for "Schemas for JSON Objects", or simply SJOT.
- * SJOT is a much simpler alternative to JSON schema.  SJOT schemas are valid
- * JSON, just like JSON schema.  But SJOT schemas have the look and feel of an
+ * SJOT is a more compact alternative to JSON schema.  SJOT schemas are valid
+ * JSON, just like JSON schema.  SJOT schemas have the look and feel of an
  * object template and are more easy to read and understand.  SJOT aims at
- * quick JSON data validation with lightweight schemas and compact validators.
+ * fast JSON data validation with lightweight schemas and compact validators.
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
@@ -56,11 +56,11 @@ try {
   window.alert(e); // FAIL: validation failed
 }
 
-// SJOT.check(schema) checks if schema is compliant and correct and has satisfiable constraints (does not reject all data), if the check fails throws an exception with diagnostics:
+// SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
 try {
   SJOT.check(schema);
 } catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or is not satisfiable
+  window.alert(e); // FAIL: schema is not compliant or is incorrect or is not satisfiable
 }
  */
 
@@ -193,7 +193,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         }
 
         // TODO get external URI type reference when URI is a URL, load async and put in sjots array
-        throw "No " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
+        throw "No " + prop + " found that is referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
 
         return;
 
@@ -1080,17 +1080,18 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
         for (var prop in type) {
 
+	  /* TODO perhaps this is overkill to reject @root and @id in objects */
           if (prop === "@root") {
 
             if (!root)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object";
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object (rewrite as a regex)";
             sjot_check(sjots, false, false, type[prop], sjot, /*FAST[*/ typepath + /*FAST]*/ "/@root");
 
           } else if (prop === "@id") {
 
             // check @id is a string
             if (!root)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object";
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object (rewrite as a regex)";
             if (typeof type[prop] !== "string")
               throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is not a string";
 

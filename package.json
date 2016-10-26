@@ -19,6 +19,7 @@
     "schema",
     "validation",
     "compact",
+    "checker",
     "validator",
     "library"
   ],
