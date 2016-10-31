@@ -1,8 +1,54 @@
-/* jshint sub:true */
+/**
+ * Convert JSON Schema v3 and v4 to SJOT
+ *
+ * @module      js2sjot
+ * @version     {VERSION}
+ * @class       JS2SJOT
+ * @requires    sjot.js
+ * @author      Chris Moutsos, ckm13d@my.fsu.edu
+ * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
+ * @license     BSD3
+ * @link        http://sjot.org
+ */
 
-/*
-  A converter from JSON schemas to SJOT schemas.
-*/
+ /*
+    Requires sjot.js SJOT class
+
+    Usage
+
+ var SJOT = require("sjot");     // npm sjot package for node.js
+
+ var JSONSchema = {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A person info object with optional id (default 999), name, street, and optional phone number",
+  "type": "object",
+  "properties": {
+    "id": {
+      "minimum": 0,
+      "maximum": 999,
+      "type": "integer",
+      "default": 999
+    },
+    "name": {
+      "type": "string"
+    },
+    "street": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^[- 0-9]+$"
+    }
+  },
+  "required": [
+    "name",
+    "street"
+  ]
+ };
+
+ var SJOTSchema = JS2SJOT.toSJOT(JSONSchema);
+
+ */
 
 "use strict";
 
@@ -126,6 +172,19 @@ var resolveJSONPointer = function(jsRoot, jsNode, ptr) {
 };
 
 var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot)  {
+  /* change extends to allOf (V3 -> V4) */
+  if (jsNode.hasOwnProperty("extends")) {
+    var extendsCopy = JSON.parse(JSON.stringify(jsNode["extends"]));
+    delete jsNode["extends"];
+    var nodeCopy = JSON.parse(JSON.stringify(jsNode));
+
+    var newNode = {};
+    newNode["allOf"] = [];
+    newNode["allOf"].push(nodeCopy);
+    newNode["allOf"].push(extendsCopy);
+    jsNode = newNode;
+  }
+
   /* renaming "additionalProperties" */
   if (jPropName === "(.*)")
     jPropName = "addProps";
@@ -140,10 +199,30 @@ var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot)  {
 
   /* no specified type */
   if (!jsNode.hasOwnProperty("type")) {
-    if (jsNode.hasOwnProperty("properties"))
+    if (jsNode.hasOwnProperty("properties") ||
+        jsNode.hasOwnProperty("minProperties") ||
+        jsNode.hasOwnProperty("maxProperties") ||
+        jsNode.hasOwnProperty("required") ||
+        jsNode.hasOwnProperty("additionalProperties") ||
+        jsNode.hasOwnProperty("patternProperties") ||
+        jsNode.hasOwnProperty("dependencies"))
       jsNode["type"] = "object";
-    else if (jsNode.hasOwnProperty("items"))
+    else if (jsNode.hasOwnProperty("items") ||
+             jsNode.hasOwnProperty("minItems") ||
+             jsNode.hasOwnProperty("maxItems") ||
+             jsNode.hasOwnProperty("uniqueItems"))
       jsNode["type"] = "array";
+    else if (jsNode.hasOwnProperty("minLength") ||
+             jsNode.hasOwnProperty("maxLength") ||
+             jsNode.hasOwnProperty("pattern"))
+      jsNode["type"] = "string";
+    else if (jsNode.hasOwnProperty("multipleOf") ||
+             jsNode.hasOwnProperty("divisibleBy") ||
+             jsNode.hasOwnProperty("minimum") ||
+             jsNode.hasOwnProperty("maximum") ||
+             jsNode.hasOwnProperty("exclusiveMinimum") ||
+             jsNode.hasOwnProperty("exclusiveMaximum"))
+      jsNode["type"] = "number";
     else
       return "any";
   }
@@ -173,10 +252,19 @@ var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot)  {
     }
   }
   else {
-    /* array of SIMPLE types -> SJOT union of simple types */
+    /* array of types -> SJOT union of types */
     var types = [];
     for (var ti = 0; ti < jsNode["type"].length; ti++) {
-      types.push(getSJOTTypeFromNode(jsRoot, { "type": jsNode["type"][ti] }, jPropName, sjotRoot));
+      var node;
+      if (typeof(jsNode["type"][ti]) === "string") {
+        node = { "type": jsNode["type"][ti] };
+      }
+      else {
+        node = jsNode["type"][ti];
+      }
+      types.push(getSJOTTypeFromNode(jsRoot, node,
+                                     jPropName,
+                                     sjotRoot));
     }
     s = [ types ];
   }
@@ -378,9 +466,14 @@ var getSJOTObjectTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
     for (var objProp in jsNode["properties"]) {
       if (jsNode["properties"].hasOwnProperty(objProp)) {
         var propOpt = true;
+        /* V4 required */
         if ((jsNode.hasOwnProperty("required")) &&
                        (jsNode["required"].indexOf(objProp) != -1)) {
           propOpt = false;
+        }
+        /* V3 required */
+        if (jsNode["properties"][objProp].hasOwnProperty("required")) {
+          propOpt = !jsNode["properties"][objProp]["required"];
         }
         toSJOT(jsRoot, jsNode["properties"][objProp],
                objProp,
@@ -421,6 +514,11 @@ var getSJOTObjectTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
     obj["@dep"] = {};
     for (var dep in jsNode["dependencies"]) {
       if (jsNode["dependencies"].hasOwnProperty(dep)) {
+
+        /* convert single strings to an array (V3 -> V4)*/
+        if (typeof(jsNode["dependencies"][dep]) === "string")
+          jsNode["dependencies"][dep] = [ jsNode["dependencies"][dep] ];
+
         if (Array.isArray(jsNode["dependencies"][dep])) {
           obj["@dep"][dep] = jsNode["dependencies"][dep];
         }
@@ -435,6 +533,12 @@ var getSJOTObjectTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
 };
 
 var getSJOTNumberTypeFromNode = function(jsNode, isInteger) {
+  /* divisibleBy -> multipleOf (V3 -> V4) */
+  if (jsNode.hasOwnProperty("divisibleBy")) {
+    jsNode["multipleOf"] = jsNode["divisibleBy"];
+    delete jsNode["divisibleBy"];
+  }
+
   var min, max;
   var xMin, xMax;
   if (jsNode.hasOwnProperty("minimum")) {
