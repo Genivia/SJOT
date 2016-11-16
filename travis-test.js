@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.2.7
+ * @version     1.2.9
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.

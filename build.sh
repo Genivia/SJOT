@@ -1,10 +1,10 @@
 #!/bin/bash
 
-cd dev
-
 # get version after version bump
-VERSION=`npm view sjot version`
+VERSION=`npm list --depth=0 | sed -n 's/^[^@]*@\([^ ]*\) .*$/\1/p'`
 echo "Creating sjot $VERSION"
+
+cd dev
 
 # bump version and remove DEBUG[ ... DEBUG]
 sed -e "s/{VERSION}/$VERSION/" -e "s/DEBUG\[.*DEBUG\]//g" -e "/DEBUG\[/,/DEBUG\]/ d" < sjot.js > ../dist/sjot.js
