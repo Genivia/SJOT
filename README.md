@@ -15,7 +15,7 @@ and compact validators.
 SJOT schemas convert to JSON schema draft v4 without loss of schema details.
 
 The `SJOT.check()` API runs a schema checker that verifies schema
-satisfiability, so you do not have to worry about schemas with conflicting
+satisfiability, so you never have to worry about schemas with conflicting
 one/any/all/dep constraints that reject all data.
 
 Live validator and converter at <https://genivia.com/get-sjot.html#demo>
@@ -28,6 +28,24 @@ Install:
 
 Released under the BSD3 license.
 Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
+
+Why another JSON schema "standard"?
+-----------------------------------
+
+- JSON schemas is **verbose**, doubling the nesting level compared to JSON data.
+  SJOT schema levels are one-on-one with JSON data.
+- JSON schema validation performance is **not scalable**.  SJOT takes linear
+  time to validate JSON data, linear in the size of the JSON data.
+- JSON schema offers very **few predeclared primitive types**.  SJOT offers a
+  wider choice of pre-defined types.
+- JSON schema is **non-strict by default**.  SJOT is.
+- JSON schemas are **not extensible**.  SJOT objects are extensible or final.
+- JSON schema **violates the encapsulation principle** because it permits
+  referencing local schema types.  SJOT groups all types that can be referenced
+  at the top level in the root schema.
+- JSON schema design **violates the orthogonality principle**.  There should
+  only be a simple and independent way to combine constructs in schemas.
+- The **principle of least surprise** may not apply to JSON schema.
 
 JSON validation JS API
 ----------------------
@@ -103,24 +121,6 @@ JSON validation C/C++ API
 
 sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
 
-Why another JSON schema "standard"?
------------------------------------
-
-- JSON schema is **verbose**, doubling the nesting level compared to JSON data.
-  SJOT schema levels are one-on-one with JSON data.
-- JSON schema validation performance is **not scalable**.  SJOT takes linear
-  time to validate JSON data, linear in the size of the JSON data.
-- JSON schema offers very **few predeclared primitive types**.  SJOT offers a
-  wider choice of pre-defined types.
-- JSON schema is **non-strict by default**.  SJOT is.
-- JSON schemas are **not extensible**.  SJOT objects are extensible or final.
-- JSON schema **violates the encapsulation principle** because it permits
-  referencing local schema types.  SJOT groups all types that can be referenced
-  at the top level in the root schema.
-- JSON schema design **violates the orthogonality principle**.  There should
-  only be a simple and independent way to define schemas.
-- The **principle of least surprise** may not apply to JSON schema.
-
 Feature wish list / nice to have
 --------------------------------
 
@@ -153,7 +153,7 @@ Changelog
 - Oct 22, 2016: sjot.js 1.2.6 added new `@dep` constraints and new built-in "true" and "false" types
 - Oct 24, 2016: sjot.js 1.2.7 added SJOT schema model checker to `SJOT.check()` that checks for non-satisfiable schemas which reject all data
 - Oct 25, 2016: sjot.js 1.2.8 minor updates
-- Oct 25, 2016: sjot.js 1.2.9 npm version sync issue (bug reported to npm)
+- Oct 25, 2016: sjot.js 1.2.9 minor updates
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
