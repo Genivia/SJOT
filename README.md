@@ -32,7 +32,7 @@ Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
 Why another JSON schema "standard"?
 -----------------------------------
 
-- JSON schemas is **verbose**, doubling the nesting level compared to JSON data.
+- JSON schema is **verbose**, doubling the nesting level compared to JSON data.
   SJOT schema levels are one-on-one with JSON data.
 - JSON schema validation performance is **not scalable**.  SJOT takes linear
   time to validate JSON data, linear in the size of the JSON data.
