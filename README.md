@@ -103,9 +103,9 @@ Three alternative versions of sjot.js are included:
 - sjot-fast.js is optimized for speed but validation error messages are less informative
 - sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
 - sjot-mean.js is optimized for speed and size
-
-dev/sjot2js.js is a SJOT to JSON schema converter.  Visit
-<https://genivia.com/get-sjot.html#demo> to try the interactive converter.
+- dev/sjot2js.js is a SJOT to JSON schema converter.  Visit
+  <https://genivia.com/get-sjot.html#demo> to try the interactive converter.
+- dev.js2sjot.js is a JSON schema to SJOT converter.
 
 sjot.js is fully functional to validate JSON data, with some limitations:
 
@@ -120,7 +120,6 @@ sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
 Feature wish list / nice to have
 --------------------------------
 
-- JSON schema to SJOT converter (work in progress)
 - Random JSON data generator from SJOT schemas for testing
 
 Changelog
