@@ -57,7 +57,7 @@ Usage:
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
 var schema = {
-  "Data": {
+  "Data": {                     // root of JSON data is a "Data" object
     "name":    "string",        // required name of type string
     "v?1.0":   "number",        // optional v with default 1.0
     "tags?":   "string{1,}",    // optional non-empty set of string tags
@@ -77,11 +77,8 @@ var data = {
 if (SJOT.valid(data, "#Data", schema))
   ... // OK: data validated against schema
 
-if (SJOT.valid(data, "http://example.com/sjot.json#Data"))
-  ... // OK: data validated against schema type Data from http://example.com/sjot.json
-
 if (SJOT.valid(data))
-  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
+  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data, not in this example)
 
 // SJOT.validate(data [, type [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
@@ -107,9 +104,8 @@ Three alternative versions of sjot.js are included:
 - sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
 - sjot-mean.js is optimized for speed and size
 
-dev/sjot2js.js is a SJOT to JSON schema converter API that will eventually be
-added into the SJOT class.  Visit <https://genivia.com/get-sjot.html#demo>
-to use the converter.
+dev/sjot2js.js is a SJOT to JSON schema converter.  Visit
+<https://genivia.com/get-sjot.html#demo> to try the interactive converter.
 
 sjot.js is fully functional to validate JSON data, with some limitations:
 
@@ -154,6 +150,7 @@ Changelog
 - Oct 24, 2016: sjot.js 1.2.7 added SJOT schema model checker to `SJOT.check()` that checks for non-satisfiable schemas which reject all data
 - Oct 25, 2016: sjot.js 1.2.8 minor updates
 - Oct 25, 2016: sjot.js 1.2.9 minor updates
+- Nov 22, 2016: sjot.js 1.3.0 merged dev/js2sjot thanks to Chris Moutsos for helping out
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
