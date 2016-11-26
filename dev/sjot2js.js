@@ -98,8 +98,9 @@ function sjot_2js(sjots, root, version, type, sjot) {
 
       if (Array.isArray(type)) {
 
-        if (type.length === 1 && Array.isArray(type[0])) {
+        if (sjot_is_union(type)) {
 
+          // convert union
           var union = [];
 
           for (var itemtype of type[0])
@@ -109,8 +110,38 @@ function sjot_2js(sjots, root, version, type, sjot) {
           else
             return union;
 
+        } else if (type.length == 0) {
+
+          // convert array []
+          return { type: "array" };
+
+        } else if (type.length === 1) {
+
+          // convert array [type] or [m]
+          if (typeof type[0] === "number")
+            return { type: "array", minItems: type[0], maxItems: type[0] };
+          else
+            return { type: "array", items: sjot_2js(sjots, false, version, type[0], sjot) };
+
+        } else if (typeof type[1] === "number") {
+
+          // convert array [n,m] or [type,m]
+          if (typeof type[0] === "number")
+            return { type: "array", minItems: type[0], maxItems: type[1] };
+          else
+            return { type: "array", items: sjot_2js(sjots, false, version, type[0], sjot), maxItems: type[1] };
+
+        } else if (typeof type[0] === "number") {
+
+          // convert array [n,type] or [n,type,m]
+          if (type.length > 2 && typeof type[2] === "number")
+            return { type: "array", items: sjot_2js(sjots, false, version, type[1], sjot), minItems: type[0], maxItems: type[2] };
+          else
+            return { type: "array", items: sjot_2js(sjots, false, version, type[1], sjot), minItems: type[0] };
+
         } else {
 
+          // convert tuple
           var tuple = [];
 
           for (var itemtype of type)
@@ -121,6 +152,7 @@ function sjot_2js(sjots, root, version, type, sjot) {
 
       } else if (root) {
 
+        // root schema type
         var schema = {};
         
         if (version === undefined || typeof version !== "number" || version < 3)
@@ -187,6 +219,7 @@ function sjot_2js(sjots, root, version, type, sjot) {
 
       } else {
 
+        // convert object and constraints
         var obj = {};
         var one = [];
         var any = [];
@@ -443,13 +476,17 @@ function sjot_2js(sjots, root, version, type, sjot) {
             
             return { type: "date-time" };
 
+          case "base64":
+
+            return { type: "string", pattern: "^[0-9A-Za-z+/]*=?=?$" };
+
           case "hex":
 
             return { type: "string", pattern: "^[0-9A-Fa-f]*$" };
 
-          case "base64":
+          case "uuid":
 
-            return { type: "string", pattern: "^[0-9A-Za-z+/]*=?=?$" };
+            return { type: "string", pattern: "^(urn:uuid:)?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$" };
 
           case "date":
 

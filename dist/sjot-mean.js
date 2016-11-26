@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.0
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -23,7 +23,7 @@
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
 var schema = {
-  "Data": {
+  "Data": {                     // root of JSON data is a "Data" object
     "name":    "string",        // required name of type string
     "v?1.0":   "number",        // optional v with default 1.0
     "tags?":   "string{1,}",    // optional non-empty set of string tags
@@ -42,9 +42,6 @@ var data = {
 
 if (SJOT.valid(data, "#Data", schema))
   ... // OK: data validated against schema
-
-if (SJOT.valid(data, "http://example.com/sjot.json#Data"))
-  ... // OK: data validated against schema type Data from http://example.com/sjot.json
 
 if (SJOT.valid(data))
   ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
@@ -192,7 +189,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
   }
 
   // check unions
-  if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
+  if (sjot_is_union(type)) {
 
     // validate data against type union [[ type, type, ... ]]
 
@@ -231,15 +228,83 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
         if (Array.isArray(type)) {
 
-          // validate a tuple
-          if (data.length != type.length)
-            throw /**/ " length " + type.length;
+          if (type.length === 1) {
 
-          for (var i = 0; i < data.length; i++) {
+            // validate an array [type] or [n] (fixed size)
+            if (typeof type[0] === "number") {
 
-            if (data[i] === null)
-              data[i] = sjot_default("null", sjots, null, type[i], sjot /**/);
-            sjot_validate(sjots, data[i], type[i], sjot /**/);
+              if (data.length !== type[0])
+                sjot_error("length", type[0], "any" /**/);
+
+            } else {
+
+              for (var i = 0; i < data.length; i++) {
+
+                if (data[i] === null)
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot /**/);
+                sjot_validate(sjots, data[i], type[0], sjot /**/);
+              }
+
+            }
+
+          } else if (typeof type[1] === "number") {
+            
+            // validate an array [n,m] or [type,m]
+            if (data.length > type[1])
+              sjot_error("length", type[1], type[0] /**/);
+
+            if (typeof type[0] === "number") {
+
+              if (data.length < type[0])
+                sjot_error("length", type[0], "any" /**/);
+
+            } else {
+
+              for (var i = 0; i < data.length; i++) {
+
+                if (data[i] === null)
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot /**/);
+                sjot_validate(sjots, data[i], type[0], sjot /**/);
+
+              }
+
+            }
+
+          } else if (typeof type[0] === "number") {
+            
+            // validate an array [n,type] or [n,type,m]
+            if (data.length < type[0])
+              sjot_error("length", type[0], type[1] /**/);
+
+            if (type.length > 2 && typeof type[2] === "number") {
+
+              if (data.length > type[2])
+                sjot_error("length", type[2], type[1] /**/);
+
+            }
+
+            for (var i = 0; i < data.length; i++) {
+
+              if (data[i] === null)
+                data[i] = sjot_default("null", sjots, null, type[1], sjot /**/);
+              sjot_validate(sjots, data[i], type[1], sjot /**/);
+
+            }
+
+          } else if (type.length > 0) {
+
+            // validate a tuple
+            if (data.length != type.length)
+              throw /**/ " length " + type.length;
+
+            for (var i = 0; i < data.length; i++) {
+
+              if (data[i] === null)
+                data[i] = sjot_default("null", sjots, null, type[i], sjot /**/);
+              sjot_validate(sjots, data[i], type[i], sjot /**/);
+
+            }
+
           }
 
           return;
@@ -257,7 +322,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, type[j], sjot /**/);
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot /**/);
               sjot_validate(sjots, data[j], itemtype, sjot /**/);
 
             }
@@ -291,7 +356,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, type[j], sjot /**/);
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot /**/);
               sjot_validate(sjots, data[j], itemtype, sjot /**/);
 
             }
@@ -687,6 +752,13 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             // check hex
             if (/^[0-9A-Fa-f]*$/.test(data))
+              return;
+            break;
+
+          case "uuid":
+
+            // check uuid
+            if (/^(urn:uuid:)?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/.test(data))
               return;
             break;
 
