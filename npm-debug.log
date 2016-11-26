@@ -10,10 +10,12 @@
 5 verbose stack M README.md
 5 verbose stack M dev/node_modules/sjot/index.js
 5 verbose stack M dev/sjot.js
-5 verbose stack M dev/sjot2js.js
 5 verbose stack M dist/sjot-fast.js
 5 verbose stack M dist/sjot-lean.js
 5 verbose stack M dist/sjot-mean.js
+5 verbose stack M index.js
+5 verbose stack D npm-debug.log
+5 verbose stack M travis-test.js
 5 verbose stack     at /usr/local/lib/node_modules/npm/lib/version.js:171:21
 5 verbose stack     at ChildProcess.exithandler (child_process.js:204:7)
 5 verbose stack     at emitTwo (events.js:87:13)
@@ -32,10 +34,12 @@
 11 error M README.md
 11 error M dev/node_modules/sjot/index.js
 11 error M dev/sjot.js
-11 error M dev/sjot2js.js
 11 error M dist/sjot-fast.js
 11 error M dist/sjot-lean.js
 11 error M dist/sjot-mean.js
+11 error M index.js
+11 error D npm-debug.log
+11 error M travis-test.js
 12 error If you need help, you may report this error at:
 12 error     <https://github.com/npm/npm/issues>
 13 verbose exit [ 1, true ]

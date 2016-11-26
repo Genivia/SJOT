@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.1
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -794,14 +794,14 @@ function sjot_validate(sjots, data, type, sjot /**/) {
           case "time":
 
             // check RFC3999 time part
-            if (/^\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$/.test(data))
+            if (/^\d{2}:\d{2}:\d{2}(\.\d{1,6})?([-+]\d{2}:?\d{2}|Z)?$/.test(data))
               return;
             break;
 
           case "datetime":
 
             // check RFC3999 datetime
-            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$/.test(data))
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([-+]\d{2}:?\d{2}|Z)?$/.test(data))
               return;
             break;
 
@@ -1575,17 +1575,21 @@ function sjot_check_union(sjots, type, sjot /**/, union) {
 
       type = sjot_reftype(sjots, type, sjot /**/);
 
-      i = type.length;
+      if (typeof type === "string") {
 
-      while (i > 0) {
+	i = type.length;
 
-        if (type.charCodeAt(i - 1) === 0x5D)
-          i = type.lastIndexOf("[", i - 1);
-        else if (type.charCodeAt(i - 1) === 0x7D)
-          i = type.lastIndexOf("{", i - 1);
-        else
-          break;
-        n++;
+	while (i > 0) {
+
+	  if (type.charCodeAt(i - 1) === 0x5D)
+	    i = type.lastIndexOf("[", i - 1);
+	  else if (type.charCodeAt(i - 1) === 0x7D)
+	    i = type.lastIndexOf("{", i - 1);
+	  else
+	    break;
+	  n++;
+
+	}
 
       }
 
