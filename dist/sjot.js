@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.0
+ * @version     1.3.1
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -23,7 +23,7 @@
 var SJOT = require("sjot");     //    or use the npm sjot package for node.js
 
 var schema = {
-  "Data": {
+  "Data": {                     // root of JSON data is a "Data" object
     "name":    "string",        // required name of type string
     "v?1.0":   "number",        // optional v with default 1.0
     "tags?":   "string{1,}",    // optional non-empty set of string tags
@@ -38,20 +38,17 @@ var data = {
     "package": { "id": 1, "name": "sjot" }
   };
 
-// SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
+// SJOT.valid(data [, type|"@root" [, schema ] ]) tests if data is valid:
 
-if (SJOT.valid(data, "#Data", schema))
+if (SJOT.valid(data, "@root", schema))
   ... // OK: data validated against schema
-
-if (SJOT.valid(data, "http://example.com/sjot.json#Data"))
-  ... // OK: data validated against schema type Data from http://example.com/sjot.json
 
 if (SJOT.valid(data))
   ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
 
-// SJOT.validate(data [, type [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
+// SJOT.validate(data [, type|"@root" [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
-  SJOT.validate(data, "#Data", schema);
+  SJOT.validate(data, "@root", schema);
 } catch (e) {
   window.alert(e); // FAIL: validation failed
 }
@@ -68,7 +65,7 @@ try {
 
 class SJOT {
 
-  // valid(obj [, type [, schema ] ])
+  // valid(obj [, type|"@root" [, schema ] ])
   static valid(obj, type, schema) {
 
     try {
@@ -84,13 +81,16 @@ class SJOT {
 
   }
 
-  // validate(obj [, type [, schema ] ])
+  // validate(obj [, type|"@root" [, schema ] ])
   static validate(obj, type, schema) {
 
     var sjots = schema;
 
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
+
+    if (type === "@root")
+      type = null;
 
     if (type === undefined || type === null) {
 
@@ -204,7 +204,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
   }
 
   // check unions
-  if (Array.isArray(type) && type.length === 1 && Array.isArray(type[0])) {
+  if (sjot_is_union(type)) {
 
     // validate data against type union [[ type, type, ... ]]
     /*LEAN[*/
@@ -250,15 +250,83 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
         if (Array.isArray(type)) {
 
-          // validate a tuple
-          if (data.length != type.length)
-            throw /*FAST[*/ datapath + /*FAST]*/ " tuple length " + data.length + " is not the required " + /*FAST[*/ typepath + /*FAST]*/ " length " + type.length;
+          if (type.length === 1) {
 
-          for (var i = 0; i < data.length; i++) {
+            // validate an array [type] or [n] (fixed size)
+            if (typeof type[0] === "number") {
 
-            if (data[i] === null)
-              data[i] = sjot_default("null", sjots, null, type[i], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]" /*FAST]*/);
-            sjot_validate(sjots, data[i], type[i], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]" /*FAST]*/);
+              if (data.length !== type[0])
+                sjot_error("length", type[0], "any" /*FAST[*/, datapath, typepath + "/[" + type[0] + "]" /*FAST]*/);
+
+            } else {
+
+              for (var i = 0; i < data.length; i++) {
+
+                if (data[i] === null)
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "]" /*FAST]*/);
+                sjot_validate(sjots, data[i], type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "]" /*FAST]*/);
+              }
+
+            }
+
+          } else if (typeof type[1] === "number") {
+            
+            // validate an array [n,m] or [type,m]
+            if (data.length > type[1])
+              sjot_error("length", type[1], type[0] /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+
+            if (typeof type[0] === "number") {
+
+              if (data.length < type[0])
+                sjot_error("length", type[0], "any" /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+
+            } else {
+
+              for (var i = 0; i < data.length; i++) {
+
+                if (data[i] === null)
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+                sjot_validate(sjots, data[i], type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+
+              }
+
+            }
+
+          } else if (typeof type[0] === "number") {
+            
+            // validate an array [n,type] or [n,type,m]
+            if (data.length < type[0])
+              sjot_error("length", type[0], type[1] /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+
+            if (type.length > 2 && typeof type[2] === "number") {
+
+              if (data.length > type[2])
+                sjot_error("length", type[2], type[1] /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "," + type[2] + "]" /*FAST]*/);
+
+            }
+
+            for (var i = 0; i < data.length; i++) {
+
+              if (data[i] === null)
+                data[i] = sjot_default("null", sjots, null, type[1], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+              sjot_validate(sjots, data[i], type[1], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
+
+            }
+
+          } else if (type.length > 0) {
+
+            // validate a tuple
+            if (data.length != type.length)
+              throw /*FAST[*/ datapath + /*FAST]*/ " tuple length " + data.length + " is not the required " + /*FAST[*/ typepath + /*FAST]*/ " length " + type.length;
+
+            for (var i = 0; i < data.length; i++) {
+
+              if (data[i] === null)
+                data[i] = sjot_default("null", sjots, null, type[i], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]" /*FAST]*/);
+              sjot_validate(sjots, data[i], type[i], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]" /*FAST]*/);
+
+            }
+
           }
 
           return;
@@ -276,7 +344,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, type[j], sjot /*FAST[*/, datapath + "[" + j + "]", typepath + "[" + j + "]" /*FAST]*/);
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
               sjot_validate(sjots, data[j], itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
 
             }
@@ -310,7 +378,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, type[j], sjot /*FAST[*/, datapath + "[" + j + "]", typepath + "[" + j + "]" /*FAST]*/);
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
               sjot_validate(sjots, data[j], itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
 
             }
@@ -709,6 +777,13 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
               return;
             break;
 
+          case "uuid":
+
+            // check uuid
+            if (/^(urn:uuid:)?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/.test(data))
+              return;
+            break;
+
           case "date":
 
             // check RFC3999 date part
@@ -1053,7 +1128,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
       if (Array.isArray(type)) {
 
-        if (type.length === 1 && Array.isArray(type[0])) {
+        if (sjot_is_union(type)) {
 
           // check union
           var union = [];
@@ -1065,7 +1140,48 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
           }
 
-        } else {
+        } else if (type.length === 1) {
+
+          // check array [type] or [m]
+          if (typeof type[0] === "number") {
+
+            if (type[0] < 0)
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "] should be non-negative";
+
+          } else {
+
+            sjot_check(sjots, false, false, type[0], sjot /*FAST[*/, typepath /*FAST]*/);
+
+          }
+
+        } else if (typeof type[1] === "number") {
+
+          // check array [n,m] or [type,m]
+          if (type[1] < 0)
+            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+
+          if (typeof type[0] === "number") {
+
+            if (type[0] < 0)
+              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+
+          } else {
+
+            sjot_check(sjots, false, false, type[0], sjot /*FAST[*/, typepath /*FAST]*/);
+
+          }
+
+        } else if (typeof type[0] === "number") {
+
+          // check array [n,type] or [n,type,m]
+          if (type[0] < 0)
+            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+          if (type.length > 2 && typeof type[2] === "number" && type[2] < type[0])
+            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "," + type[2] + "] should be non-negative";
+          sjot_check(sjots, false, false, type[1], sjot /*FAST[*/, typepath /*FAST]*/);
+
+
+        } else if (type.length > 0) {
 
           // check tuple
           for (var i = 0; i < type.length; i++)
@@ -1080,7 +1196,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
         for (var prop in type) {
 
-	  /* TODO perhaps this is overkill to reject @root and @id in objects */
+          /* TODO perhaps this is overkill to reject @root and @id in objects */
           if (prop === "@root") {
 
             if (!root)
@@ -1285,8 +1401,9 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
           case "double":
           case "number":
           case "string":
-          case "hex":
           case "base64":
+          case "hex":
+          case "uuid":
           case "date":
           case "time":
           case "datetime":
@@ -1427,6 +1544,17 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
 }
 
+function sjot_is_union(type) {
+
+  return Array.isArray(type) &&
+    type.length === 1 &&
+    Array.isArray(type[0]) &&
+    type[0].length > 1 &&
+    typeof type[0] !== "number" &&
+    typeof type[1] !== "number";
+
+}
+
 function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union) {
 
   // count array depth, each depth has its own type conflict set
@@ -1486,7 +1614,28 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
 
     }
 
-  } else if (type === "array" || Array.isArray(type)) {
+  } else if (Array.isArray(type) && type.length === 0 || type === "array") {
+
+    type = "any";
+    n++;
+
+  } else if (Array.isArray(type) && (type.length === 1 || typeof type[1] === "number")) {
+
+    if (typeof type[0] === "number")
+      type = "any";
+    else
+      type = type[0];
+    n++;
+
+  } else if (Array.isArray(type) && typeof type[0] === "number") {
+
+    if (typeof type[1] === "number")
+      type = "any";
+    else
+      type = type[1];
+    n++;
+
+  } else if (Array.isArray(type)) {
 
     // tuple is represented by "any[]"
     type = "any";
@@ -1541,8 +1690,9 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
         break;
 
       case "string":
-      case "hex":
       case "base64":
+      case "hex":
+      case "uuid":
       case "date":
       case "time":
       case "datetime":

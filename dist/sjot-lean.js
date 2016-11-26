@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     {VERSION}
+ * @version     1.3.1
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -38,17 +38,17 @@ var data = {
     "package": { "id": 1, "name": "sjot" }
   };
 
-// SJOT.valid(data [, type [, schema ] ]) tests if data is valid:
+// SJOT.valid(data [, type|"@root" [, schema ] ]) tests if data is valid:
 
-if (SJOT.valid(data, "#Data", schema))
+if (SJOT.valid(data, "@root", schema))
   ... // OK: data validated against schema
 
 if (SJOT.valid(data))
   ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
 
-// SJOT.validate(data [, type [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
+// SJOT.validate(data [, type|"@root" [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
-  SJOT.validate(data, "#Data", schema);
+  SJOT.validate(data, "@root", schema);
 } catch (e) {
   window.alert(e); // FAIL: validation failed
 }
@@ -65,7 +65,7 @@ try {
 
 class SJOT {
 
-  // valid(obj [, type [, schema ] ])
+  // valid(obj [, type|"@root" [, schema ] ])
   static valid(obj, type, schema) {
 
     try {
@@ -81,13 +81,16 @@ class SJOT {
 
   }
 
-  // validate(obj [, type [, schema ] ])
+  // validate(obj [, type|"@root" [, schema ] ])
   static validate(obj, type, schema) {
 
     var sjots = schema;
 
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
+
+    if (type === "@root")
+      type = null;
 
     if (type === undefined || type === null) {
 
