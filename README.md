@@ -121,6 +121,7 @@ Feature wish list / nice to have
 --------------------------------
 
 - Random JSON data generator from SJOT schemas for testing
+- Tool to generate SJOT schema from JSON data samples
 
 Changelog
 ---------
@@ -152,6 +153,7 @@ Changelog
 - Nov 22, 2016: sjot.js 1.3.0 merged dev/js2sjot thanks to Chris Moutsos for helping out
 - Nov 25, 2016: sjot.js 1.3.1 added `uuid` type and inline arrays with `[type]` and `[n,type,m]`
 - Nov 26, 2016: sjot.js 1.3.2 fixes for minor issues
+- Nov 28, 2016: sjot.js 1.3.3 performance improvements, fixes for minor issues
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

@@ -26,6 +26,7 @@ var schema =
     "string":       "string",
     "base64":       "base64",
     "hex":          "hex",
+    "uuid":         "uuid",
     "date":         "date",
     "time":         "time",
     "datetime":     "datetime",
@@ -42,6 +43,7 @@ var schema =
     "array":        "array",
     "null":         "null",
     "obj":          { "optional?": "string", "[a]": "number", "(\\w+)": "number" },
+    "arr":          [ "number" ],
     "tuple":        [ "string", "number" ],
     "union":        [[ "string", "number" ]]
   },
@@ -76,6 +78,7 @@ var data =
   "string":       "string",
   "base64":       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
   "hex":          "0123456789abcdefABCDEF",
+  "uuid":         "urn:uuid:123e4567-e89b-12d3-a456-426655440000",
   "date":         "1929-12-31",
   "time":         "23:59:59",
   "datetime":     "1929-12-31T23:59:59",
@@ -92,10 +95,11 @@ var data =
   "array":        [ 1, "a", null, true ],
   "null":         null,
   "obj":          { "[a]": 0, "a": 1, "b": 2 },
+  "arr":          [ 1, 2, 3, 4 ],
   "tuple":        [ "string", 123 ],
   "union":        123
 };
 
 SJOT.check(schema);
-SJOT.validate(data, null, schema);
+SJOT.validate(data, "@root", schema);
 console.log("OK!");

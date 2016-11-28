@@ -2,7 +2,7 @@ var SJOT = require("sjot");
 
 var schema =
 {
-   "Data": {
+   "@root": {
       "name":    "string",
       "v?1.0":   "number",
       "tags?":   "string{1,}",
@@ -19,7 +19,7 @@ var data =
 };
 
 try {
-  SJOT.validate(data, null, schema);
+  SJOT.validate(data, "@root", schema);
   console.log("OK! JSON data is valid");
 } catch (e) {
   console.log(e);

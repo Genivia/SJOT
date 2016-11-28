@@ -15,7 +15,6 @@
  * @link        http://sjot.org
  */
 
-
 /*
    Usage
 
@@ -204,33 +203,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
   }
 
   // check unions
-  if (sjot_is_union(type)) {
-
-    // validate data against type union [[ type, type, ... ]]
-    /*LEAN[*/
-    var union = [];
-    /*LEAN]*/
-
-    for (var itemtype of type[0]) {
-
-      try {
-
-        return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, datapath, typepath + "/" + itemtype /*FAST]*/);
-
-      } catch (e) {
-      
-        /*LEAN[*/
-        // TODO consider alternative quick checks that are faster?
-        sjot_check_union(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/, union);
-        /*LEAN]*/
-
-      }
-
-    }
-
-    sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
-  }
+  if (sjot_is_union(type))
+    return sjot_validate_union(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*FAST]*/);
 
   switch (typeof data) {
 
@@ -826,6 +800,140 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
 }
 
+function sjot_validate_union(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*FAST]*/) {
+
+  var union = [];
+
+  for (var itemtype of type[0])
+    sjot_check_union(sjots, itemtype, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/, union, 1);
+
+  var n = 1;
+  var item = data;
+
+  while (Array.isArray(item)) {
+
+    n++;
+
+    if (item.length === 0) {
+
+      if ((union[0] !== undefined && n >= union[0]) || union[n] !== undefined)
+        return;
+      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+
+    }
+
+    item = item[0];
+
+  }
+
+  if (union[0] !== undefined && n >= union[0])
+    return;
+
+  if (union[n] !== undefined) {
+
+    if (item === null) {
+
+      if (union[n].n === null)
+        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+      return sjot_validate(sjots, data, union[n].n, sjot /*FAST[*/, typepath + "/" + union[n].n /*FAST]*/);
+
+    }
+    
+    switch (typeof item) {
+
+      case "boolean":
+
+        if (union[n].b !== null) {
+
+          if (n > 1)
+            return sjot_validate(sjots, data, union[n].b, sjot /*FAST[*/, typepath + "/" + union[n].b /*FAST]*/);
+
+          for (var itemtype of type[0]) {
+
+            try {
+
+              return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
+
+            } catch (e) {
+
+            }
+
+          }
+
+        }
+
+        break;
+
+      case "number":
+
+        if (union[n].x !== null) {
+
+          if (n > 1)
+            return sjot_validate(sjots, data, union[n].x, sjot /*FAST[*/, typepath + "/" + union[n].x /*FAST]*/);
+
+          for (var itemtype of type[0]) {
+
+            try {
+
+              return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
+
+            } catch (e) {
+
+            }
+
+          }
+
+        }
+
+        break;
+
+      case "string":
+
+        if (union[n].s !== null) {
+
+          if (n > 1)
+            return sjot_validate(sjots, data, union[n].s, sjot /*FAST[*/, typepath + "/" + union[n].s /*FAST]*/);
+
+          for (var itemtype of type[0]) {
+
+            try {
+
+              return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
+
+            } catch (e) {
+
+            }
+
+          }
+
+        }
+
+        break;
+
+      case "object":
+
+        if (union[n].o !== null)
+          return sjot_validate(sjots, data, union[n].o, sjot /*FAST[*/, typepath + "/" + union[n].o /*FAST]*/);
+
+        if (union[n].p !== null) {
+
+          for (var prop in item)
+            if (union[n].p.hasOwnProperty(prop))
+              return sjot_validate(sjots, data, union[n].p[prop], sjot /*FAST[*/, typepath + "/" + union[n].p[prop] /*FAST]*/);
+          for (var prop in union[n].p)
+            if (union[n].p.hasOwnProperty(prop))
+              return sjot_validate(sjots, data, union[n].p[prop], sjot /*FAST[*/, typepath + "/" + union[n].p[prop] /*FAST]*/);
+
+        }
+
+    }
+
+  }
+
+  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+
+}
+
 // check array/set/string bounds
 function sjot_validate_bounds(len, type, i /*FAST[*/, datapath, typepath /*FAST]*/) {
 
@@ -1136,7 +1244,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
           for (var itemtype of type[0]) {
 
             sjot_check(sjots, false, false, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
-            sjot_check_union(sjots, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/, union);
+            sjot_check_union(sjots, itemtype, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/, union, 1);
 
           }
 
@@ -1196,7 +1304,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
         for (var prop in type) {
 
-          /* TODO perhaps this is overkill to reject @root and @id in objects */
+          // TODO perhaps this is overkill to reject @root and @id in objects
           if (prop === "@root") {
 
             if (!root)
@@ -1543,6 +1651,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
   }
 
 }
+/*LEAN]*/
 
 function sjot_is_union(type) {
 
@@ -1555,21 +1664,19 @@ function sjot_is_union(type) {
 
 }
 
-function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union) {
+function sjot_check_union(sjots, type, itemtype, sjot /*FAST[*/, typepath /*FAST]*/, union, n) {
 
   // count array depth, each depth has its own type conflict set
-  var n = 1;
+  if (typeof itemtype === "string") {
 
-  if (typeof type === "string") {
-
-    var i = type.length;
+    var i = itemtype.length;
 
     while (i > 0) {
 
-      if (type.charCodeAt(i - 1) === 0x5D)
-        i = type.lastIndexOf("[", i - 1);
+      if (itemtype.charCodeAt(i - 1) === 0x5D)
+        i = itemtype.lastIndexOf("[", i - 1);
       else if (type.charCodeAt(i - 1) === 0x7D)
-        i = type.lastIndexOf("{", i - 1);
+        i = itemtype.lastIndexOf("{", i - 1);
       else
         break;
       n++;
@@ -1577,73 +1684,66 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
     }
 
     // n is array depth, now get item type and check if this is a type reference
-    type = type.slice(0, i);
+    itemtype = itemtype.slice(0, i);
 
-    if (type.indexOf("#") !== -1 && !type.startsWith("(")) {
+    if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("("))
+      return sjot_check_union(
+          sjots,
+          type,
+          sjot_reftype(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/),
+          sjot,
+          /*FAST[*/ typepath, /*FAST]*/
+          union,
+          n);
 
-      type = sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
+  }
 
-      if (typeof type === "string") {
+  if (itemtype === "char" && n > 0) {
 
-	i = type.length;
+    // "char[]" is a special case, synonymous to "string"
+    n--;
+    itemtype = "string";
 
-	while (i > 0) {
+  } else if (itemtype === "array") {
 
-	  if (type.charCodeAt(i - 1) === 0x5D)
-	    i = type.lastIndexOf("[", i - 1);
-	  else if (type.charCodeAt(i - 1) === 0x7D)
-	    i = type.lastIndexOf("{", i - 1);
-	  else
-	    break;
-	  n++;
+    // "array" is synonymous to "any[]"
+    n++;
+    itemtype = "any";
 
-	}
+  } else if (Array.isArray(itemtype)) {
+    
+    if (itemtype.length === 0 || itemtype === "array") {
 
-      }
-
-    }
-
-
-    if (type === "char" && n > 0) {
-
-      // "char[]" is a special case
-      type = "string";
-      n--;
-
-    } else if (type === "array") {
-
-      // "array" is synonymous to "any[]"
-      type = "any";
       n++;
+      itemtype = "any";
+
+    } else if (itemtype.length === 1 || typeof itemtype[1] === "number") {
+
+      // nested unions, including arrays of unions, are not permitted
+      if (sjot_is_union(itemtype))
+        throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " nested unions are not permitted";
+
+      n++;
+      if (typeof itemtype[0] === "number")
+        itemtype = "any";
+      else
+        return sjot_check_union(sjots, type, itemtype[0], sjot /*FAST[*/, typepath /*FAST]*/, union, n);
+
+    } else if (typeof itemtype[0] === "number") {
+
+      n++;
+      if (typeof itemtype[1] === "number")
+        itemtype = "any";
+      else
+        return sjot_check_union(sjots, type, itemtype[1], sjot /*FAST[*/, typepath /*FAST]*/, union, n);
+
+    } else {
+
+      // tuple is represented by "any[]"
+      n++;
+      itemtype = "any";
 
     }
-
-  } else if (Array.isArray(type) && type.length === 0 || type === "array") {
-
-    type = "any";
-    n++;
-
-  } else if (Array.isArray(type) && (type.length === 1 || typeof type[1] === "number")) {
-
-    if (typeof type[0] === "number")
-      type = "any";
-    else
-      type = type[0];
-    n++;
-
-  } else if (Array.isArray(type) && typeof type[0] === "number") {
-
-    if (typeof type[1] === "number")
-      type = "any";
-    else
-      type = type[1];
-    n++;
-
-  } else if (Array.isArray(type)) {
-
-    // tuple is represented by "any[]"
-    type = "any";
-    n++;
 
   }
 
@@ -1651,28 +1751,28 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
   if (union[0] !== undefined && n >= union[0])
     throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct types";
 
-  // record null, boolean, number, string, and object types for conflict checking at array depth n
+  // record null, boolean, number, string, and object types with property mapping for conflict checking at array depth n
   if (union[n] === undefined)
-    union[n] = { n: false, b: false, x: false, s: false, o: false };
+    union[n] = { n: null, b: null, x: null, s: null, o: null, p: null };
 
-  if (typeof type === "string") {
+  if (typeof itemtype === "string") {
 
-    switch (type) {
+    switch (itemtype) {
 
       case "null":
 
-        if (union[n].n)
+        if (union[n].n !== null)
           throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple null types";
-        union[n].n = true;
+        union[n].n = type;
         break;
 
       case "boolean":
       case "true":
       case "false":
 
-        if (n > 1 && union[n].b)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple boolean array types";
-        union[n].b = true;
+        if (n > 1 && union[n].b !== null)
+          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple boolean types";
+        union[n].b = type;
         break;
 
       case "byte":
@@ -1688,9 +1788,9 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
       case "double":
       case "number":
 
-        if (n > 1 && union[n].x)
+        if (n > 1 && union[n].x !== null)
           throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple numeric array types";
-        union[n].x = true;
+        union[n].x = type;
         break;
 
       case "string":
@@ -1703,77 +1803,71 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
       case "duration":
       case "char":
 
-        if (n > 1 && union[n].s)
+        if (n > 1 && union[n].s !== null)
           throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple string array types";
-        union[n].s = true;
+        union[n].s = type;
         break;
 
       case "any":
 
         for (var i = n; i < union.length; i++)
-          if (union[i] !== undefined && (union[i].n || union[i].b || union[i].x || union[i].s || union[i].o))
+          if (union[i] !== undefined && (union[i].n !== null || union[i].b !== null || union[i].x !== null || union[i].s !== null || union[i].o !== null || union[i].p !== null))
             throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct types";
         union[0] = n;
         break;
 
       case "atom":
 
-        if (union[n].b || union[n].x || union[n].s)
+        if (union[n].b !== null || union[n].x !== null || union[n].s !== null)
           throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple atomic types";
-        union[n].b = true;
-        union[n].x = true;
-        union[n].s = true;
+        union[n].b = type;
+        union[n].x = type;
+        union[n].s = type;
         break;
 
       case "object":
 
-        if (union[n].o)
+        if (union[n].o !== null || union[n].p !== null)
           throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple object types";
-        union[n].o = true;
+        union[n].o = type;
         break;
 
       default:
 
-        if (type.startsWith("(")) {
+        if (itemtype.startsWith("(")) {
 
-          if (n > 1 && union[n].s)
+          if (n > 1 && union[n].s !== null)
             throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple string array types";
-          union[n].s = true;
+          union[n].s = type;
 
         } else {
 
-          if (n > 1 && union[n].x)
+          if (n > 1 && union[n].x !== null)
             throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple numeric array types";
-          union[n].x = true;
+          union[n].x = type;
 
         }
 
     }
 
-  } else if (typeof type === "object") {
+  } else if (typeof itemtype === "object") {
 
-    if (union[n].o === true)
+    if (union[n].o !== null)
       throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct object types";
 
-    var empty = false;
+    if (union[n].p === null)
+      union[n].p = {};
 
-    if (union[n].o === false) {
+    for (var prop in itemtype) {
 
-      empty = true;
-      union[n].o = {};
-
-    }
-
-    for (var prop in type) {
-
-      if (type.hasOwnProperty(prop)) {
+      if (!prop.startsWith('@') && itemtype.hasOwnProperty(prop)) {
 
         if (prop.startsWith("(")) {
 
           // regex property means only one object permitted in the union to ensure uniqueness
           if (!empty)
             throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct object types";
-          union[n].o = true;
+          union[n].o = type;
           break;
 
         } else {
@@ -1782,9 +1876,9 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
 
           if (i !== -1)
             prop = prop.slice(0, i);
-          if (union[n].o.hasOwnProperty(prop))
+          if (union[n].p.hasOwnProperty(prop))
             throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct object types";
-          union[n].o[prop] = true;
+          union[n].p[prop] = type;
 
         }
 
@@ -1796,6 +1890,7 @@ function sjot_check_union(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/, union
 
 }
 
+/*LEAN[*/
 /*FAST[*/
 // SJOT schema model checker: check if constraints are satisfiable, takes 2^n time to test n distinct variables in constraints
 // returns true if the model is satisfiable

@@ -7,14 +7,13 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.2
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
  * @license     BSD3
  * @link        http://sjot.org
  */
-
 
 /*
    Usage
@@ -192,26 +191,8 @@ function sjot_validate(sjots, data, type, sjot /**/) {
   }
 
   // check unions
-  if (sjot_is_union(type)) {
-
-    // validate data against type union [[ type, type, ... ]]
-
-    for (var itemtype of type[0]) {
-
-      try {
-
-        return sjot_validate(sjots, data, itemtype, sjot /**/);
-
-      } catch (e) {
-      
-
-      }
-
-    }
-
-    sjot_error("value", data, type /**/);
-
-  }
+  if (sjot_is_union(type))
+    return sjot_validate_union(sjots, data, type, sjot /**/);
 
   switch (typeof data) {
 
@@ -807,6 +788,140 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
 }
 
+function sjot_validate_union(sjots, data, type, sjot /**/) {
+
+  var union = [];
+
+  for (var itemtype of type[0])
+    sjot_check_union(sjots, itemtype, itemtype, sjot /**/, union, 1);
+
+  var n = 1;
+  var item = data;
+
+  while (Array.isArray(item)) {
+
+    n++;
+
+    if (item.length === 0) {
+
+      if ((union[0] !== undefined && n >= union[0]) || union[n] !== undefined)
+        return;
+      sjot_error("value", data, type /**/);
+
+    }
+
+    item = item[0];
+
+  }
+
+  if (union[0] !== undefined && n >= union[0])
+    return;
+
+  if (union[n] !== undefined) {
+
+    if (item === null) {
+
+      if (union[n].n === null)
+        sjot_error("value", data, type /**/);
+      return sjot_validate(sjots, data, union[n].n, sjot /**/);
+
+    }
+    
+    switch (typeof item) {
+
+      case "boolean":
+
+        if (union[n].b !== null) {
+
+          if (n > 1)
+            return sjot_validate(sjots, data, union[n].b, sjot /**/);
+
+          for (var itemtype of type[0]) {
+
+            try {
+
+              return sjot_validate(sjots, data, itemtype, sjot /**/);
+
+            } catch (e) {
+
+            }
+
+          }
+
+        }
+
+        break;
+
+      case "number":
+
+        if (union[n].x !== null) {
+
+          if (n > 1)
+            return sjot_validate(sjots, data, union[n].x, sjot /**/);
+
+          for (var itemtype of type[0]) {
+
+            try {
+
+              return sjot_validate(sjots, data, itemtype, sjot /**/);
+
+            } catch (e) {
+
+            }
+
+          }
+
+        }
+
+        break;
+
+      case "string":
+
+        if (union[n].s !== null) {
+
+          if (n > 1)
+            return sjot_validate(sjots, data, union[n].s, sjot /**/);
+
+          for (var itemtype of type[0]) {
+
+            try {
+
+              return sjot_validate(sjots, data, itemtype, sjot /**/);
+
+            } catch (e) {
+
+            }
+
+          }
+
+        }
+
+        break;
+
+      case "object":
+
+        if (union[n].o !== null)
+          return sjot_validate(sjots, data, union[n].o, sjot /**/);
+
+        if (union[n].p !== null) {
+
+          for (var prop in item)
+            if (union[n].p.hasOwnProperty(prop))
+              return sjot_validate(sjots, data, union[n].p[prop], sjot /**/);
+          for (var prop in union[n].p)
+            if (union[n].p.hasOwnProperty(prop))
+              return sjot_validate(sjots, data, union[n].p[prop], sjot /**/);
+
+        }
+
+    }
+
+  }
+
+  sjot_error("value", data, type /**/);
+
+}
+
 // check array/set/string bounds
 function sjot_validate_bounds(len, type, i /**/) {
 
@@ -1090,6 +1205,244 @@ function sjot_error(what, data, type /**/) {
     throw /**/ " " + what + " " + data + " is not " + a + " " + type + b;
   else
     throw /**/ " " + what + " is not " + a + " " + type + b;
+
+}
+
+
+function sjot_is_union(type) {
+
+  return Array.isArray(type) &&
+    type.length === 1 &&
+    Array.isArray(type[0]) &&
+    type[0].length > 1 &&
+    typeof type[0] !== "number" &&
+    typeof type[1] !== "number";
+
+}
+
+function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
+
+  // count array depth, each depth has its own type conflict set
+  if (typeof itemtype === "string") {
+
+    var i = itemtype.length;
+
+    while (i > 0) {
+
+      if (itemtype.charCodeAt(i - 1) === 0x5D)
+        i = itemtype.lastIndexOf("[", i - 1);
+      else if (type.charCodeAt(i - 1) === 0x7D)
+        i = itemtype.lastIndexOf("{", i - 1);
+      else
+        break;
+      n++;
+
+    }
+
+    // n is array depth, now get item type and check if this is a type reference
+    itemtype = itemtype.slice(0, i);
+
+    if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("("))
+      return sjot_check_union(
+          sjots,
+          type,
+          sjot_reftype(sjots, itemtype, sjot /**/),
+          sjot,
+          /**/
+          union,
+          n);
+
+  }
+
+  if (itemtype === "char" && n > 0) {
+
+    // "char[]" is a special case, synonymous to "string"
+    n--;
+    itemtype = "string";
+
+  } else if (itemtype === "array") {
+
+    // "array" is synonymous to "any[]"
+    n++;
+    itemtype = "any";
+
+  } else if (Array.isArray(itemtype)) {
+    
+    if (itemtype.length === 0 || itemtype === "array") {
+
+      n++;
+      itemtype = "any";
+
+    } else if (itemtype.length === 1 || typeof itemtype[1] === "number") {
+
+      // nested unions, including arrays of unions, are not permitted
+      if (sjot_is_union(itemtype))
+        throw "SJOT schema format error: " /**/ + " nested unions are not permitted";
+
+      n++;
+      if (typeof itemtype[0] === "number")
+        itemtype = "any";
+      else
+        return sjot_check_union(sjots, type, itemtype[0], sjot /**/, union, n);
+
+    } else if (typeof itemtype[0] === "number") {
+
+      n++;
+      if (typeof itemtype[1] === "number")
+        itemtype = "any";
+      else
+        return sjot_check_union(sjots, type, itemtype[1], sjot /**/, union, n);
+
+    } else {
+
+      // tuple is represented by "any[]"
+      n++;
+      itemtype = "any";
+
+    }
+
+  }
+
+  // union[0] is the cut-off array depth where everything is "any" and will conflict
+  if (union[0] !== undefined && n >= union[0])
+    throw "SJOT schema format error: " /**/ + " union requires distinct types";
+
+  // record null, boolean, number, string, and object types with property mapping for conflict checking at array depth n
+  if (union[n] === undefined)
+    union[n] = { n: null, b: null, x: null, s: null, o: null, p: null };
+
+  if (typeof itemtype === "string") {
+
+    switch (itemtype) {
+
+      case "null":
+
+        if (union[n].n !== null)
+          throw "SJOT schema format error: " /**/ + " union has multiple null types";
+        union[n].n = type;
+        break;
+
+      case "boolean":
+      case "true":
+      case "false":
+
+        if (n > 1 && union[n].b !== null)
+          throw "SJOT schema format error: " /**/ + " union has multiple boolean types";
+        union[n].b = type;
+        break;
+
+      case "byte":
+      case "short":
+      case "int":
+      case "long":
+      case "ubyte":
+      case "ushort":
+      case "uint":
+      case "ulong":
+      case "integer":
+      case "float":
+      case "double":
+      case "number":
+
+        if (n > 1 && union[n].x !== null)
+          throw "SJOT schema format error: " /**/ + " union has multiple numeric array types";
+        union[n].x = type;
+        break;
+
+      case "string":
+      case "base64":
+      case "hex":
+      case "uuid":
+      case "date":
+      case "time":
+      case "datetime":
+      case "duration":
+      case "char":
+
+        if (n > 1 && union[n].s !== null)
+          throw "SJOT schema format error: " /**/ + " union has multiple string array types";
+        union[n].s = type;
+        break;
+
+      case "any":
+
+        for (var i = n; i < union.length; i++)
+          if (union[i] !== undefined && (union[i].n !== null || union[i].b !== null || union[i].x !== null || union[i].s !== null || union[i].o !== null || union[i].p !== null))
+            throw "SJOT schema format error: " /**/ + " union requires distinct types";
+        union[0] = n;
+        break;
+
+      case "atom":
+
+        if (union[n].b !== null || union[n].x !== null || union[n].s !== null)
+          throw "SJOT schema format error: " /**/ + " union has multiple atomic types";
+        union[n].b = type;
+        union[n].x = type;
+        union[n].s = type;
+        break;
+
+      case "object":
+
+        if (union[n].o !== null || union[n].p !== null)
+          throw "SJOT schema format error: " /**/ + " union has multiple object types";
+        union[n].o = type;
+        break;
+
+      default:
+
+        if (itemtype.startsWith("(")) {
+
+          if (n > 1 && union[n].s !== null)
+            throw "SJOT schema format error: " /**/ + " union has multiple string array types";
+          union[n].s = type;
+
+        } else {
+
+          if (n > 1 && union[n].x !== null)
+            throw "SJOT schema format error: " /**/ + " union has multiple numeric array types";
+          union[n].x = type;
+
+        }
+
+    }
+
+  } else if (typeof itemtype === "object") {
+
+    if (union[n].o !== null)
+      throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+
+    if (union[n].p === null)
+      union[n].p = {};
+
+    for (var prop in itemtype) {
+
+      if (!prop.startsWith('@') && itemtype.hasOwnProperty(prop)) {
+
+        if (prop.startsWith("(")) {
+
+          // regex property means only one object permitted in the union to ensure uniqueness
+          if (!empty)
+            throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+          union[n].o = type;
+          break;
+
+        } else {
+
+          var i = prop.indexOf("?");
+
+          if (i !== -1)
+            prop = prop.slice(0, i);
+          if (union[n].p.hasOwnProperty(prop))
+            throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+          union[n].p[prop] = type;
+
+        }
+
+      }
+
+    }
+    
+  }
 
 }
 
