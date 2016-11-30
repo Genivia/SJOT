@@ -72,7 +72,7 @@ var data = {
     "package": { "id": 1, "name": "sjot" }
   };
 
-// SJOT.valid(data [, type|"@root" [, schema ] ]) tests if data is valid:
+// SJOT.valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) tests if data is valid:
 
 if (SJOT.valid(data, "@root", schema))
   ... // OK: data validated against schema
@@ -80,7 +80,7 @@ if (SJOT.valid(data, "@root", schema))
 if (SJOT.valid(data))
   ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data, not in this example)
 
-// SJOT.validate(data [, type|"@root" [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
+// SJOT.validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
   SJOT.validate(data, "@root", schema);
 } catch (e) {
@@ -154,6 +154,7 @@ Changelog
 - Nov 25, 2016: sjot.js 1.3.1 added `uuid` type and inline arrays with `[type]` and `[n,type,m]`
 - Nov 26, 2016: sjot.js 1.3.2 fixes for minor issues
 - Nov 28, 2016: sjot.js 1.3.3 performance improvements, fixes for minor issues
+- Nov 29, 2016: sjot.js 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may be used in `@sjot` in JSON
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

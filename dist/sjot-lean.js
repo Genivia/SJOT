@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.3
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -37,7 +37,7 @@ var data = {
     "package": { "id": 1, "name": "sjot" }
   };
 
-// SJOT.valid(data [, type|"@root" [, schema ] ]) tests if data is valid:
+// SJOT.valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) tests if data is valid:
 
 if (SJOT.valid(data, "@root", schema))
   ... // OK: data validated against schema
@@ -45,7 +45,7 @@ if (SJOT.valid(data, "@root", schema))
 if (SJOT.valid(data))
   ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
 
-// SJOT.validate(data [, type|"@root" [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
+// SJOT.validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
   SJOT.validate(data, "@root", schema);
 } catch (e) {
@@ -64,12 +64,12 @@ try {
 
 class SJOT {
 
-  // valid(obj [, type|"@root" [, schema ] ])
-  static valid(obj, type, schema) {
+  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
+  static valid(data, type, schema) {
 
     try {
 
-      return this.validate(obj, type, schema);
+      return this.validate(data, type, schema);
 
     } catch (e) {
 
@@ -80,15 +80,17 @@ class SJOT {
 
   }
 
-  // validate(obj [, type|"@root" [, schema ] ])
-  static validate(obj, type, schema) {
+  // validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
+  static validate(data, type, schema) {
 
     var sjots = schema;
 
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
 
-    if (type === "@root")
+    if (type === null && typeof data === "object" && data !== null && data.hasOwnProperty('@sjot') && typeof data['@sjot'] === "string")
+      type = data['@sjot'];
+    else if (type === "#" || type === "@root")
       type = null;
 
     if (type === undefined || type === null) {
@@ -105,9 +107,9 @@ class SJOT {
     }
 
     if (Array.isArray(sjots))
-      sjot_validate(sjots, obj, type, sjots[0] /*FAST[*/, "#", "#" /*FAST]*/);
+      sjot_validate(sjots, data, type, sjots[0] /*FAST[*/, "#", "#" /*FAST]*/);
     else
-      sjot_validate([sjots], obj, type, sjots /*FAST[*/, "#", "#" /*FAST]*/);
+      sjot_validate([sjots], data, type, sjots /*FAST[*/, "#", "#" /*FAST]*/);
 
     return true;
 
@@ -137,9 +139,12 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
       var sjoot = data['@sjot'];
 
       if (Array.isArray(sjoot))
-        return sjot_validate(sjoot, data, sjot_roottype(sjoot[0]), sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
-      else
-        return sjot_validate([sjoot], data, sjot_roottype(sjoot), sjoot/*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
+        return sjot_validate(sjots.concat(sjoot), data, sjot_roottype(sjoot[0]), sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
+      else if (typeof sjoot === "string" && sjoot !== "any" && sjoot !== "object")
+        return sjot_validate(sjots, data, sjoot, sjot /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
+      else if (typeof sjoot === "object")
+        return sjot_validate(sjots.concat([sjoot]), data, sjot_roottype(sjoot), sjoot /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
+      throw "Invalid @sjot schema " /*FAST[*/ + datapath  /*FAST]*/;
 
     }
 
@@ -158,6 +163,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         // validate non-id schema using the local type reference
         var prop = type.slice(h + 1);
 
+        if (prop === "")
+          return sjot_validate(sjots, data, sjot_roottype(sjot), sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
         if (!sjot.hasOwnProperty(prop))
           throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
         return sjot_validate(sjots, data, sjot[prop], sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
@@ -171,6 +178,8 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
           if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
             // validate with type reference if URI matches the @id of this SJOT schema
+            if (prop === "")
+              return sjot_validate(sjots, data, sjot_roottype(sjoot), sjoot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
             if (!sjoot.hasOwnProperty(prop))
               throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
             return sjot_validate(sjots, data, sjoot[prop], sjoot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
@@ -180,9 +189,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
         }
 
         // TODO get external URI type reference when URI is a URL, load async and put in sjots array
-        throw "No " + prop + " found that is referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-
-        return;
+        throw "No type " + prop + " found that is referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
 
       }
 
@@ -1073,8 +1080,16 @@ function sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 // get schema root type
 function sjot_roottype(sjot) {
 
-  if (sjot.hasOwnProperty('@root'))
-    return sjot['@root'];
+  if (sjot.hasOwnProperty('@root')) {
+
+    var type = sjot['@root'];
+
+    if (typeof type !== "string" || !type.endsWith("#"))
+      return type;
+    throw "SJOT schema root refers to a root";
+
+  }
+
   for (var prop in sjot)
     if (sjot.hasOwnProperty(prop) && !prop.startsWith("@"))
       return sjot[prop];
@@ -1092,6 +1107,8 @@ function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
   if (h <= 0) {
 
     // local reference #type to non-id schema (permit just "type")
+    if (prop === "")
+      return sjot_roottype(sjot);
     if (!sjot.hasOwnProperty(prop))
       throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath /*FAST]*/ + "/" + type;
     type = sjot[prop];
@@ -1106,6 +1123,8 @@ function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
       if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
+        if (prop === "")
+          return sjot_roottype(sjoot);
         if (!sjoot.hasOwnProperty(prop))
           throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
         type = sjoot[prop];
