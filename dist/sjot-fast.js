@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.4
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -97,7 +97,7 @@ class SJOT {
 
       if (sjots === undefined || sjots === null)
         type = "any";
-      else if (Array.isArray(sjots))
+      else if (Array.isArray(sjots) && sjots.length > 0)
         type = sjot_roottype(sjots[0]);
       else if (typeof sjots === "object")
         type = sjot_roottype(sjots);
@@ -106,7 +106,7 @@ class SJOT {
 
     }
 
-    if (Array.isArray(sjots))
+    if (Array.isArray(sjots) && sjots.length > 0)
       sjot_validate(sjots, data, type, sjots[0] /**/);
     else
       sjot_validate([sjots], data, type, sjots /**/);
@@ -418,7 +418,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
                   for (var propset of proptype)
                     if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
-                      throw datapath + " requires any of" + propset;
+                      throw datapath + " requires any of " + propset;
                   break;
 
                 case "@all":
@@ -434,7 +434,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                   for (var name in proptype)
                     if (data.hasOwnProperty(name) &&
                         (typeof proptype[name] !== "string" || !data.hasOwnProperty(proptype[name])) &&
-                        (typeof proptype[name] !== "object" || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
+                        (!Array.isArray(proptype[name]) || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
                       throw datapath + "/" + name + " requires " + proptype[name];
                   break;
 
@@ -1247,6 +1247,8 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
     case "object":
 
+      if (root)
+	sjot_roottype(sjot);
       if (prim)
         throw "SJOT schema format error: " /**/ + " is not a primitive type value";
 
@@ -1375,7 +1377,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
                   if (typeof name !== "string" || name.startsWith("@") || name.startsWith("("))
                     throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
                   if (temp[name] === false)
-                    throw "SJOT schema format error: " /**/ + prop + " propsets are not disjoint sets";
+                    throw "SJOT schema format error: " /**/ + prop + " property sets are not disjoint";
                   temp[name] = false;
 
                 }
@@ -1391,7 +1393,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
                   temp[name] = false;
                   if (typeof propsets[name] === "string")
                     temp[propsets[name]] = false;
-                  else if (Array.isArray(propsets[name]))
+                  else if (Array.isArray(propsets[name]) && propsets[name].every(function (prop) { return typeof prop === "string"; }))
                     propsets[name].forEach(function (prop) { temp[prop] = false; });
                   else
                     throw "SJOT schema format error: " /**/ + prop + " malformed dependencies";
@@ -1428,7 +1430,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
             for (var name in temp)
               if (temp[name] === false)
-                throw "SJOT schema format error: " /**/ + prop + " propsets contains " + name + " that is not an optional property of this object";
+                throw "SJOT schema format error: " /**/ + prop + " property set contains a \"" + name + "\" that is not an optional property of this object";
 
           } else if (prop.startsWith("(")) {
 

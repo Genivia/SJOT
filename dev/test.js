@@ -39,6 +39,7 @@ var schema =
     "stringset":    "string{}",
     "stringset10":  "string{1,10}",
     "#ref":         "#ref",
+    "#?":           "#",
     "object":       "object",
     "array":        "array",
     "null":         "null",

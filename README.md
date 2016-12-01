@@ -155,6 +155,7 @@ Changelog
 - Nov 26, 2016: sjot.js 1.3.2 fixes for minor issues
 - Nov 28, 2016: sjot.js 1.3.3 performance improvements, fixes for minor issues
 - Nov 29, 2016: sjot.js 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may be used in `@sjot` in JSON
+- Dec  1, 2016: sjot.js 1.3.5 minor improvements
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

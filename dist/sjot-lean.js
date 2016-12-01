@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.4
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -97,7 +97,7 @@ class SJOT {
 
       if (sjots === undefined || sjots === null)
         type = "any";
-      else if (Array.isArray(sjots))
+      else if (Array.isArray(sjots) && sjots.length > 0)
         type = sjot_roottype(sjots[0]);
       else if (typeof sjots === "object")
         type = sjot_roottype(sjots);
@@ -106,7 +106,7 @@ class SJOT {
 
     }
 
-    if (Array.isArray(sjots))
+    if (Array.isArray(sjots) && sjots.length > 0)
       sjot_validate(sjots, data, type, sjots[0] /*FAST[*/, "#", "#" /*FAST]*/);
     else
       sjot_validate([sjots], data, type, sjots /*FAST[*/, "#", "#" /*FAST]*/);
@@ -406,7 +406,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
                   for (var propset of proptype)
                     if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
-                      throw datapath + " requires any of" + propset;
+                      throw datapath + " requires any of " + propset;
                   break;
 
                 case "@all":
@@ -422,7 +422,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
                   for (var name in proptype)
                     if (data.hasOwnProperty(name) &&
                         (typeof proptype[name] !== "string" || !data.hasOwnProperty(proptype[name])) &&
-                        (typeof proptype[name] !== "object" || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
+                        (!Array.isArray(proptype[name]) || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
                       throw datapath + "/" + name + " requires " + proptype[name];
                   break;
 
