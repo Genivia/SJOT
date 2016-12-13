@@ -45,6 +45,9 @@ var schema =
     "null":         "null",
     "obj":          { "optional?": "string", "[a]": "number", "(\\w+)": "number" },
     "arr":          [ "number" ],
+    "arr1":         [ 1, "number" ],
+    "arr1to10":     [ 1, "number", 10 ],
+    "arr0":         [ 0 ],
     "tuple":        [ "string", "number" ],
     "union":        [[ "string", "number" ]]
   },
@@ -97,6 +100,9 @@ var data =
   "null":         null,
   "obj":          { "[a]": 0, "a": 1, "b": 2 },
   "arr":          [ 1, 2, 3, 4 ],
+  "arr1":         [ 1, 2, 3, 4 ],
+  "arr1to10":     [ 1, 2, 3, 4 ],
+  "arr0":         [ ],
   "tuple":        [ "string", 123 ],
   "union":        123
 };

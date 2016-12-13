@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for optimal performance.)
  *
  * @module      sjot
- * @version     1.3.5
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
@@ -133,6 +133,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
   if (type === "any") {
 
+    // check if object has a @sjot attribute with an embedded SJOT schema
     if (typeof data === "object" && data !== null && data.hasOwnProperty('@sjot')) {
 
       // sjoot: validate this object using the embedded SJOT schema or schemas
@@ -160,26 +161,30 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
       if (h === 0) {
 
-        // validate non-id schema using the local type reference
+        // validate non-id schema using the local type reference #[type]
         var prop = type.slice(h + 1);
 
+	// type reference # to root
         if (prop === "")
           return sjot_validate(sjots, data, sjot_roottype(sjot), sjot /**/);
+	// type reference #type is in SJOT schema (prop = type)
         if (!sjot.hasOwnProperty(prop))
           throw "SJOT schema has no type " + prop + " referenced by " /**/ + type;
         return sjot_validate(sjots, data, sjot[prop], sjot /**/);
 
       } else {
 
+	// validate id schema using the local type reference URI#[type]
         var prop = type.slice(h + 1);
 
         for (var sjoot of sjots) {
 
           if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
-            // validate with type reference if URI matches the @id of this SJOT schema
+            // validate with root reference # if URI matches the @id of this SJOT schema
             if (prop === "")
               return sjot_validate(sjots, data, sjot_roottype(sjoot), sjoot /**/);
+	    // type reference URI#type is in SJOT schema (prop = type)
             if (!sjoot.hasOwnProperty(prop))
               throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /**/ + type;
             return sjot_validate(sjots, data, sjoot[prop], sjoot /**/);
@@ -205,6 +210,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
     case "object":
 
+      // catch null and undefined, null validates against the "null" type
       if (data === null || data === undefined) {
 
         if (data === null && type === "null")
@@ -221,7 +227,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           if (type.length === 1) {
 
-            // validate an array [type] or [n] (fixed size)
+            // validate an array [type] or [n] (fixed size array)
             if (typeof type[0] === "number") {
 
               if (data.length !== type[0])
@@ -229,6 +235,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             } else {
 
+	      // validate array and replace nulls in array with primitive type value
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
@@ -240,7 +247,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           } else if (typeof type[1] === "number") {
             
-            // validate an array [n,m] or [type,m]
+            // validate an array [n,m]
             if (data.length > type[1])
               sjot_error("length", type[1], type[0] /**/);
 
@@ -251,6 +258,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             } else {
 
+	      // validate an array [type,m] and replace nulls in array with primitive type value
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
@@ -267,6 +275,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             if (data.length < type[0])
               sjot_error("length", type[0], type[1] /**/);
 
+            // validate an array [n,type,m]
             if (type.length > 2 && typeof type[2] === "number") {
 
               if (data.length > type[2])
@@ -274,6 +283,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             }
 
+            // validate an array [n,type] or [n,type,m]
             for (var i = 0; i < data.length; i++) {
 
               if (data[i] === null)
@@ -284,7 +294,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           } else if (type.length > 0) {
 
-            // validate a tuple
+            // validate a tuple [type, type, ...] and replace nulls with primitive type value
             if (data.length != type.length)
               throw /**/ " length " + type.length;
 
@@ -310,6 +320,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             sjot_validate_bounds(data.length, type, i + 1 /**/);
 
+            // validate an array "type[n,m]" and replace nulls with primitive type value
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
@@ -344,6 +355,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             sjot_validate_bounds(data.length, type, i + 1 /**/);
 
+            // validate a set "type{n,m}" and replace nulls with primitive type value
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
@@ -580,7 +592,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           // check numeric ranges n..m,n..,..m,<n..m>,<n..,..m>,n
           // may not reject non-integers in e.g. "1.0" or non-floats in e.g. "1" because JS numbers are floats
-          // TODO perhaps use a regex instead of (or with) a loop to improve performance
+          // TODO perhaps use a regex instead of (or with) a loop to improve performance?
           for (var i = 0; i < type.length; i++) {
 
             var isfloat = !Number.isInteger(data);
@@ -795,13 +807,16 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
 }
 
+// union validation, used in sjot_validate()
 function sjot_validate_union(sjots, data, type, sjot /**/) {
 
   var union = [];
 
+  // check if union has distinct arrays and objects
   for (var itemtype of type[0])
     sjot_check_union(sjots, itemtype, itemtype, sjot /**/, union, 1);
 
+  // n is the depth of array nestings + 1
   var n = 1;
   var item = data;
 
@@ -821,6 +836,7 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
 
   }
 
+  // everything is "any" when array depth n >= union[0]
   if (union[0] !== undefined && n >= union[0])
     return;
 
@@ -929,7 +945,7 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
 
 }
 
-// check array/set/string bounds
+// check array/set/string bounds, used in sjot_validate()
 function sjot_validate_bounds(len, type, i /**/) {
 
   var j = type.indexOf("]", i);
@@ -1106,9 +1122,10 @@ function sjot_reftype(sjots, type, sjot /**/) {
 
   if (h <= 0) {
 
-    // local reference #type to non-id schema (permit just "type")
+    // local reference to root # in non-id schema
     if (prop === "")
       return sjot_roottype(sjot);
+    // local reference #type in non-id schema (prop = type)
     if (!sjot.hasOwnProperty(prop))
       throw "SJOT schema has no type " + prop + " referenced by " /**/ + "/" + type;
     type = sjot[prop];
@@ -1118,13 +1135,15 @@ function sjot_reftype(sjots, type, sjot /**/) {
 
   } else {
 
-    // reference URI#type
+    // reference URI#[type]
     for (var sjoot of sjots) {
 
       if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
+	// type reference # to root
         if (prop === "")
           return sjot_roottype(sjoot);
+	// reference URI#type (prop = type)
         if (!sjoot.hasOwnProperty(prop))
           throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /**/ + type;
         type = sjoot[prop];
@@ -1142,6 +1161,7 @@ function sjot_reftype(sjots, type, sjot /**/) {
 
 }
 
+// return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null")
 function sjot_default(value, sjots, data, type, sjot /**/) {
 
   if (typeof type !== "string" || type.endsWith("]") || type.endsWith("}"))
@@ -1228,6 +1248,7 @@ function sjot_error(what, data, type /**/) {
 }
 
 
+// returns true if type is a union [[ type, type, ... ]]
 function sjot_is_union(type) {
 
   return Array.isArray(type) &&
@@ -1239,6 +1260,7 @@ function sjot_is_union(type) {
 
 }
 
+// check if union [[ type, type, ... ]] has distinct array and object types
 function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
 
   // count array depth, each depth has its own type conflict set
