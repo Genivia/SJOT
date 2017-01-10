@@ -109,13 +109,12 @@ Three alternative versions of sjot.js are included:
 
 sjot.js is fully functional to validate JSON data, with some limitations:
 
-- For security reasons, no loading of external type references "URI#type" yet (where URI is a URL of a schema to load)
 - The SJOT model checker `SJOT.check()` checks schema satisfiability per object type for up to 20 distinct properties collected from the @one, @any, @all, and @dep of that object type. The model checker stays silent for over 20 properties (the model satisfiability problem is NP-complete).
 
 JSON validation C/C++ API
 -------------------------
 
-sjot.c and sjot.cpp initial release for gSOAP is expected in October 2016.
+sjot.c and sjot.cpp initial release for gSOAP is expected in 2017.
 
 Feature wish list / nice to have
 --------------------------------
@@ -127,11 +126,11 @@ Changelog
 ---------
 
 - Oct  1, 2016: sjot.js 0.0.2 released
-- Oct  2, 2016: sjot.js 0.1.0 added @extends and fixed minor issues
+- Oct  2, 2016: sjot.js 0.1.0 added `@extends` and fixed minor issues
 - Oct  3, 2016: sjot.js 0.1.1 fixes for minor issues
 - Oct  3, 2016: sjot.js 0.1.2 fixes for minor issues
 - Oct  3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
-- Oct  4, 2016: sjot.js 0.1.4 added @final, added validation error reporting (on the console), fixed minor issues
+- Oct  4, 2016: sjot.js 0.1.4 added `@final`, added validation error reporting, fixed minor issues
 - Oct  5, 2016: sjot.js 0.1.5 minor fixes
 - Oct  5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(data)` returns true (valid) or false (invalid), `SJOT.validate(data)` throws exception string with error details when validation fails
 - Oct  6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
@@ -142,20 +141,22 @@ Changelog
 - Oct 11, 2016: sjot.js 1.1.1 datetime RFC3339 validation fixed
 - Oct 12, 2016: sjot.js 1.2.0 regex property names added
 - Oct 13, 2016: sjot.js 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
-- Oct 18, 2016: sjot.js 1.2.2 fix for SJOT.check #type cycling and "null" type
-- Oct 19, 2016: sjot.js 1.2.3 updated union SJOT.check and validation rules
+- Oct 18, 2016: sjot.js 1.2.2 fix for `SJOT.check()` `#type` cycling and added `"null"` type
+- Oct 19, 2016: sjot.js 1.2.3 updated `SJOT.check()` for union types and validation rules
 - Oct 20, 2016: sjot.js 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
 - Oct 21, 2016: sjot.js 1.2.5 improvements and dev/sjot2js.js added
-- Oct 22, 2016: sjot.js 1.2.6 added new `@dep` constraints and new built-in "true" and "false" types
+- Oct 22, 2016: sjot.js 1.2.6 added new `@dep` constraints and new built-in `"true"` and `"false"` types
 - Oct 24, 2016: sjot.js 1.2.7 added SJOT schema model checker to `SJOT.check()` that checks for non-satisfiable schemas which reject all data
 - Oct 25, 2016: sjot.js 1.2.8 minor updates
 - Oct 25, 2016: sjot.js 1.2.9 minor updates
 - Nov 22, 2016: sjot.js 1.3.0 merged dev/js2sjot thanks to Chris Moutsos for helping out
-- Nov 25, 2016: sjot.js 1.3.1 added `uuid` type and inline arrays with `[type]` and `[n,type,m]`
+- Nov 25, 2016: sjot.js 1.3.1 added `"uuid"` type and inline arrays with `[type]` and `[n,type,m]`
 - Nov 26, 2016: sjot.js 1.3.2 fixes for minor issues
 - Nov 28, 2016: sjot.js 1.3.3 performance improvements, fixes for minor issues
-- Nov 29, 2016: sjot.js 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may be used in `@sjot` in JSON
+- Nov 29, 2016: sjot.js 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may also be used in `@sjot` in JSON
 - Dec  1, 2016: sjot.js 1.3.5 minor improvements
+- Dec 12, 2016: sjot.js 1.3.6 minor improvements
+- Jan  9, 2017: sjot.js 1.3.7 added remote SJOT schema loading (subject to Same Origin Policy)
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
