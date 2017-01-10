@@ -4,13 +4,13 @@
  * JSON, just like JSON schema.  SJOT schemas have the look and feel of an
  * object template and are more easy to read and understand.  SJOT aims at
  * fast JSON data validation with lightweight schemas and compact validators.
- * (This initial release is not yet fully optimized for optimal performance.)
+ * (This initial release is not yet fully optimized for best performance.)
  *
  * @module      sjot
- * @version     1.3.6
+ * @version     1.3.7
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
- * @copyright   Robert van Engelen, Genivia Inc, 2016. All Rights Reserved.
+ * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
  * @license     BSD3
  * @link        http://sjot.org
  */
@@ -88,9 +88,8 @@ class SJOT {
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
 
-    if (type === null && typeof data === "object" && data !== null && data.hasOwnProperty('@sjot') && typeof data['@sjot'] === "string")
-      type = data['@sjot'];
-    else if (type === "#" || type === "@root")
+    // types "#" and "@root" are synonymous to null: all look for the SJOT @root
+    if (type === "#" || type === "@root")
       type = null;
 
     if (type === undefined || type === null) {
@@ -169,48 +168,12 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
     var h = type.indexOf("#");
 
-    if (h >= 0 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
-
-      if (h === 0) {
-
-        // validate non-id schema using the local type reference #[type]
-        var prop = type.slice(h + 1);
-
-	// type reference # to root
-        if (prop === "")
-          return sjot_validate(sjots, data, sjot_roottype(sjot), sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
-	// type reference #type is in SJOT schema (prop = type)
-        if (!sjot.hasOwnProperty(prop))
-          throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-        return sjot_validate(sjots, data, sjot[prop], sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
-
-      } else {
-
-	// validate id schema using the local type reference URI#[type]
-        var prop = type.slice(h + 1);
-
-        for (var sjoot of sjots) {
-
-          if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
-
-            // validate with root reference # if URI matches the @id of this SJOT schema
-            if (prop === "")
-              return sjot_validate(sjots, data, sjot_roottype(sjoot), sjoot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
-	    // type reference URI#type is in SJOT schema (prop = type)
-            if (!sjoot.hasOwnProperty(prop))
-              throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-            return sjot_validate(sjots, data, sjoot[prop], sjoot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
-
-          }
-
-        }
-
-        // TODO get external URI type reference when URI is a URL, load async and put in sjots array
-        throw "No type " + prop + " found that is referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-
-      }
-
-    }
+    if (h >= 0 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+      return sjot_validate(
+          sjots,
+          data,
+          sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/),
+          sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
 
   }
 
@@ -247,7 +210,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
             } else {
 
-	      // validate array and replace nulls in array with primitive type value
+              // validate array and replace nulls in array with primitive type default value
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
@@ -270,7 +233,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
             } else {
 
-	      // validate an array [type,m] and replace nulls in array with primitive type value
+              // validate an array [type,m] and replace nulls in array with primitive type default value
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
@@ -306,7 +269,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
           } else if (type.length > 0) {
 
-            // validate a tuple [type, type, ...] and replace nulls with primitive type value
+            // validate a tuple [type, type, ...] and replace nulls with primitive type default value
             if (data.length != type.length)
               throw /*FAST[*/ datapath + /*FAST]*/ " tuple length " + data.length + " is not the required " + /*FAST[*/ typepath + /*FAST]*/ " length " + type.length;
 
@@ -332,7 +295,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
             sjot_validate_bounds(data.length, type, i + 1 /*FAST[*/, datapath, typepath /*FAST]*/);
 
-            // validate an array "type[n,m]" and replace nulls with primitive type value
+            // validate an array "type[n,m]" and replace nulls with primitive type default value
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
@@ -367,7 +330,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
 
             sjot_validate_bounds(data.length, type, i + 1 /*FAST[*/, datapath, typepath /*FAST]*/);
 
-            // validate a set "type{n,m}" and replace nulls with primitive type value
+            // validate a set "type{n,m}" and replace nulls with primitive type default value
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
@@ -530,9 +493,7 @@ function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*F
     case "boolean":
 
       // validate a boolean value
-      if (type === "boolean" || type === "atom")
-        return;
-      if ((data && type === "true") || (!data && type === "false"))
+      if (type === "boolean" || type === "atom" || (data && type === "true") || (!data && type === "false"))
         return;
       sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
 
@@ -1126,7 +1087,7 @@ function sjot_roottype(sjot) {
 
 }
 
-// get object from type reference
+// get referenced type from type reference [URI]#[type]
 function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
   var h = type.indexOf("#");
@@ -1152,10 +1113,10 @@ function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
       if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
 
-	// type reference # to root
+        // type reference # to root
         if (prop === "")
           return sjot_roottype(sjoot);
-	// reference URI#type (prop = type)
+        // reference URI#type (prop = type)
         if (!sjoot.hasOwnProperty(prop))
           throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
         type = sjoot[prop];
@@ -1167,9 +1128,54 @@ function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
 
     }
 
-    // TODO get external URI type reference when URI is a URL, load async and put in sjots array
+    // TODO get external URI type reference when URI is a URL, load and put in sjots array
+    // throw "No type " + prop + " found at " + type.slice(0, h - 1) + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
+
+    var URL = type.slice(0, h);
+
+    try {
+
+      var sjoot = sjot_load(URL);
+
+      if (sjoot.hasOwnProperty('@id') && sjoot['@id'] !== URL)
+        throw "SJOT schema " + URL + " load error: @id mismatch";
+      sjoot['@id'] = URL;
+      sjots = sjots.concat(sjoot);
+      return sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
+
+    } catch (e) {
+
+      throw "No type " + prop + " found at " + URL + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type + " error: " + e;
+    }
 
   }
+
+}
+
+// load JSON from file
+function sjot_load(file) {
+  
+  var json;
+  var load = function(file, callback) {   
+
+    var xobj = new XMLHttpRequest();
+
+    xobj.overrideMimeType("application/json");
+    xobj.open('GET', file, false); // uses deprecated synchronous load, WHICH IS WHAT WE WANT
+
+    xobj.onreadystatechange = function() {
+
+      if (xobj.readyState == 4 && xobj.status == "200")
+        callback(xobj.responseText);
+
+    };
+
+    xobj.send(null);  
+
+  }
+ 
+  load(file, function(response) { json = JSON.parse(response); });
+  return json;
 
 }
 
@@ -1268,7 +1274,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
     case "object":
 
       if (root)
-	sjot_roottype(sjot);
+        sjot_roottype(sjot);
       if (prim)
         throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
 
@@ -1368,7 +1374,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
           } else if (prop === "@extends") {
 
-            // has undefined value (by sjot_extends)
+            // has undefined value (by sjot_extends) so can ignore
 
           } else if (prop === "@final") {
 
@@ -1953,9 +1959,9 @@ function sjot_check_satisfiable(one, any, all, dep) {
 
       bits[prop] = false;
       if (typeof dep[prop] === "string")
-	bits[dep[prop]] = false;
+        bits[dep[prop]] = false;
       else
-	dep[prop].forEach(function (prop) { bits[prop] = false; });
+        dep[prop].forEach(function (prop) { bits[prop] = false; });
 
     }
 

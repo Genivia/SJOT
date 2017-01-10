@@ -1,6 +1,6 @@
 {
   "name": "sjot",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "Schemas for JSON Objects, or simply SJOT, is a more compact alternative to JSON schema. SJOT aims at fast JSON validation with lightweight schemas and compact validators.",
   "main": "sjot.js",
   "scripts": {
