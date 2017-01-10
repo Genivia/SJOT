@@ -18,7 +18,7 @@ The `SJOT.check()` API runs a schema checker that verifies schema
 satisfiability, so you never have to worry about schemas with conflicting
 one/any/all/dep constraints that reject all data.
 
-Live validator and converter at <https://genivia.com/get-sjot.html#demo>
+Live validator and converter at <https://www.genivia.com/get-sjot.html#demo>
 
 Read more at <http://sjot.org>
 
@@ -104,7 +104,7 @@ Three alternative versions of sjot.js are included:
 - sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
 - sjot-mean.js is optimized for speed and size
 - dev/sjot2js.js is a SJOT to JSON schema converter.  Visit
-  <https://genivia.com/get-sjot.html#demo> to try the interactive converter.
+  <https://www.genivia.com/get-sjot.html#demo> to try the interactive converter.
 - dev.js2sjot.js is a JSON schema to SJOT converter.
 
 sjot.js is fully functional to validate JSON data, with some limitations:
