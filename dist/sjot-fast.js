@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for best performance.)
  *
  * @module      sjot
- * @version     1.3.7
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -785,7 +785,7 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
 
   var union = [];
 
-  // check if union has distinct arrays and objects
+  // check if union has distinct arrays and objects, this tells us which type we can pick to validate data against
   for (var itemtype of type[0])
     sjot_check_union(sjots, itemtype, itemtype, sjot /**/, union, 1);
 
@@ -809,7 +809,7 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
 
   }
 
-  // everything is "any" when array depth n >= union[0]
+  // everything is "any" when array depth n >= union[0], so we're done
   if (union[0] !== undefined && n >= union[0])
     return;
 
@@ -1179,7 +1179,7 @@ function sjot_load(file) {
 
 }
 
-// return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null")
+// return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null" and anything else)
 function sjot_default(value, sjots, data, type, sjot /**/) {
 
   if (typeof type !== "string" || type.endsWith("]") || type.endsWith("}"))
@@ -1214,10 +1214,7 @@ function sjot_default(value, sjots, data, type, sjot /**/) {
     case "uint":
     case "ulong":
 
-      if (value === "null")
-        return 0;
-      else
-        return Number.parseFloat(value);
+      return value === "null" ? 0 : Number.parseFloat(value);
 
     case "object":
     case "array":
@@ -1227,18 +1224,9 @@ function sjot_default(value, sjots, data, type, sjot /**/) {
     default:
 
       // check type for numeric range and if so set number, not string
-      if (!type.startsWith("(") && /\d/.test(type)) {
-
-        if (value === "null")
-          return 0;
-        else
-          return Number.parseFloat(value);
-
-      }
-
-      if (value === "null")
-        return "";
-      return value;
+      if (!type.startsWith("(") && /\d/.test(type))
+        return value === "null" ? 0 : Number.parseFloat(value);
+      return value === "null" ? "" : value;
 
   }
 
@@ -1905,8 +1893,8 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
 
         if (prop.startsWith("(")) {
 
-          // regex property means only one object permitted in the union to ensure uniqueness
-          if (!empty)
+          // object with regex property means only one such object is permitted in the union to ensure uniqueness
+          if (union[n].o !== null)
             throw "SJOT schema format error: " /**/ + " union requires distinct object types";
           union[n].o = type;
           break;

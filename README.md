@@ -157,6 +157,7 @@ Changelog
 - Dec  1, 2016: sjot.js 1.3.5 minor improvements
 - Dec 12, 2016: sjot.js 1.3.6 minor improvements
 - Jan  9, 2017: sjot.js 1.3.7 added remote SJOT schema loading (subject to Same Origin Policy)
+- Feb 13, 2017: sjot.js 1.3.8 minor improvements
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
