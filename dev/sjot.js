@@ -1444,7 +1444,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
             for (var name in temp)
               if (temp[name] === false)
-                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " property set contains a \"" + name + "\" that is not an optional property of this object";
+                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " property set contains a \"" + name + "\" that is not an optional non-default property of this object";
 
           } else if (prop.startsWith("(")) {
 
