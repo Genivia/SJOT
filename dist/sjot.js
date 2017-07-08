@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for best performance.)
  *
  * @module      sjot
- * @version     1.3.8
+ * @version     1.3.9
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -126,7 +126,7 @@ class SJOT {
     if (Array.isArray(sjots)) {
 
       for (var i = 0; i < sjots.length; i++)
-        sjot_check(sjots, true, false, sjots[i], sjots[i], "[" + i + "]");
+        sjot_check(sjots, true, false, sjots[i], sjots[i], "#[" + i + "]");
 
     } else {
 
@@ -1261,13 +1261,13 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
     case "object":
 
+      if (type === null || type === undefined)
+        throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " is " + type;
+
       if (root)
         sjot_roottype(sjot);
       if (prim)
-        throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
-
-      if (type === null || type === undefined)
-        throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is " + type;
+        throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " is not a primitive type value";
 
       if (Array.isArray(type)) {
 
@@ -1289,7 +1289,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
           if (typeof type[0] === "number") {
 
             if (type[0] < 0)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "] should be non-negative";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/[" + type[0] + "] should be non-negative";
 
           } else {
 
@@ -1301,12 +1301,12 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
           // check array [n,m] or [type,m]
           if (type[1] < 0)
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+            throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
 
           if (typeof type[0] === "number") {
 
             if (type[0] < 0)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
 
           } else {
 
@@ -1318,9 +1318,9 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
           // check array [n,type] or [n,type,m]
           if (type[0] < 0)
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+            throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
           if (type.length > 2 && typeof type[2] === "number" && type[2] < type[0])
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "," + type[2] + "] should be non-negative";
+            throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/[" + type[0] + "," + type[1] + "," + type[2] + "] should be non-negative";
           sjot_check(sjots, false, false, type[1], sjot /*FAST[*/, typepath /*FAST]*/);
 
 
@@ -1343,22 +1343,22 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
           if (prop === "@root") {
 
             if (!root)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object (rewrite as a regex)";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is used in an object (rewrite as a regex)";
             sjot_check(sjots, false, false, type[prop], sjot, /*FAST[*/ typepath + /*FAST]*/ "/@root");
 
           } else if (prop === "@id") {
 
             // check @id is a string
             if (!root)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is used in an object (rewrite as a regex)";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is used in an object (rewrite as a regex)";
             if (typeof type[prop] !== "string")
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is not a string";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not a string";
 
           } else if (prop === "@note") {
 
             // check @note is a string
             if (typeof type[prop] !== "string")
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " is not a string";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not a string";
 
           } else if (prop === "@extends") {
 
@@ -1368,7 +1368,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
             // check @final is true or false
             if (typeof type[prop] !== "boolean")
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@final is not true or false";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/@final is not true or false";
 
           } else if (prop === "@one" || prop === "@any" || prop === "@all" || prop === "@dep") {
 
@@ -1378,20 +1378,20 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
             if (prop !== "@dep") {
               
               if (!Array.isArray(propsets))
-                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
+                throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
 
               // check if the propsets are disjoint
               for (var propset of propsets) {
 
                 if (!Array.isArray(propset))
-                  throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
+                  throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
 
                 for (var name of propset) {
 
                   if (typeof name !== "string" || name.startsWith("@") || name.startsWith("("))
-                    throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
+                    throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not an array of property sets";
                   if (temp[name] === false)
-                    throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " property sets are not disjoint";
+                    throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " property sets are not disjoint";
                   temp[name] = false;
 
                 }
@@ -1410,7 +1410,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
                   else if (Array.isArray(propsets[name]) && propsets[name].every(function (prop) { return typeof prop === "string"; }))
                     propsets[name].forEach(function (prop) { temp[prop] = false; });
                   else
-                    throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " malformed dependencies";
+                    throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " malformed dependencies";
 
                 }
 
@@ -1444,13 +1444,13 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
             for (var name in temp)
               if (temp[name] === false)
-                throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " property set contains a \"" + name + "\" that is not an optional property of this object";
+                throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " property set contains a \"" + name + "\" that is not an optional non-default property of this object";
 
           } else if (prop.startsWith("(")) {
 
             // check if valid regex property name
             if (!prop.endsWith(")"))
-              throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not a valid regex";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not a valid regex";
 
             try {
 
@@ -1458,14 +1458,14 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
             } catch (e) {
 
-              throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop + " is not a valid regex: " + e;
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + "/" /*FAST]*/ + prop + " is not a valid regex: " + e;
 
             }
 
           } else if (root && prop.endsWith("]") || prop.endsWith("}")) {
 
             // property names cannot end in a "]" or a "}" (users should use a regex in this case!)
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " type name ends with a ] or a } (use a regex for this property name instead)";
+            throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + "/" + prop + " type name ends with a ] or a } (use a regex for this property name instead)";
 
           } else {
 
@@ -1484,7 +1484,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
               type.hasOwnProperty("@any") ? type["@any"] : [],
               type.hasOwnProperty("@all") ? type["@all"] : [],
               type.hasOwnProperty("@dep") ? type["@dep"] : {}))
-          throw "SJOT schema format error: " + typepath + " has non-satisfiable constraints and rejects all data";
+          throw "SJOT schema format error: schema " + typepath + " has non-satisfiable constraints and rejects all data";
         /*FAST]*/
 
       }
@@ -1492,6 +1492,9 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
       break;
 
     case "string":
+
+      if (root)
+	throw "SJOT schema format error: \"" + type + "\" is not a SJOT schema object";
 
       if (type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
 
@@ -1506,23 +1509,23 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
         var i = type.lastIndexOf("[");
 
         if (i === -1)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " missing [";
+          throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " missing [";
 
         var primtype = type.slice(0, i);
 
         if (prim && primtype !== "char")
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
+          throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " is not a primitive type value";
         return sjot_check(sjots, false, false, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
 
       } else if (type.endsWith("}")) {
 
         if (prim)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
+          throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " is not a primitive type value";
 
         var i = type.lastIndexOf("{");
 
         if (i === -1)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " missing {";
+          throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " missing {";
         return sjot_check(sjots, false, true, type.slice(0, i), sjot /*FAST[*/, typepath /*FAST]*/);
 
       } else {
@@ -1563,7 +1566,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
           case "array":
 
             if (prim)
-              throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " is not a primitive type value";
+              throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " is not a primitive type value";
             break;
 
 
@@ -1572,7 +1575,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
             if (type.startsWith("(")) {
 
               if (!type.endsWith(")"))
-                throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " " + type + " is not a valid regex";
+                throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath /*FAST]*/ + " " + type + " is not a valid regex";
 
               try {
 
@@ -1580,7 +1583,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
               } catch (e) {
 
-                throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a valid regex: " + e;
+                throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a valid regex: " + e;
 
               }
 
@@ -1611,13 +1614,13 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
                     // check ..m>
                     if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
-                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                      throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                   } else {
 
                     // check ..m
                     if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
-                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                      throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                   }
 
@@ -1627,7 +1630,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
                     // check n.. and <n..
                     if (isNaN(Number.parseFloat(type.slice(i, j))))
-                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                      throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                   } else {
 
@@ -1635,7 +1638,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
                     n = Number.parseFloat(type.slice(i, j));
                     if (isNaN(n))
-                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                      throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     if (type.charCodeAt(k - 1) === 0x3E) {
 
@@ -1643,19 +1646,19 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
                       e = true;
                       m = Number.parseFloat(type.slice(j + 2, k - 1));
                       if (isNaN(m))
-                        throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                        throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     } else {
 
                       // check n..m and <n..m
                       m = Number.parseFloat(type.slice(j + 2, k));
                       if (isNaN(m))
-                        throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                        throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                     }
 
                     if (n > m || (e && n === m))
-                      throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " has empty range " + n + ".." + m;
+                      throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " has empty range " + n + ".." + m;
 
                   }
 
@@ -1663,7 +1666,7 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
 
                   // check n
                   if (isNaN(Number.parseFloat(type.slice(i, k))))
-                    throw "SJOT schema format error: " /*FAST[*/ + typepath + " " /*FAST]*/ + type + " is not a type";
+                    throw "SJOT schema format error: " /*FAST[*/ + "schema " + typepath + " " /*FAST]*/ + type + " is not a type";
 
                 }
 
@@ -1680,6 +1683,9 @@ function sjot_check(sjots, root, prim, type, sjot /*FAST[*/, typepath /*FAST]*/)
       break;
 
     default:
+
+      if (root)
+	throw "SJOT schema format error: " + type + " is not a SJOT schema object";
 
       throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " has unknown type " + type;
 
