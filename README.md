@@ -1,7 +1,7 @@
 
 [![logo][logo-url]][sjot-url]
 
-[![npm version][npm-image]][npm-url][![build status][travis-image]][travis-url][![license][bsd-3-image]][bsd-3-url]
+[![npm version][npm-image]][npm-url] [![build status][travis-image]][travis-url] [![license][bsd-3-image]][bsd-3-url]
 
 SJOT: Schemas for JSON Objects
 ==============================
@@ -26,9 +26,6 @@ Install:
 
     npm install sjot
 
-Released under the BSD3 license.
-Copyright (C) 2016, Robert van Engelen, Genivia Inc, All Rights Reserved.
-
 Why another JSON schema "standard"?
 -----------------------------------
 
@@ -46,6 +43,12 @@ Why another JSON schema "standard"?
 - JSON schema design **violates the orthogonality principle**.  There should
   only be a simple and independent way to combine constructs in schemas.
 - The **principle of least surprise** may not apply to JSON schema.
+
+SJOT does not suffer from any of these concerns.  SJOT defines schemas in
+compact JSON.  SJOT is strict by default and supports object extensibility by
+inheritance.  SJOT validators are very fast and scalable.  The asymptotic
+running time of JSON validity checking is linear in the size of the JSON
+content being verified.
 
 JSON validation JS API
 ----------------------
