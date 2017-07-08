@@ -7,7 +7,7 @@
  * (This initial release is not yet fully optimized for best performance.)
  *
  * @module      sjot
- * @version     1.3.8
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -126,7 +126,7 @@ class SJOT {
     if (Array.isArray(sjots)) {
 
       for (var i = 0; i < sjots.length; i++)
-        sjot_check(sjots, true, false, sjots[i], sjots[i], "[" + i + "]");
+        sjot_check(sjots, true, false, sjots[i], sjots[i], "#[" + i + "]");
 
     } else {
 
@@ -1261,13 +1261,13 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
     case "object":
 
+      if (type === null || type === undefined)
+        throw "SJOT schema format error: " /**/ + " is " + type;
+
       if (root)
         sjot_roottype(sjot);
       if (prim)
         throw "SJOT schema format error: " /**/ + " is not a primitive type value";
-
-      if (type === null || type === undefined)
-        throw "SJOT schema format error: " /**/ + " is " + type;
 
       if (Array.isArray(type)) {
 
@@ -1343,22 +1343,22 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
           if (prop === "@root") {
 
             if (!root)
-              throw "SJOT schema format error: " /**/ + "/" + prop + " is used in an object (rewrite as a regex)";
+              throw "SJOT schema format error: " /**/ + prop + " is used in an object (rewrite as a regex)";
             sjot_check(sjots, false, false, type[prop], sjot, /**/ "/@root");
 
           } else if (prop === "@id") {
 
             // check @id is a string
             if (!root)
-              throw "SJOT schema format error: " /**/ + "/" + prop + " is used in an object (rewrite as a regex)";
+              throw "SJOT schema format error: " /**/ + prop + " is used in an object (rewrite as a regex)";
             if (typeof type[prop] !== "string")
-              throw "SJOT schema format error: " /**/ + "/" + prop + " is not a string";
+              throw "SJOT schema format error: " /**/ + prop + " is not a string";
 
           } else if (prop === "@note") {
 
             // check @note is a string
             if (typeof type[prop] !== "string")
-              throw "SJOT schema format error: " /**/ + "/" + prop + " is not a string";
+              throw "SJOT schema format error: " /**/ + prop + " is not a string";
 
           } else if (prop === "@extends") {
 
@@ -1444,7 +1444,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
             for (var name in temp)
               if (temp[name] === false)
-                throw "SJOT schema format error: " /**/ + prop + " property set contains a \"" + name + "\" that is not an optional property of this object";
+                throw "SJOT schema format error: " /**/ + prop + " property set contains a \"" + name + "\" that is not an optional non-default property of this object";
 
           } else if (prop.startsWith("(")) {
 
@@ -1484,6 +1484,9 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
       break;
 
     case "string":
+
+      if (root)
+	throw "SJOT schema format error: \"" + type + "\" is not a SJOT schema object";
 
       if (type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
 
@@ -1672,6 +1675,9 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
       break;
 
     default:
+
+      if (root)
+	throw "SJOT schema format error: " + type + " is not a SJOT schema object";
 
       throw "SJOT schema format error: " /**/ + " has unknown type " + type;
 

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# script used by package.json and executed with npm commands:
+# npm version patch
+# npm version minor
+# npm version major
+
 # get version after version bump
 VERSION=`npm list --depth=0 | sed -n 's/^[^@]*@\([^ ]*\) .*$/\1/p'`
 echo "Creating sjot $VERSION"
