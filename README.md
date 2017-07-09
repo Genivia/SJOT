@@ -6,23 +6,173 @@
 SJOT: Schemas for JSON Objects
 ==============================
 
-Schemas for JSON Objects, or simply SJOT, is a fast and lightweight alternative
-to JSON schema.  SJOT schemas are valid JSON, just like JSON schema.  SJOT
-schemas have the look and feel of an object template and are therefore very
-easy to use.  SJOT aims at fast JSON validation with lightweight schemas and
-compact validators.
+Schemas for JSON Objects, or simply SJOT, offers faster JSON validation with
+lightweight schemas and compact validators.  SJOT schemas have the look and
+feel of object templates and are easy to use.
 
-SJOT schemas convert to JSON schema draft v4 without loss of schema details.
+Highlights
+----------
 
-The `SJOT.check()` API runs a schema checker that verifies schema
-satisfiability, so you never have to worry about schemas with conflicting
-one/any/all/dep constraints that reject all data.
+- SJOT schemas are compact, like JSON templates.
 
-Live validator and converter at <https://www.genivia.com/get-sjot.html#demo>
+- JSON validation with SJOT is fast: the worst-case running time is
+  asymptotically linear in the size of the JSON document to validate.
 
-Read more at <http://sjot.org>
+- The `SJOT.check()` SJOT API runs a schema checker that verifies schema
+  satisfiability, so you never have to worry about schemas with conflicting
+  one/any/all/dep constraints that reject all data.
 
-Install:
+- SJOT schemas translate to JSON schema draft v4 without loss of schema details.
+
+- Live validator and converter at <https://www.genivia.com/get-sjot.html#demo>
+
+- Full documentation at <http://sjot.org>
+
+SJOT schema basics
+------------------
+
+A SJOT schema is a dictionary of named types, with `@root` defining the root of the JSON document:
+
+    {
+      "@root":     type,
+      "SomeType":  type,
+      "OtherType": type,
+      ...
+    }
+
+A type in a SJOT schema is one of:
+
+    "any"       any type (wildcard)
+    "atom"      non-null primitive type
+    "boolean"   Boolean
+    "true"      fixed value true
+    "false"     fixed value false
+    "byte"      8-bit integer
+    "short"     16-bit integer
+    "int"       32-bit integer
+    "long"      64-bit integer
+    "ubyte"     8-bit unsigned integer
+    "ushort"    16-bit unsigned integer
+    "uint"      32-bit unsigned integer
+    "ulong"     64-bit unsigned integer
+    "integer"   integer (unconstrained)
+    "float"     single precision decimal
+    "double"    double precision decimal
+    "number"    decimal number (unconstrained)
+    "n,m,..."   integer/number enumeration
+    "n..m"      inclusive numeric range
+    "<n..m>"    exclusive numeric range
+    "string"    string
+    "base64"    string with base64 content
+    "hex"       string with hexadecimal content
+    "uuid"      string with UUID content
+    "date"      string with RFC 3339 date
+    "time"      string with RFC 3339 time
+    "datetime"  string with RFC 3339 datetime
+    "duration"  string with ISO-8601 duration
+    "char"      string with a single character
+    "char[n,m]" string of n to m characters
+    "(regex)"   string that matches the regex
+    "type[]"    array of values of named type
+    "type[n,m]" array of n to m values of named type
+    "type{}"    set of atoms (array of unique atoms)
+    "type{n,m}" set of n to m atoms
+    "URI#name"  reference to named type in schema "@id": "URI"
+    "#name"     reference to named type in current schema
+    "object"    object, same as {}
+    "array"     array, same as []
+    "null"      fixed value null
+    [ type ]              array of values of type
+    [ n, type, m ]        array of n to m values of type
+    [ type, ..., type ]   tuple of types
+    [[ type, ..., type ]] union (choice) of types
+    { "prop": type, ... } object with typed properties
+
+An object property is optional when its name has a `?`, which can be followed
+with a default value for the property.
+
+An object property name can be expressed as a regex for property name matching.
+
+Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
+`@all`, `@dep`.
+
+SJOT explained by example
+-------------------------
+
+**Arrays and objects**
+
+An array of non-extensible address objects with required number, street, city,
+state and zip, and an optional phone number:
+
+    {
+      "@root": [
+        {
+          "@final": true,
+          "number": "1..",
+          "street": "char[1,]",
+          "city":   "char[1,]",
+          "state":  "char[2]",
+          "zip":    "10000..99999",
+          "phone?": "([- 0-9]+)"
+        }
+      ]
+    }
+
+**Inheritance by extension**
+
+    {
+      "@root": "#Product[]",
+
+      "Product": {
+        "SKU":   "100..",
+        "name":  "string",
+        "price": "<0.0.."
+      },
+
+      "Widget": {
+        "@extends": "#Product",
+        "dimensions": {
+          "length": "number",
+          "width":  "number",
+          "height": "number"
+        }
+      }
+    }
+
+**Dependence testing**
+
+If property `contest` is present then property `prizes` must also be present,
+where `prizes` is a non-empty array of unique strings:
+
+    {
+      "@root": {
+        "event":    "string",
+        "contest?": "string",
+        "prizes?":  "string{1,}",
+        "@dep": {
+          "contest": [ "prizes" ]
+        }
+      }
+    }
+
+**Union of types**
+
+A non-empty array of mixed strings and numbers:
+
+    {
+      "@root": [1, [["string", "number"]] ]
+    }
+
+**Regex**
+
+An extensible dictionary object of word-word pairs:
+
+    {
+      "@root": { "(\\w+)", "(\\w+)" }
+    }
+
+Installation
+------------
 
     npm install sjot
 
