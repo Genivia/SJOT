@@ -8,8 +8,9 @@ SJOT: Schemas for JSON Objects
 
 Schemas for JSON Objects, or simply SJOT, is a fast and lightweight alternative
 to JSON schema.  SJOT schemas are valid JSON, just like JSON schema.  SJOT
-schemas have the look and feel of an object template and are easy to use.  SJOT
-aims at fast JSON validation with lightweight schemas and compact validators.
+schemas have the look and feel of an object template and are therefore very
+easy to use.  SJOT aims at fast JSON validation with lightweight schemas and
+compact validators.
 
 SJOT schemas convert to JSON schema draft v4 without loss of schema details.
 
@@ -111,7 +112,7 @@ Three alternative versions of sjot.js are included:
 
 sjot.js is fully functional to validate JSON data, with some limitations:
 
-- The SJOT model checker `SJOT.check()` checks schema satisfiability per object type for up to 20 distinct properties collected from the @one, @any, @all, and @dep of that object type. The model checker stays silent for over 20 properties (the model satisfiability problem is NP-complete).
+- The SJOT model checker `SJOT.check()` checks schema satisfiability for up to 20 distinct properties collected from the @one, @any, @all, and @dep of an object type. The model checker stays silent for over 20 properties due to the excessive computational expense (the model satisfiability problem is NP-complete).
 
 JSON validation C/C++ API
 -------------------------
@@ -123,6 +124,11 @@ Feature wish list / nice to have
 
 - Random JSON data generator from SJOT schemas for testing
 - Tool to generate SJOT schema from JSON data samples
+
+How to contribute?
+------------------
+
+Please see [CONTRIBUTING](CONTRIBUTING.md).
 
 Changelog
 ---------

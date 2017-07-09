@@ -18,8 +18,8 @@ Did you find a bug?
   information as possible, and a code sample or an executable test case
   demonstrating the expected behavior that is not occurring.
 
-Did you have a patch that fixes a bug?
---------------------------------------
+Do you have a patch that fixes a bug?
+-------------------------------------
 
 - Open a new GitHub pull request with the patch.
 - Write a clear log message for your commits.  One-line messages are fine for
