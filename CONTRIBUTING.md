@@ -1,10 +1,9 @@
-How to contribute to RE/flex
-============================
+How to contribute to SJOT
+=========================
 
 Thank you for taking the time to contribute.
 
-The following is a set of guidelines for contributing to RE/flex and its
-packages.
+The following is a set of guidelines for contributing to SJOT.
 
 Contribution and participation in the SJOT project requires adherence to our
 [code of conduct](CODE_OF_CONDUCT.md).
