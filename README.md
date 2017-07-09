@@ -99,7 +99,7 @@ Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
 SJOT explained by example
 -------------------------
 
-**Arrays and objects**
+### Arrays and objects
 
 An array of non-extensible address objects with required number, street, city,
 state and zip, and an optional phone number:
@@ -118,7 +118,9 @@ state and zip, and an optional phone number:
       ]
     }
 
-**Inheritance by extension**
+### Inheritance
+
+An array of extensible products and widgets, where `Widget` extends `Product`:
 
     {
       "@root": "#Product[]",
@@ -139,7 +141,7 @@ state and zip, and an optional phone number:
       }
     }
 
-**Dependence testing**
+### Dependence
 
 If property `contest` is present then property `prizes` must also be present,
 where `prizes` is a non-empty array of unique strings:
@@ -155,7 +157,7 @@ where `prizes` is a non-empty array of unique strings:
       }
     }
 
-**Union of types**
+### Union
 
 A non-empty array of mixed strings and numbers:
 
@@ -163,7 +165,7 @@ A non-empty array of mixed strings and numbers:
       "@root": [1, [["string", "number"]] ]
     }
 
-**Regex**
+### Regex
 
 An extensible dictionary object of word-word pairs:
 
