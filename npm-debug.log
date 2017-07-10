@@ -6,80 +6,25 @@
 2 info using npm@3.10.8
 3 info using node@v6.9.1
 4 info git [ 'status', '--porcelain' ]
-5 info lifecycle sjot@1.3.10~preversion: sjot@1.3.10
-6 verbose lifecycle sjot@1.3.10~preversion: unsafe-perm in lifecycle true
-7 verbose lifecycle sjot@1.3.10~preversion: PATH: /usr/local/lib/node_modules/npm/bin/node-gyp-bin:/Users/engelen/GitHub/SJOT/node_modules/.bin:/usr/local/teTeX/bin/i386-apple-darwin-current:/opt/local/bin:/opt/local/sbin:/Applications/SWI-Prolog.app/Contents/MacOS:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/TeX/texbin:/Applications/Wireshark.app/Contents/MacOS:/usr/X11R6/bin:/Users/engelen/bin:/usr/texbin:/usr/local/bin
-8 verbose lifecycle sjot@1.3.10~preversion: CWD: /Users/engelen/GitHub/SJOT
-9 silly lifecycle sjot@1.3.10~preversion: Args: [ '-c', 'npm test' ]
-10 silly lifecycle sjot@1.3.10~preversion: Returned: code: 0  signal: null
-11 verbose version.write data { name: 'sjot',
-11 verbose version.write   version: '1.3.10',
-11 verbose version.write   description: 'Schemas for JSON Objects, or simply SJOT, is a more compact alternative to JSON schema. SJOT aims at fast JSON validation with lightweight schemas and compact validators.',
-11 verbose version.write   main: 'sjot.js',
-11 verbose version.write   scripts:
-11 verbose version.write    { preversion: 'npm test',
-11 verbose version.write      version: './build.sh && git add -A dist',
-11 verbose version.write      postversion: 'git push && git push --tags',
-11 verbose version.write      test: './test.sh' },
-11 verbose version.write   repository: { type: 'git', url: 'git+https://github.com/Genivia/SJOT.git' },
-11 verbose version.write   keywords:
-11 verbose version.write    [ 'JSON',
-11 verbose version.write      'lightweight',
-11 verbose version.write      'schema',
-11 verbose version.write      'validation',
-11 verbose version.write      'compact',
-11 verbose version.write      'checker',
-11 verbose version.write      'validator',
-11 verbose version.write      'library' ],
-11 verbose version.write   author: 'Robert van Engelen',
-11 verbose version.write   license: 'BSD-3-Clause',
-11 verbose version.write   bugs: { url: 'https://github.com/Genivia/SJOT/issues' },
-11 verbose version.write   homepage: 'https://github.com/Genivia/SJOT#readme',
-11 verbose version.write   tonicExampleFilename: 'example.js' } to package.json
-12 info lifecycle sjot@1.3.10~version: sjot@1.3.10
-13 verbose lifecycle sjot@1.3.10~version: unsafe-perm in lifecycle true
-14 verbose lifecycle sjot@1.3.10~version: PATH: /usr/local/lib/node_modules/npm/bin/node-gyp-bin:/Users/engelen/GitHub/SJOT/node_modules/.bin:/usr/local/teTeX/bin/i386-apple-darwin-current:/opt/local/bin:/opt/local/sbin:/Applications/SWI-Prolog.app/Contents/MacOS:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/TeX/texbin:/Applications/Wireshark.app/Contents/MacOS:/usr/X11R6/bin:/Users/engelen/bin:/usr/texbin:/usr/local/bin
-15 verbose lifecycle sjot@1.3.10~version: CWD: /Users/engelen/GitHub/SJOT
-16 silly lifecycle sjot@1.3.10~version: Args: [ '-c', './build.sh && git add -A dist' ]
-17 silly lifecycle sjot@1.3.10~version: Returned: code: 0  signal: null
-18 info git [ 'add', '/Users/engelen/GitHub/SJOT/package.json' ]
-19 info git [ 'commit', '-m', '1.3.10' ]
-20 info git [ 'tag', 'v1.3.10', '-am', '1.3.10' ]
-21 info lifecycle sjot@1.3.10~postversion: sjot@1.3.10
-22 verbose lifecycle sjot@1.3.10~postversion: unsafe-perm in lifecycle true
-23 verbose lifecycle sjot@1.3.10~postversion: PATH: /usr/local/lib/node_modules/npm/bin/node-gyp-bin:/Users/engelen/GitHub/SJOT/node_modules/.bin:/usr/local/teTeX/bin/i386-apple-darwin-current:/opt/local/bin:/opt/local/sbin:/Applications/SWI-Prolog.app/Contents/MacOS:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/TeX/texbin:/Applications/Wireshark.app/Contents/MacOS:/usr/X11R6/bin:/Users/engelen/bin:/usr/texbin:/usr/local/bin
-24 verbose lifecycle sjot@1.3.10~postversion: CWD: /Users/engelen/GitHub/SJOT
-25 silly lifecycle sjot@1.3.10~postversion: Args: [ '-c', 'git push && git push --tags' ]
-26 silly lifecycle sjot@1.3.10~postversion: Returned: code: 1  signal: null
-27 info lifecycle sjot@1.3.10~postversion: Failed to exec postversion script
-28 verbose stack Error: sjot@1.3.10 postversion: `git push && git push --tags`
-28 verbose stack Exit status 1
-28 verbose stack     at EventEmitter.<anonymous> (/usr/local/lib/node_modules/npm/lib/utils/lifecycle.js:255:16)
-28 verbose stack     at emitTwo (events.js:106:13)
-28 verbose stack     at EventEmitter.emit (events.js:191:7)
-28 verbose stack     at ChildProcess.<anonymous> (/usr/local/lib/node_modules/npm/lib/utils/spawn.js:40:14)
-28 verbose stack     at emitTwo (events.js:106:13)
-28 verbose stack     at ChildProcess.emit (events.js:191:7)
-28 verbose stack     at maybeClose (internal/child_process.js:877:16)
-28 verbose stack     at Process.ChildProcess._handle.onexit (internal/child_process.js:226:5)
-29 verbose pkgid sjot@1.3.10
-30 verbose cwd /Users/engelen/GitHub/SJOT
-31 error Darwin 16.6.0
-32 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "version" "patch"
-33 error node v6.9.1
-34 error npm  v3.10.8
-35 error code ELIFECYCLE
-36 error sjot@1.3.10 postversion: `git push && git push --tags`
-36 error Exit status 1
-37 error Failed at the sjot@1.3.10 postversion script 'git push && git push --tags'.
-37 error Make sure you have the latest version of node.js and npm installed.
-37 error If you do, this is most likely a problem with the sjot package,
-37 error not with npm itself.
-37 error Tell the author that this fails on your system:
-37 error     git push && git push --tags
-37 error You can get information on how to open an issue for this project with:
-37 error     npm bugs sjot
-37 error Or if that isn't available, you can get their info via:
-37 error     npm owner ls sjot
-37 error There is likely additional logging output above.
-38 verbose exit [ 1, true ]
+5 verbose stack Error: Git working directory not clean.
+5 verbose stack UD npm-debug.log
+5 verbose stack     at /usr/local/lib/node_modules/npm/lib/version.js:247:19
+5 verbose stack     at /usr/local/lib/node_modules/npm/lib/utils/no-progress-while-running.js:21:8
+5 verbose stack     at ChildProcess.exithandler (child_process.js:197:7)
+5 verbose stack     at emitTwo (events.js:106:13)
+5 verbose stack     at ChildProcess.emit (events.js:191:7)
+5 verbose stack     at maybeClose (internal/child_process.js:877:16)
+5 verbose stack     at Socket.<anonymous> (internal/child_process.js:334:11)
+5 verbose stack     at emitOne (events.js:96:13)
+5 verbose stack     at Socket.emit (events.js:188:7)
+5 verbose stack     at Pipe._handle.close [as _onclose] (net.js:498:12)
+6 verbose cwd /Users/engelen/GitHub/SJOT
+7 error Darwin 16.6.0
+8 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "version" "patch"
+9 error node v6.9.1
+10 error npm  v3.10.8
+11 error Git working directory not clean.
+11 error UD npm-debug.log
+12 error If you need help, you may report this error at:
+12 error     <https://github.com/npm/npm/issues>
+13 verbose exit [ 1, true ]
