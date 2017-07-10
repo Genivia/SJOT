@@ -42,54 +42,56 @@ A SJOT schema is a dictionary of named types, with `@root` defining the root of 
 
 A type in a SJOT schema is one of:
 
-    "any"       any type (wildcard)
-    "atom"      non-null primitive type
-    "boolean"   Boolean
-    "true"      fixed value true
-    "false"     fixed value false
-    "byte"      8-bit integer
-    "short"     16-bit integer
-    "int"       32-bit integer
-    "long"      64-bit integer
-    "ubyte"     8-bit unsigned integer
-    "ushort"    16-bit unsigned integer
-    "uint"      32-bit unsigned integer
-    "ulong"     64-bit unsigned integer
-    "integer"   integer (unconstrained)
-    "float"     single precision decimal
-    "double"    double precision decimal
-    "number"    decimal number (unconstrained)
-    "n,m,..."   integer/number enumeration
-    "n..m"      inclusive numeric range
-    "<n..m>"    exclusive numeric range
-    "string"    string
-    "base64"    string with base64 content
-    "hex"       string with hexadecimal content
-    "uuid"      string with UUID content
-    "date"      string with RFC 3339 date
-    "time"      string with RFC 3339 time
-    "datetime"  string with RFC 3339 datetime
-    "duration"  string with ISO-8601 duration
-    "char"      string with a single character
-    "char[n,m]" string of n to m characters
-    "(regex)"   string that matches the regex
-    "type[]"    array of values of named type
-    "type[n,m]" array of n to m values of named type
-    "type{}"    set of atoms (array of unique atoms)
-    "type{n,m}" set of n to m atoms
-    "URI#name"  reference to named type in schema "@id": "URI"
-    "#name"     reference to named type in current schema
-    "object"    object, same as {}
-    "array"     array, same as []
-    "null"      fixed value null
-    [ type ]              array of values of type
-    [ n, type, m ]        array of n to m values of type
+    "any"                 any type (wildcard)
+    "atom"                non-null primitive type
+    "boolean"             Boolean
+    "true"                fixed value true
+    "false"               fixed value false
+    "byte"                8-bit integer
+    "short"               16-bit integer
+    "int"                 32-bit integer
+    "long"                64-bit integer
+    "ubyte"               8-bit unsigned integer
+    "ushort"              16-bit unsigned integer
+    "uint"                32-bit unsigned integer
+    "ulong"               64-bit unsigned integer
+    "integer"             integer (unconstrained)
+    "float"               single precision decimal
+    "double"              double precision decimal
+    "number"              decimal number (unconstrained)
+    "n,m,..."             integer/number enumeration
+    "n..m"                inclusive numeric range (n or m is optional)
+    "<n..m>"              exclusive numeric range (n or m is optional)
+    "string"              string
+    "base64"              string with base64 content
+    "hex"                 string with hexadecimal content
+    "uuid"                string with UUID content
+    "date"                string with RFC 3339 date
+    "time"                string with RFC 3339 time
+    "datetime"            string with RFC 3339 datetime
+    "duration"            string with ISO-8601 duration
+    "char"                string with a single character
+    "char[n,m]"           string of n to m characters (n, m are optional)
+    "(regex)"             string that matches the regex
+    "type[]"              array of values of named type
+    "type[n,m]"           array of n to m values of named type (n, m are optional)
+    "type{}"              set of atoms (array of unique atoms)
+    "type{n,m}"           set of n to m atoms (n, m are optiona)
+    "URI#name"            reference to named type in schema "@id": "URI"
+    "#name"               reference to named type in current schema
+    "object"              object, same as {}
+    "array"               array, same as []
+    "null"                fixed value null
+    [ type ]              array of values of type (type is optional)
+    [ n, type, m ]        array of n to m values of type (n, type, m are optional)
     [ type, ..., type ]   tuple of types
     [[ type, ..., type ]] union (choice) of types
     { "prop": type, ... } object with typed properties
 
-An object property is optional when its name has a `?`, which can be followed
-with a default value for the property.
+An object property is optional when its name ends with a `?`, which can be
+followed with the specification of a value in the property name to assign a
+default value to the property that will be set by the validator when the
+property is omitted in JSON.
 
 An object property name can be expressed as a regex for property name matching.
 
@@ -102,7 +104,7 @@ SJOT explained by example
 ### Arrays and objects
 
 An array of non-extensible address objects with required number, street, city,
-state and zip, and an optional phone number:
+state and zip, and an optional phone number specified as a regex:
 
     {
       "@root": [
@@ -116,6 +118,16 @@ state and zip, and an optional phone number:
           "phone?": "([- 0-9]+)"
         }
       ]
+    }
+
+### Default values
+
+A property with a value of `null` in an object is the same as omitting the
+property from the object.  When a property is omitted, the default value will
+be assigned by the validator when specified for primitive types:
+
+    {
+      "@root": { "year?1900": "1900.." }
     }
 
 ### Inheritance
@@ -143,8 +155,11 @@ An array of extensible products and widgets, where `Widget` extends `Product`:
 
 ### Dependence
 
-If property `contest` is present then property `prizes` must also be present,
-where `prizes` is a non-empty array of unique strings:
+Dependences are specified with `@dep` (if a property is present then other(s)
+must be present), `@one` (exactly one must be present), `@any` (one or more
+must be present), and `@all` (none or all must be present).   If property
+`contest` is present then property `prizes` must also be present as specified
+with `@dep`, where `prizes` is a non-empty array of unique strings:
 
     {
       "@root": {
@@ -167,7 +182,9 @@ A non-empty array of mixed strings and numbers:
 
 ### Regex
 
-An extensible dictionary object of word-word pairs:
+A regex property name or string type opens with `(` and ends with `)` and is
+implicitly anchored with a `^` and a `$`.  An extensible dictionary object of
+word-word pairs:
 
     {
       "@root": { "(\\w+)", "(\\w+)" }
@@ -182,25 +199,21 @@ Why another JSON schema "standard"?
 -----------------------------------
 
 - JSON schema is **verbose**, doubling the nesting level compared to JSON data.
-  SJOT schema levels are one-on-one with JSON data.
-- JSON schema validation performance is **not scalable**.  SJOT takes linear
-  time to validate JSON data, linear in the size of the JSON data.
-- JSON schema offers very **few predeclared primitive types**.  SJOT offers a
-  wider choice of pre-defined types.
-- JSON schema is **non-strict by default**.  SJOT is.
-- JSON schemas are **not extensible**.  SJOT objects are extensible or final.
+  By contrast, SJOT schema levels are one-on-one with JSON data.
+- JSON schema validation performance is **not scalable**.  By contrast, SJOT
+  takes linear time to validate JSON data, linear in the size of the JSON data.
+- JSON schema offers very **few predeclared primitive types**.  By contrast,
+  SJOT offers a wider choice of pre-defined types.
+- JSON schema is **non-strict by default**.  By contrast, SJOT is strict by
+  default since properties are required by default.
+- JSON schemas are **not extensible**.  By contrast, SJOT objects are
+  extensible or final.
 - JSON schema **violates the encapsulation principle** because it permits
-  referencing local schema types.  SJOT groups all types that can be referenced
-  at the top level in the root schema.
+  referencing local schema types.  By contrast, SJOT groups all types at the
+  top level in the schema.
 - JSON schema design **violates the orthogonality principle**.  There should
-  only be a simple and independent way to combine constructs in schemas.
+  only be one simple and independent way to combine constructs as in SJOT.
 - The **principle of least surprise** may not apply to JSON schema.
-
-SJOT does not suffer from any of these concerns.  SJOT defines schemas in
-compact JSON.  SJOT is strict by default and supports object extensibility by
-inheritance.  SJOT validators are very fast and scalable.  The asymptotic
-running time of JSON validity checking is linear in the size of the JSON
-content being verified.
 
 JSON validation JS API
 ----------------------
