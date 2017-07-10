@@ -1,63 +1,17 @@
 /**
- * A validator for "Schemas for JSON Objects", or simply SJOT.
- * SJOT is a more compact alternative to JSON schema.  SJOT schemas are valid
- * JSON, just like JSON schema.  SJOT schemas have the look and feel of an
- * object template and are more easy to read and understand.  SJOT aims at
- * fast JSON data validation with lightweight schemas and compact validators.
- * (This initial release is not yet fully optimized for best performance.)
+ * Schemas for JSON Objects, or simply SJOT, offers faster JSON validation with
+ * lightweight schemas and compact validators.  SJOT schemas have the look and
+ * feel of object templates and are easy to use.
+ *
+ * See the README.md
  *
  * @module      sjot
- * @version     1.3.9
+ * @version     1.3.10
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
  * @license     BSD3
  * @link        http://sjot.org
- */
-
-/*
-   Usage
-
-// <script src="sjot.js"></script>    add this to your web page to load sjot.js
-var SJOT = require("sjot");     //    or use the npm sjot package for node.js
-
-var schema = {
-  "Data": {                     // root of JSON data is a "Data" object
-    "name":    "string",        // required name of type string
-    "v?1.0":   "number",        // optional v with default 1.0
-    "tags?":   "string{1,}",    // optional non-empty set of string tags
-    "package": { "id": "1..", "name": "char[1,]" }
-   }                            // package.id >= 1, non-empty package.name
-};
-
-var data = {
-    "name":    "SJOT",
-    "v":       1.1,
-    "tags":    [ "JSON", "SJOT" ],
-    "package": { "id": 1, "name": "sjot" }
-  };
-
-// SJOT.valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) tests if data is valid:
-
-if (SJOT.valid(data, "@root", schema))
-  ... // OK: data validated against schema
-
-if (SJOT.valid(data))
-  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data)
-
-// SJOT.validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
-try {
-  SJOT.validate(data, "@root", schema);
-} catch (e) {
-  window.alert(e); // FAIL: validation failed
-}
-
-// SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
-try {
-  SJOT.check(schema);
-} catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or is incorrect or is not satisfiable
-}
  */
 
 "use strict";
