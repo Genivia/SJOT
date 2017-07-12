@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.3.11
+ * @version     1.3.12
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
