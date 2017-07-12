@@ -13,7 +13,7 @@ feel of object templates and are easy to use.
 Highlights
 ----------
 
-- SJOT schemas are compact, like JSON templates.
+- SJOT schemas are compact and have the appearance of JSON templates.
 
 - JSON validation with SJOT is fast: the worst-case running time is
   asymptotically linear in the size of the JSON document to validate.
@@ -59,7 +59,7 @@ A type in a SJOT schema is one of:
     "float"               single precision decimal
     "double"              double precision decimal
     "number"              decimal number (unconstrained)
-    "n,m,..."             integer/number enumeration
+    "n,m,..."             numeric enumeration
     "n..m"                inclusive numeric range (n or m is optional)
     "<n..m>"              exclusive numeric range (n or m is optional)
     "string"              string
@@ -76,7 +76,7 @@ A type in a SJOT schema is one of:
     "type[]"              array of values of named type
     "type[n,m]"           array of n to m values of named type (n, m are optional)
     "type{}"              set of atoms (array of unique atoms)
-    "type{n,m}"           set of n to m atoms (n, m are optiona)
+    "type{n,m}"           set of n to m atoms (n, m are optional)
     "URI#name"            reference to named type in schema "@id": "URI"
     "#name"               reference to named type in current schema
     "object"              object, same as {}
@@ -84,27 +84,29 @@ A type in a SJOT schema is one of:
     "null"                fixed value null
     [ type ]              array of values of type (type is optional)
     [ n, type, m ]        array of n to m values of type (n, type, m are optional)
-    [ type, ..., type ]   tuple of types
+    [ type, ..., type ]   tuple of typed values
     [[ type, ..., type ]] union (choice) of types
     { "prop": type, ... } object with typed properties
 
-An object property is optional when its name ends with a `?`, which can be
-followed with the specification of a value in the property name to assign a
-default value to the property that will be set by the validator when the
-property is omitted in JSON.
+An object property is optional when its name ends with a `?`, which may be
+followed by an optional value for the property.  This default value will be
+assigned by the validator when the property is omitted from the object or is
+null.
 
 An object property name can be expressed as a regex for property name matching.
 
 Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
 `@all`, `@dep`.
 
+Notes can be placed in schemas and objects with `@note`.
+
 SJOT explained by example
 -------------------------
 
 ### Arrays and objects
 
-An array of non-extensible address objects with required number, street, city,
-state and zip, and an optional phone number specified as a regex:
+An array of non-extensible (final) address objects with required number,
+street, city, state and zip, and an optional phone number specified as a regex:
 
     {
       "@root": [
@@ -122,9 +124,8 @@ state and zip, and an optional phone number specified as a regex:
 
 ### Default values
 
-A property with a value of `null` in an object is the same as omitting the
-property from the object.  When a property is omitted, the default value will
-be assigned by the validator when specified for primitive types:
+When a property is omitted or is null, the default value will be assigned by
+the validator to the property (primitive types only):
 
     {
       "@root": { "year?1900": "1900.." }
@@ -135,7 +136,7 @@ be assigned by the validator when specified for primitive types:
 An array of extensible products and widgets, where `Widget` extends `Product`:
 
     {
-      "@root": "#Product[]",
+      "@root": [ "#Product" ],
 
       "Product": {
         "SKU":   "100..",
@@ -332,6 +333,9 @@ Changelog
 - Jan  9, 2017: sjot.js 1.3.7 added remote SJOT schema loading (subject to Same Origin Policy)
 - Feb 13, 2017: sjot.js 1.3.8 minor improvements
 - Jul  8, 2017: sjot.js 1.3.9 minor improvements
+- Jul  9, 2017: sjot.js 1.3.10 minor improvements
+- Jul  9, 2017: sjot.js 1.3.11 minor improvements
+- Jul 12, 2017: sjot.js 1.3.12 validation error messages now use JSONPath to identify JSON error locations
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org

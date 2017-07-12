@@ -3,14 +3,14 @@
  * lightweight schemas and compact validators.  SJOT schemas have the look and
  * feel of object templates and are easy to use.
  *
- * See the README.md
+ * See README.md
  *
  * @module      sjot
  * @version     1.3.11
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
- * @license     BSD3
+ * @license     BSD 3-Clause
  * @link        http://sjot.org
  */
 
@@ -19,6 +19,7 @@
 class SJOT {
 
   // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
+  // returns true when data is valid according to schema, false otherwise
   static valid(data, type, schema) {
 
     try {
@@ -27,7 +28,7 @@ class SJOT {
 
     } catch (e) {
 
-      /*LOG[*/ console.log(e); // report error /*LOG]*/
+      /*LOG[*/console.log(e);/*LOG]*/
       return false;
 
     }
@@ -35,6 +36,7 @@ class SJOT {
   }
 
   // validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
+  // throws a string exception when data is not valid according to schema
   static validate(data, type, schema) {
 
     var sjots = schema;
@@ -55,20 +57,21 @@ class SJOT {
       else if (typeof sjots === "object")
         type = sjot_roottype(sjots);
       else
-        throw "SJOT schema expected but " + typeof sjots + " found";
+        sjot_schema_error("is not a SJOT schema object"/**/);
 
     }
 
     if (Array.isArray(sjots) && sjots.length > 0)
-      sjot_validate(sjots, data, type, sjots[0] /**/);
+      sjot_validate(sjots, data, type, sjots[0]/**/);
     else
-      sjot_validate([sjots], data, type, sjots /**/);
+      sjot_validate([sjots], data, type, sjots/**/);
 
     return true;
 
   }
 
   // check(schema)
+  // throws a string exception when schema has an error
   static check(schema) {
 
     var sjots = schema;
@@ -80,11 +83,11 @@ class SJOT {
     if (Array.isArray(sjots)) {
 
       for (var i = 0; i < sjots.length; i++)
-        sjot_check(sjots, true, false, sjots[i], sjots[i], "#[" + i + "]");
+        sjot_check(sjots, true, false, sjots[i], sjots[i], "[" + i + "]");
 
     } else {
 
-      sjot_check([sjots], true, false, sjots, sjots, "#");
+      sjot_check([sjots], true, false, sjots, sjots, "");
 
     }
     /*LEAN]*/
@@ -93,24 +96,24 @@ class SJOT {
 
 }
 
-// one validation function that is tail recursive
-function sjot_validate(sjots, data, type, sjot /**/) {
+// one validation function that is tail recursive, simply returns or throws validation error
+function sjot_validate(sjots, data, type, sjot/**/) {
 
   if (type === "any") {
 
     // check if object has a @sjot attribute with an embedded SJOT schema
     if (typeof data === "object" && data !== null && data.hasOwnProperty('@sjot')) {
 
-      // sjoot: validate this object using the embedded SJOT schema or schemas
+      // sjoot: validate this object using the embedded SJOT schema or array of schemas
       var sjoot = data['@sjot'];
 
       if (Array.isArray(sjoot))
-        return sjot_validate(sjots.concat(sjoot), data, sjot_roottype(sjoot[0]), sjoot[0] /**/);
+        return sjot_validate(sjots.concat(sjoot), data, sjot_roottype(sjoot[0]), sjoot[0]/**/);
       else if (typeof sjoot === "string" && sjoot !== "any" && sjoot !== "object")
-        return sjot_validate(sjots, data, sjoot, sjot /**/);
+        return sjot_validate(sjots, data, sjoot, sjot/**/);
       else if (typeof sjoot === "object")
-        return sjot_validate(sjots.concat([sjoot]), data, sjot_roottype(sjoot), sjoot /**/);
-      throw "Invalid @sjot schema " /**/;
+        return sjot_validate(sjots.concat([sjoot]), data, sjot_roottype(sjoot), sjoot/**/);
+      throw "Invalid @sjot schema "/**/;
 
     }
 
@@ -122,18 +125,18 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
     var h = type.indexOf("#");
 
-    if (h >= 0 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+    if (h >= 0 && !type.startsWith("(") && !type.endsWith("]") && !type.endsWith("}"))
       return sjot_validate(
           sjots,
           data,
-          sjot_reftype(sjots, type, sjot /**/),
-          sjot /**/);
+          sjot_reftype(sjots, type, sjot/**/),
+          sjot/**/);
 
   }
 
   // check unions
   if (sjot_is_union(type))
-    return sjot_validate_union(sjots, data, type, sjot /**/);
+    return sjot_validate_union(sjots, data, type, sjot/**/);
 
   switch (typeof data) {
 
@@ -144,7 +147,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
         if (data === null && type === "null")
           return;
-        sjot_error("value", data, type /**/);
+        sjot_error("value", data, type/**/);
 
       } else if (Array.isArray(data)) {
 
@@ -154,36 +157,40 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
         if (Array.isArray(type)) {
 
+          if (type.length === 0)
+            return;
+
           if (type.length === 1) {
 
             // validate an array [type] or [n] (fixed size array)
             if (typeof type[0] === "number") {
 
               if (data.length !== type[0])
-                sjot_error("length", type[0], "any" /**/);
+                sjot_error("length", type[0], "any"/**/);
 
             } else {
 
-              // validate array and replace nulls in array with primitive type default value
+              // validate array [type] and replace nulls in array with primitive type default value
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
-                  data[i] = sjot_default("null", sjots, null, type[0], sjot /**/);
-                sjot_validate(sjots, data[i], type[0], sjot /**/);
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot/**/);
+                sjot_validate(sjots, data[i], type[0], sjot/**/);
               }
 
             }
 
           } else if (typeof type[1] === "number") {
-            
-            // validate an array [n,m]
+
+            // validate an array [type,m] or [n,m]
             if (data.length > type[1])
-              sjot_error("length", type[1], type[0] /**/);
+              sjot_error("length", type[1], type[0]/**/);
 
             if (typeof type[0] === "number") {
 
+              // validate an array [n,m]
               if (data.length < type[0])
-                sjot_error("length", type[0], "any" /**/);
+                sjot_error("length", type[0], "any"/**/);
 
             } else {
 
@@ -191,24 +198,24 @@ function sjot_validate(sjots, data, type, sjot /**/) {
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
-                  data[i] = sjot_default("null", sjots, null, type[0], sjot /**/);
-                sjot_validate(sjots, data[i], type[0], sjot /**/);
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot/**/);
+                sjot_validate(sjots, data[i], type[0], sjot/**/);
 
               }
 
             }
 
           } else if (typeof type[0] === "number") {
-            
+
             // validate an array [n,type] or [n,type,m]
             if (data.length < type[0])
-              sjot_error("length", type[0], type[1] /**/);
+              sjot_error("length", type[0], type[1]/**/);
 
             // validate an array [n,type,m]
             if (type.length > 2 && typeof type[2] === "number") {
 
               if (data.length > type[2])
-                sjot_error("length", type[2], type[1] /**/);
+                sjot_error("length", type[2], type[1]/**/);
 
             }
 
@@ -216,8 +223,8 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             for (var i = 0; i < data.length; i++) {
 
               if (data[i] === null)
-                data[i] = sjot_default("null", sjots, null, type[1], sjot /**/);
-              sjot_validate(sjots, data[i], type[1], sjot /**/);
+                data[i] = sjot_default("null", sjots, null, type[1], sjot/**/);
+              sjot_validate(sjots, data[i], type[1], sjot/**/);
 
             }
 
@@ -225,13 +232,13 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
             // validate a tuple [type, type, ...] and replace nulls with primitive type default value
             if (data.length != type.length)
-              throw /**/ " length " + type.length;
+              sjot_error("array of length", data.length, type/**/);
 
             for (var i = 0; i < data.length; i++) {
 
               if (data[i] === null)
-                data[i] = sjot_default("null", sjots, null, type[i], sjot /**/);
-              sjot_validate(sjots, data[i], type[i], sjot /**/);
+                data[i] = sjot_default("null", sjots, null, type[i], sjot/**/);
+              sjot_validate(sjots, data[i], type[i], sjot/**/);
 
             }
 
@@ -247,14 +254,14 @@ function sjot_validate(sjots, data, type, sjot /**/) {
             var i = type.lastIndexOf("[");
             var itemtype = type.slice(0, i);
 
-            sjot_validate_bounds(data.length, type, i + 1 /**/);
+            sjot_validate_bounds(data.length, type, i + 1/**/);
 
             // validate an array "type[n,m]" and replace nulls with primitive type default value
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, itemtype, sjot /**/);
-              sjot_validate(sjots, data[j], itemtype, sjot /**/);
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot/**/);
+              sjot_validate(sjots, data[j], itemtype, sjot/**/);
 
             }
 
@@ -262,34 +269,34 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           } else if (type.endsWith("}")) {
 
-            // validate a set
+            // validate a set (array of unique atoms)
             var i = type.lastIndexOf("{");
             var itemtype = type.slice(0, i);
 
-            if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !(itemtype.endsWith("]") || itemtype.endsWith("}"))) {
+            if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !itemtype.endsWith("]") && !itemtype.endsWith("}")) {
 
               // get referenced URI#name type
-              itemtype = sjot_reftype(sjots, itemtype, sjot /**/);
+              itemtype = sjot_reftype(sjots, itemtype, sjot/**/);
               if (typeof itemtype !== "string")
-                sjot_error("value", data, type /**/);
+                sjot_error("value", data, type/**/);
 
             }
 
-            // check uniqueness of items in the set
+            // check uniqueness of items in the set by sorting the array
             var len = data.length;
 
-            data = data.sort().filter(function (e, i, a) { return i === 0 || e !== a[i-1]; });
+            data = data.sort().filter(function (e, i, a) { return i === 0 || e !== a[i - 1]; });
             if (data.length !== len)
-              sjot_error("value", data, type /**/);
+              sjot_error("value", data, type/**/);
 
-            sjot_validate_bounds(data.length, type, i + 1 /**/);
+            sjot_validate_bounds(data.length, type, i + 1/**/);
 
             // validate a set "type{n,m}" and replace nulls with primitive type default value
             for (var j = 0; j < data.length; j++) {
 
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, itemtype, sjot /**/);
-              sjot_validate(sjots, data[j], itemtype, sjot /**/);
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot/**/);
+              sjot_validate(sjots, data[j], itemtype, sjot/**/);
 
             }
 
@@ -299,7 +306,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
         }
 
-        sjot_error("value", data, type /**/);
+        sjot_error("value", data, type/**/);
 
       } else {
 
@@ -307,7 +314,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
         if (type === "object") {
 
           // validate this object using the embedded @sjot, if present
-          return sjot_validate(sjots, data, "any", sjot /**/);
+          return sjot_validate(sjots, data, "any", sjot/**/);
 
         }
 
@@ -315,14 +322,14 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
           // special case for JS (not JSON), check for Date object
           if (!data.constructor.name != "Date")
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         } else if (typeof type === "object") {
 
-          // put @extends base properties into this object type
+          // put @extends base properties into this object type to speed up repeated validation
           if (type.hasOwnProperty('@extends'))
-            sjot_extends(sjots, type, sjot /**/);
+            sjot_extends(sjots, type, sjot/**/);
 
           var isfinal = type.hasOwnProperty('@final') && type['@final'];
           var props = {};
@@ -340,14 +347,14 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
                   for (var propset of proptype)
                     if (propset.reduce( function (sum, prop) { return sum + data.hasOwnProperty(prop); }, 0) !== 1)
-                      throw datapath + " requires one of " + propset;
+                      sjot_error("requires one of " + propset + " properties", data, ""/**/);
                   break;
 
                 case "@any":
 
                   for (var propset of proptype)
                     if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
-                      throw datapath + " requires any of " + propset;
+                      sjot_error("requires any of " + propset + " properties", data, ""/**/);
                   break;
 
                 case "@all":
@@ -355,7 +362,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                   for (var propset of proptype)
                     if (propset.some(function (prop) { return data.hasOwnProperty(prop); }) &&
                         !propset.every(function (prop) { return data.hasOwnProperty(prop); }))
-                      throw datapath + " requires all or none of " + propset;
+                      sjot_error("requires all or none of " + propset + " properties", data, ""/**/);
                   break;
 
                 case "@dep":
@@ -364,7 +371,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                     if (data.hasOwnProperty(name) &&
                         (typeof proptype[name] !== "string" || !data.hasOwnProperty(proptype[name])) &&
                         (!Array.isArray(proptype[name]) || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
-                      throw datapath + "/" + name + " requires " + proptype[name];
+                      sjot_error("requires " + proptype[name], data, ""/**/);
                   break;
 
               }
@@ -379,7 +386,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
                 if (data.hasOwnProperty(name) && matcher.test(name)) {
 
-                  sjot_validate(sjots, data[name], proptype, sjot /**/);
+                  sjot_validate(sjots, data[name], proptype, sjot/**/);
                   if (isfinal)
                     props[name] = null;
 
@@ -396,8 +403,8 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
                 // validate required property
                 if (!data.hasOwnProperty(prop))
-                  throw datapath + "/" + prop + " is required by " /**/ + prop;
-                sjot_validate(sjots, data[prop], type[prop], sjot /**/);
+                  sjot_error("should be present", data, ""/**/);
+                sjot_validate(sjots, data[prop], type[prop], sjot/**/);
                 if (isfinal)
                   props[prop] = null;
 
@@ -408,12 +415,12 @@ function sjot_validate(sjots, data, type, sjot /**/) {
                 // validate optional property when present or set default value when absent
                 if (data.hasOwnProperty(name) && data[name] !== null && data[name] !== undefined) {
 
-                  sjot_validate(sjots, data[name], type[prop], sjot /**/);
+                  sjot_validate(sjots, data[name], type[prop], sjot/**/);
 
                 } else if (i < prop.length - 1) {
 
-                  data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot /**/);
-                  sjot_validate(sjots, data[name], type[prop], sjot /**/);
+                  data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot/**/);
+                  sjot_validate(sjots, data[name], type[prop], sjot/**/);
                 } else {
 
                   delete data[name];
@@ -432,11 +439,11 @@ function sjot_validate(sjots, data, type, sjot /**/) {
           if (isfinal)
             for (var prop in data)
               if (data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
-                throw "Extra property " + datapath + "/" + prop + " in final object " /**/;
+                sjot_error("additional property should not be present", data, ""/**/);
 
         } else {
 
-          sjot_error("value", data, type /**/);
+          sjot_error("value", data, type/**/);
 
         }
 
@@ -449,73 +456,78 @@ function sjot_validate(sjots, data, type, sjot /**/) {
       // validate a boolean value
       if (type === "boolean" || type === "atom" || (data && type === "true") || (!data && type === "false"))
         return;
-      sjot_error("value", data, type /**/);
+      sjot_error("value", data, type/**/);
 
     case "number":
 
       // validate a number
-      if (type === "number" || type === "float" || type === "double" || type === "atom")
-        return;
-      if (typeof type !== "string")
-        sjot_error("value", data, type /**/);
-
       switch (type) {
+
+        case "atom":
+        case "number":
+        case "float":
+        case "double":
+
+          return;
 
         case "integer":
 
           if (!Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "byte":
 
           if (data < -128 || data > 127 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "short":
 
           if (data < -32768 || data > 32767 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "int":
 
           if (data < -2147483648 || data > 2147483647 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "long":
 
           if (data < -140737488355328 || data > 140737488355327 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "ubyte":
 
           if (data < 0 || data > 255 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "ushort":
 
           if (data < 0 || data > 65535 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "uint":
 
           if (data < 0 || data > 4294967295 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         case "ulong":
 
           if (data < 0 || data > 18446744073709551615 || !Number.isInteger(data))
-            sjot_error("value", data, type /**/);
+            sjot_error("value", data, type/**/);
           return;
 
         default:
+
+          if (typeof type !== "string")
+            sjot_error("value", data, type/**/);
 
           // check numeric ranges n..m,n..,..m,<n..m>,<n..,..m>,n
           // may not reject non-integers in e.g. "1.0" or non-floats in e.g. "1" because JS numbers are floats
@@ -638,7 +650,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
       }
 
-      sjot_error("value", data, type /**/);
+      sjot_error("value", data, type/**/);
 
     case "string":
 
@@ -646,7 +658,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
       if (type === "string" || type === "char[]" || type === "atom")
         return;
       if (typeof type !== "string")
-        sjot_error("value", data, type /**/);
+        sjot_error("value", data, type/**/);
 
       if (type.startsWith("(")) {
 
@@ -663,7 +675,7 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
         } else {
 
-          return sjot_validate_bounds(data.length, type, 5 /**/);
+          return sjot_validate_bounds(data.length, type, 5/**/);
 
         }
 
@@ -724,24 +736,24 @@ function sjot_validate(sjots, data, type, sjot /**/) {
 
       }
 
-      sjot_error("value", data, type /**/);
+      sjot_error("value", data, type/**/);
 
     default:
 
-      throw "SJOT schema format error in " /**/ + type;
+      sjot_schema_error("is not a valid type"/**/);
 
   }
 
 }
 
 // union validation, used in sjot_validate()
-function sjot_validate_union(sjots, data, type, sjot /**/) {
+function sjot_validate_union(sjots, data, type, sjot/**/) {
 
   var union = [];
 
   // check if union has distinct arrays and objects, this tells us which type we can pick to validate data against
   for (var itemtype of type[0])
-    sjot_check_union(sjots, itemtype, itemtype, sjot /**/, union, 1);
+    sjot_check_union(sjots, itemtype, itemtype, sjot/**/, union, 1);
 
   // n is the depth of array nestings + 1
   var n = 1;
@@ -755,7 +767,7 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
 
       if ((union[0] !== undefined && n >= union[0]) || union[n] !== undefined)
         return;
-      sjot_error("value", data, type /**/);
+      sjot_error("value", data, type/**/);
 
     }
 
@@ -772,11 +784,11 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
     if (item === null) {
 
       if (union[n].n === null)
-        sjot_error("value", data, type /**/);
-      return sjot_validate(sjots, data, union[n].n, sjot /**/);
+        sjot_error("value", data, type/**/);
+      return sjot_validate(sjots, data, union[n].n, sjot/**/);
 
     }
-    
+
     switch (typeof item) {
 
       case "boolean":
@@ -784,13 +796,13 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
         if (union[n].b !== null) {
 
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].b, sjot /**/);
+            return sjot_validate(sjots, data, union[n].b, sjot/**/);
 
           for (var itemtype of type[0]) {
 
             try {
 
-              return sjot_validate(sjots, data, itemtype, sjot /**/);
+              return sjot_validate(sjots, data, itemtype, sjot/**/);
 
             } catch (e) {
 
@@ -807,13 +819,13 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
         if (union[n].x !== null) {
 
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].x, sjot /**/);
+            return sjot_validate(sjots, data, union[n].x, sjot/**/);
 
           for (var itemtype of type[0]) {
 
             try {
 
-              return sjot_validate(sjots, data, itemtype, sjot /**/);
+              return sjot_validate(sjots, data, itemtype, sjot/**/);
 
             } catch (e) {
 
@@ -830,13 +842,13 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
         if (union[n].s !== null) {
 
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].s, sjot /**/);
+            return sjot_validate(sjots, data, union[n].s, sjot/**/);
 
           for (var itemtype of type[0]) {
 
             try {
 
-              return sjot_validate(sjots, data, itemtype, sjot /**/);
+              return sjot_validate(sjots, data, itemtype, sjot/**/);
 
             } catch (e) {
 
@@ -851,16 +863,16 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
       case "object":
 
         if (union[n].o !== null)
-          return sjot_validate(sjots, data, union[n].o, sjot /**/);
+          return sjot_validate(sjots, data, union[n].o, sjot/**/);
 
         if (union[n].p !== null) {
 
           for (var prop in item)
             if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot /**/);
+              return sjot_validate(sjots, data, union[n].p[prop], sjot/**/);
           for (var prop in union[n].p)
             if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot /**/);
+              return sjot_validate(sjots, data, union[n].p[prop], sjot/**/);
 
         }
 
@@ -868,12 +880,12 @@ function sjot_validate_union(sjots, data, type, sjot /**/) {
 
   }
 
-  sjot_error("value", data, type /**/);
+  sjot_error("value", data, type/**/);
 
 }
 
 // check array/set/string bounds, used in sjot_validate()
-function sjot_validate_bounds(len, type, i /**/) {
+function sjot_validate_bounds(len, type, i/**/) {
 
   var j = type.indexOf("]", i);
   var k = type.indexOf(",", i);
@@ -890,7 +902,7 @@ function sjot_validate_bounds(len, type, i /**/) {
     var n = Number.parseInt(type.slice(i, j));
 
     if (len !== n)
-      sjot_error("length", len, type /**/);
+      sjot_error("length", len, type/**/);
 
   } else if (k + 1 === j) {
 
@@ -898,7 +910,7 @@ function sjot_validate_bounds(len, type, i /**/) {
     var n = Number.parseInt(type.slice(i, k));
 
     if (len < n)
-      sjot_error("length", len, type /**/);
+      sjot_error("length", len, type/**/);
 
   } else if (i === k) {
 
@@ -906,7 +918,7 @@ function sjot_validate_bounds(len, type, i /**/) {
     var m = Number.parseInt(type.slice(k + 1, j));
 
     if (len > m)
-      sjot_error("length", len, type /**/);
+      sjot_error("length", len, type/**/);
 
   } else {
 
@@ -915,14 +927,14 @@ function sjot_validate_bounds(len, type, i /**/) {
     var m = Number.parseInt(type.slice(k + 1, j));
 
     if (len < n || len > m)
-      sjot_error("length", len, type /**/);
+      sjot_error("length", len, type/**/);
 
   }
 
 }
 
-// extends object types by recursively expanding base object types
-function sjot_extends(sjots, type, sjot /**/) {
+// extend object type by recursively expanding base object types, setting @extends to undefined
+function sjot_extends(sjots, type, sjot/**/) {
 
   // put @extends base properties into this object type
   if (type.hasOwnProperty('@extends')) {
@@ -936,16 +948,16 @@ function sjot_extends(sjots, type, sjot /**/) {
       return;
 
     if (typeof basetype !== "string")
-      throw "SJOT schema format error: " /**/ + "/@extends is not an object";
+      sjot_schema_error("@extends does not refer to an object"/**/);
 
     // get referenced URI#name base type
-    var base = sjot_reftype(sjots, basetype, sjot /**/);
+    var base = sjot_reftype(sjots, basetype, sjot/**/);
 
     if (typeof base !== "object")
-      throw "SJOT schema format error: " /**/ + "/@extends is not an object";
+      sjot_schema_error("@extends does not refer to an object"/**/);
 
     // recursively expand
-    sjot_extends(sjots, base, sjot /**/);
+    sjot_extends(sjots, base, sjot/**/);
 
     for (var prop in base) {
 
@@ -958,7 +970,7 @@ function sjot_extends(sjots, type, sjot /**/) {
             case "@final":
 
               if (base[prop])
-                throw "SJOT schema format error: " /**/ + " @extends " + basetype + " that is final";
+                sjot_schema_error("@extends " + basetype + " that is final"/**/);
               break;
 
             case "@one":
@@ -1006,7 +1018,7 @@ function sjot_extends(sjots, type, sjot /**/) {
         } else {
 
           if (type.hasOwnProperty(prop))
-            throw "SJOT schema format error: " /**/ + "/" + prop + " overriding of " + basetype + "/" + prop + " is not permitted";
+            sjot_schema_error("overriding of " + basetype + "/" + prop + " is not permitted"/**/);
 
           type[prop] = base[prop];
 
@@ -1029,7 +1041,7 @@ function sjot_roottype(sjot) {
 
     if (typeof type !== "string" || !type.endsWith("#"))
       return type;
-    throw "SJOT schema root refers to a root";
+    sjot_schema_error("root refers to a root"/**/);
 
   }
 
@@ -1037,12 +1049,12 @@ function sjot_roottype(sjot) {
     if (sjot.hasOwnProperty(prop) && !prop.startsWith("@"))
       return sjot[prop];
 
-  throw "SJOT schema has no root type";
+  sjot_schema_error("has no root type"/**/);
 
 }
 
 // get referenced type from type reference [URI]#[type]
-function sjot_reftype(sjots, type, sjot /**/) {
+function sjot_reftype(sjots, type, sjot/**/) {
 
   var h = type.indexOf("#");
   var prop = type.slice(h + 1);
@@ -1054,10 +1066,10 @@ function sjot_reftype(sjots, type, sjot /**/) {
       return sjot_roottype(sjot);
     // local reference #type in non-id schema (prop = type)
     if (!sjot.hasOwnProperty(prop))
-      throw "SJOT schema has no type " + prop + " referenced by " /**/ + "/" + type;
+      sjot_schema_error("missing named type referenced by " + prop/**/);
     type = sjot[prop];
     if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
-      throw "SJOT schema format error: " /**/ + type + " spaghetti type references not permitted";
+      sjot_schema_error("spaghetti references to named types not permitted"/**/);
     return type;
 
   } else {
@@ -1072,10 +1084,10 @@ function sjot_reftype(sjots, type, sjot /**/) {
           return sjot_roottype(sjoot);
         // reference URI#type (prop = type)
         if (!sjoot.hasOwnProperty(prop))
-          throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /**/ + type;
+          sjot_schema_error("schema " + sjoot['@id'] + " missing named type referenced by " + prop/**/);
         type = sjoot[prop];
         if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
-          throw "SJOT schema format error: " /**/ + type + " spaghetti type references not permitted";
+          sjot_schema_error("spaghetti references to named types not permitted"/**/);
         return type;
 
       }
@@ -1083,7 +1095,7 @@ function sjot_reftype(sjots, type, sjot /**/) {
     }
 
     // TODO get external URI type reference when URI is a URL, load and put in sjots array
-    // throw "No type " + prop + " found at " + type.slice(0, h - 1) + " referenced by " /**/ + type;
+    // throw "No type " + prop + " found at " + type.slice(0, h - 1) + " referenced by "/**/ + type;
 
     var URL = type.slice(0, h);
 
@@ -1092,14 +1104,14 @@ function sjot_reftype(sjots, type, sjot /**/) {
       var sjoot = sjot_load(URL);
 
       if (sjoot.hasOwnProperty('@id') && sjoot['@id'] !== URL)
-        throw "SJOT schema " + URL + " load error: @id mismatch";
+        sjot_schema_error("schema \"" + URL + "\" load error due to @id URL mismatch"/**/);
       sjoot['@id'] = URL;
       sjots = sjots.concat(sjoot);
-      return sjot_reftype(sjots, type, sjot /**/);
+      return sjot_reftype(sjots, type, sjot/**/);
 
     } catch (e) {
 
-      throw "No type " + prop + " found at " + URL + " referenced by " /**/ + type + " error: " + e;
+      sjot_schema_error("no type " + prop + " found in \"" + URL + "\" " + e/**/);
     }
 
   }
@@ -1108,9 +1120,9 @@ function sjot_reftype(sjots, type, sjot /**/) {
 
 // load JSON from file
 function sjot_load(file) {
-  
+
   var json;
-  var load = function(file, callback) {   
+  var load = function(file, callback) {
 
     var xobj = new XMLHttpRequest();
 
@@ -1124,22 +1136,22 @@ function sjot_load(file) {
 
     };
 
-    xobj.send(null);  
+    xobj.send(null);
 
   }
- 
+
   load(file, function(response) { json = JSON.parse(response); });
   return json;
 
 }
 
 // return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null" and anything else)
-function sjot_default(value, sjots, data, type, sjot /**/) {
+function sjot_default(value, sjots, data, type, sjot/**/) {
 
   if (typeof type !== "string" || type.endsWith("]") || type.endsWith("}"))
     return null;
   if (type.indexOf("#") !== -1 && !type.startsWith("("))
-    type = sjot_reftype(sjots, type, sjot /**/);
+    type = sjot_reftype(sjots, type, sjot/**/);
   if (typeof type !== "string" || type.endsWith("]") || type.endsWith("}"))
     return null;
 
@@ -1187,41 +1199,46 @@ function sjot_default(value, sjots, data, type, sjot /**/) {
 }
 
 // throw descriptive error message
-function sjot_error(what, data, type /**/) {
+function sjot_error(what, data, type/**/) {
 
-  var a = "a";
+  var a = "is not an object ";
 
-  if (Array.isArray(type))
-    a = type.length === 1 && Array.isArray(type[0]) ? "one of" : "a tuple of";
+  if (type === "")
+    a = "";
+  else if (Array.isArray(type))
+    a = type.length === 0 ? "is not an array " : type.length === 1 && Array.isArray(type[0]) ? "is not one of " : "is not an array of ";
   else if (typeof type === "string")
-    a = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type"
+    a = type.endsWith("]") ? "is not an array " : type.endsWith("}") ? "is not a set " : "is not of type "
+  else
+    type = "";
 
-  var b = /**/ "";
+  var b =/**/ "";
 
   if (typeof data === "string")
-    throw /**/ " " + what + " \"" + data + "\" is not " + a + " " + type + b;
+    throw /**/ " " + what + " \"" + data + "\" " + a + type + b;
   else if (typeof data === "number" || typeof data === "boolean" || data === null)
-    throw /**/ " " + what + " " + data + " is not " + a + " " + type + b;
+    throw /**/ " " + what + " " + data + " " + a + type + b;
   else
-    throw /**/ " " + what + " is not " + a + " " + type + b;
+    throw /**/ " " + what + " " + a + type + b;
 
 }
 
 /*LEAN[*/
 // check schema compliance and correctness (an optional feature, can be removed for compact SJOT libraries)
-function sjot_check(sjots, root, prim, type, sjot /**/) {
+function sjot_check(sjots, root, prim, type, sjot/**/) {
 
   switch (typeof type) {
 
     case "object":
 
       if (type === null || type === undefined)
-        throw "SJOT schema format error: " /**/ + " is " + type;
+        sjot_schema_error("is not a valid type"/**/);
 
       if (root)
         sjot_roottype(sjot);
+
       if (prim)
-        throw "SJOT schema format error: " /**/ + " is not a primitive type value";
+        sjot_schema_error("is not a primitive type"/**/);
 
       if (Array.isArray(type)) {
 
@@ -1232,10 +1249,12 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
           for (var itemtype of type[0]) {
 
-            sjot_check(sjots, false, false, itemtype, sjot /**/);
-            sjot_check_union(sjots, itemtype, itemtype, sjot /**/, union, 1);
+            sjot_check(sjots, false, prim, itemtype, sjot/**/);
+            sjot_check_union(sjots, itemtype, itemtype, sjot/**/, union, 1);
 
           }
+
+        } else if (type.length === 0) {
 
         } else if (type.length === 1) {
 
@@ -1243,11 +1262,11 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
           if (typeof type[0] === "number") {
 
             if (type[0] < 0)
-              throw "SJOT schema format error: " /**/ + "/[" + type[0] + "] should be non-negative";
+              sjot_schema_error("array size is negative"/**/);
 
           } else {
 
-            sjot_check(sjots, false, false, type[0], sjot /**/);
+            sjot_check(sjots, false, false, type[0], sjot/**/);
 
           }
 
@@ -1255,16 +1274,16 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
           // check array [n,m] or [type,m]
           if (type[1] < 0)
-            throw "SJOT schema format error: " /**/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+            sjot_schema_error("array size is negative"/**/);
 
           if (typeof type[0] === "number") {
 
             if (type[0] < 0)
-              throw "SJOT schema format error: " /**/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+              sjot_schema_error("array size is negative"/**/);
 
           } else {
 
-            sjot_check(sjots, false, false, type[0], sjot /**/);
+            sjot_check(sjots, false, false, type[0], sjot/**/);
 
           }
 
@@ -1272,47 +1291,46 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
           // check array [n,type] or [n,type,m]
           if (type[0] < 0)
-            throw "SJOT schema format error: " /**/ + "/[" + type[0] + "," + type[1] + "] should be non-negative";
+            sjot_schema_error("array size is negative"/**/);
           if (type.length > 2 && typeof type[2] === "number" && type[2] < type[0])
-            throw "SJOT schema format error: " /**/ + "/[" + type[0] + "," + type[1] + "," + type[2] + "] should be non-negative";
-          sjot_check(sjots, false, false, type[1], sjot /**/);
+            sjot_schema_error("array size is negative"/**/);
+          sjot_check(sjots, false, false, type[1], sjot/**/);
 
 
         } else if (type.length > 0) {
 
           // check tuple
           for (var i = 0; i < type.length; i++)
-            sjot_check(sjots, false, false, type[i], sjot, /**/ "[" + i + "]");
+            sjot_check(sjots, false, false, type[i], sjot,/**/ "[" + i + "]");
 
         }
 
       } else {
 
         // put @extends base properties into this object type
-        sjot_extends(sjots, type, sjot /**/);
+        sjot_extends(sjots, type, sjot/**/);
 
         for (var prop in type) {
 
-          // TODO perhaps this is overkill to reject @root and @id in objects
+          // reject @root and @id in objects
           if (prop === "@root") {
 
             if (!root)
-              throw "SJOT schema format error: " /**/ + prop + " is used in an object (rewrite as a regex)";
-            sjot_check(sjots, false, false, type[prop], sjot, /**/ "/@root");
+              sjot_schema_error("@root is used in an object (redefine as a regex)"/**/);
+            sjot_check(sjots, false, false, type[prop], sjot,/**/ "/@root");
 
           } else if (prop === "@id") {
 
             // check @id is a string
             if (!root)
-              throw "SJOT schema format error: " /**/ + prop + " is used in an object (rewrite as a regex)";
+              sjot_schema_error("@id is used in an object (redefine as a regex)"/**/);
             if (typeof type[prop] !== "string")
-              throw "SJOT schema format error: " /**/ + prop + " is not a string";
+              sjot_schema_error("@id value is not a string"/**/);
 
           } else if (prop === "@note") {
 
-            // check @note is a string
             if (typeof type[prop] !== "string")
-              throw "SJOT schema format error: " /**/ + prop + " is not a string";
+              sjot_schema_error("@note value is not a string"/**/);
 
           } else if (prop === "@extends") {
 
@@ -1322,7 +1340,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
             // check @final is true or false
             if (typeof type[prop] !== "boolean")
-              throw "SJOT schema format error: " /**/ + "/@final is not true or false";
+              sjot_schema_error("@final value is not true or false"/**/);
 
           } else if (prop === "@one" || prop === "@any" || prop === "@all" || prop === "@dep") {
 
@@ -1330,22 +1348,22 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
             var temp = {};
 
             if (prop !== "@dep") {
-              
+
               if (!Array.isArray(propsets))
-                throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
+                sjot_schema_error("is not an array of property sets"/**/);
 
               // check if the propsets are disjoint
               for (var propset of propsets) {
 
                 if (!Array.isArray(propset))
-                  throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
+                  sjot_schema_error("is not an array of property sets"/**/);
 
                 for (var name of propset) {
 
                   if (typeof name !== "string" || name.startsWith("@") || name.startsWith("("))
-                    throw "SJOT schema format error: " /**/ + prop + " is not an array of property sets";
+                    sjot_schema_error("is not an array of property sets"/**/);
                   if (temp[name] === false)
-                    throw "SJOT schema format error: " /**/ + prop + " property sets are not disjoint";
+                    sjot_schema_error("property sets are not disjoint"/**/);
                   temp[name] = false;
 
                 }
@@ -1364,7 +1382,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
                   else if (Array.isArray(propsets[name]) && propsets[name].every(function (prop) { return typeof prop === "string"; }))
                     propsets[name].forEach(function (prop) { temp[prop] = false; });
                   else
-                    throw "SJOT schema format error: " /**/ + prop + " malformed dependencies";
+                    sjot_schema_error("malformed @dep dependencies"/**/);
 
                 }
 
@@ -1398,13 +1416,9 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
             for (var name in temp)
               if (temp[name] === false)
-                throw "SJOT schema format error: " /**/ + prop + " property set contains a \"" + name + "\" that is not an optional non-default property of this object";
+                sjot_schema_error("property set contains property " + name + " that is not an optional non-default property of this object"/**/);
 
           } else if (prop.startsWith("(")) {
-
-            // check if valid regex property name
-            if (!prop.endsWith(")"))
-              throw "SJOT schema format error: " /**/ + prop + " is not a valid regex";
 
             try {
 
@@ -1412,21 +1426,21 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
             } catch (e) {
 
-              throw "SJOT schema format error: " /**/ + prop + " is not a valid regex: " + e;
+              sjot_schema_error(e/**/);
 
             }
 
           } else if (root && prop.endsWith("]") || prop.endsWith("}")) {
 
             // property names cannot end in a "]" or a "}" (users should use a regex in this case!)
-            throw "SJOT schema format error: " /**/ + "/" + prop + " type name ends with a ] or a } (use a regex for this property name instead)";
+            sjot_schema_error("name ends with a ] or a } (use a regex for this property name instead)"/**/);
 
           } else {
 
             var i = prop.indexOf("?");
 
             // check property type (primitive=true when optional with a default value)
-            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot, /**/ prop);
+            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot,/**/ prop);
 
           }
 
@@ -1440,14 +1454,14 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
     case "string":
 
       if (root)
-	throw "SJOT schema format error: \"" + type + "\" is not a SJOT schema object";
+        sjot_schema_error("is not a SJOT schema object"/**/);
 
-      if (type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}"))) {
+      if (type.indexOf("#") !== -1 && !type.startsWith("(") && !type.endsWith("]") && !type.endsWith("}")) {
 
-        var reftype = sjot_reftype(sjots, type, sjot /**/);
+        var reftype = sjot_reftype(sjots, type, sjot/**/);
 
         if (prim)
-          return sjot_check(sjots, false, true, reftype, sjot /**/);
+          return sjot_check(sjots, false, true, reftype, sjot/**/);
         return;
 
       } else if (type.endsWith("]")) {
@@ -1455,24 +1469,24 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
         var i = type.lastIndexOf("[");
 
         if (i === -1)
-          throw "SJOT schema format error: " /**/ + " missing [";
+          sjot_schema_error("missing ["/**/);
 
         var primtype = type.slice(0, i);
 
         if (prim && primtype !== "char")
-          throw "SJOT schema format error: " /**/ + " is not a primitive type value";
-        return sjot_check(sjots, false, false, type.slice(0, i), sjot /**/);
+          sjot_schema_error("is not a primitive type"/**/);
+        return sjot_check(sjots, false, false, type.slice(0, i), sjot/**/);
 
       } else if (type.endsWith("}")) {
 
         if (prim)
-          throw "SJOT schema format error: " /**/ + " is not a primitive type value";
+          sjot_schema_error("is not a primitive type"/**/);
 
         var i = type.lastIndexOf("{");
 
         if (i === -1)
-          throw "SJOT schema format error: " /**/ + " missing {";
-        return sjot_check(sjots, false, true, type.slice(0, i), sjot /**/);
+          sjot_schema_error("missing {"/**/);
+        return sjot_check(sjots, false, true, type.slice(0, i), sjot/**/);
 
       } else {
 
@@ -1512,7 +1526,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
           case "array":
 
             if (prim)
-              throw "SJOT schema format error: " /**/ + " is not a primitive type value";
+              sjot_schema_error("is not a primitive type"/**/);
             break;
 
 
@@ -1520,16 +1534,13 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
             if (type.startsWith("(")) {
 
-              if (!type.endsWith(")"))
-                throw "SJOT schema format error: " /**/ + " " + type + " is not a valid regex";
-
               try {
 
                 RegExp(type);
 
               } catch (e) {
 
-                throw "SJOT schema format error: " /**/ + type + " is not a valid regex: " + e;
+                sjot_schema_error(e/**/);
 
               }
 
@@ -1560,13 +1571,13 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
                     // check ..m>
                     if (isNaN(Number.parseFloat(type.slice(j + 2, k - 1))))
-                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+                      sjot_schema_error("is not a valid range"/**/);
 
                   } else {
 
                     // check ..m
                     if (isNaN(Number.parseFloat(type.slice(j + 2, k))))
-                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+                      sjot_schema_error("is not a valid range"/**/);
 
                   }
 
@@ -1576,7 +1587,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
                     // check n.. and <n..
                     if (isNaN(Number.parseFloat(type.slice(i, j))))
-                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+                      sjot_schema_error("is not a valid range"/**/);
 
                   } else {
 
@@ -1584,7 +1595,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
                     n = Number.parseFloat(type.slice(i, j));
                     if (isNaN(n))
-                      throw "SJOT schema format error: " /**/ + type + " is not a type";
+                      sjot_schema_error("is not a valid range"/**/);
 
                     if (type.charCodeAt(k - 1) === 0x3E) {
 
@@ -1592,19 +1603,19 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
                       e = true;
                       m = Number.parseFloat(type.slice(j + 2, k - 1));
                       if (isNaN(m))
-                        throw "SJOT schema format error: " /**/ + type + " is not a type";
+                        sjot_schema_error("is not a valid range"/**/);
 
                     } else {
 
                       // check n..m and <n..m
                       m = Number.parseFloat(type.slice(j + 2, k));
                       if (isNaN(m))
-                        throw "SJOT schema format error: " /**/ + type + " is not a type";
+                        sjot_schema_error("is not a valid range"/**/);
 
                     }
 
                     if (n > m || (e && n === m))
-                      throw "SJOT schema format error: " /**/ + type + " has empty range " + n + ".." + m;
+                      sjot_schema_error("has an empty range " + n + ".." + m/**/);
 
                   }
 
@@ -1612,7 +1623,7 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
 
                   // check n
                   if (isNaN(Number.parseFloat(type.slice(i, k))))
-                    throw "SJOT schema format error: " /**/ + type + " is not a type";
+                    sjot_schema_error("is not a valid type"/**/);
 
                 }
 
@@ -1631,9 +1642,9 @@ function sjot_check(sjots, root, prim, type, sjot /**/) {
     default:
 
       if (root)
-	throw "SJOT schema format error: " + type + " is not a SJOT schema object";
+        sjot_schema_error("is not a SJOT schema object"/**/);
 
-      throw "SJOT schema format error: " /**/ + " has unknown type " + type;
+      sjot_schema_error("is not a valid type"/**/);
 
   }
 
@@ -1653,7 +1664,7 @@ function sjot_is_union(type) {
 }
 
 // check if union [[ type, type, ... ]] has distinct array and object types
-function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
+function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
 
   // count array depth, each depth has its own type conflict set
   if (typeof itemtype === "string") {
@@ -1679,7 +1690,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       return sjot_check_union(
           sjots,
           type,
-          sjot_reftype(sjots, itemtype, sjot /**/),
+          sjot_reftype(sjots, itemtype, sjot/**/),
           sjot,
           /**/
           union,
@@ -1700,7 +1711,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
     itemtype = "any";
 
   } else if (Array.isArray(itemtype)) {
-    
+
     if (itemtype.length === 0 || itemtype === "array") {
 
       n++;
@@ -1710,13 +1721,13 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
 
       // nested unions, including arrays of unions, are not permitted
       if (sjot_is_union(itemtype))
-        throw "SJOT schema format error: " /**/ + " nested unions are not permitted";
+        sjot_schema_error("nested unions are not permitted"/**/);
 
       n++;
       if (typeof itemtype[0] === "number")
         itemtype = "any";
       else
-        return sjot_check_union(sjots, type, itemtype[0], sjot /**/, union, n);
+        return sjot_check_union(sjots, type, itemtype[0], sjot/**/, union, n);
 
     } else if (typeof itemtype[0] === "number") {
 
@@ -1724,7 +1735,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       if (typeof itemtype[1] === "number")
         itemtype = "any";
       else
-        return sjot_check_union(sjots, type, itemtype[1], sjot /**/, union, n);
+        return sjot_check_union(sjots, type, itemtype[1], sjot/**/, union, n);
 
     } else {
 
@@ -1738,7 +1749,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
 
   // union[0] is the cut-off array depth where everything is "any" and will conflict
   if (union[0] !== undefined && n >= union[0])
-    throw "SJOT schema format error: " /**/ + " union requires distinct types";
+    sjot_schema_error("union requires distinct types"/**/);
 
   // record null, boolean, number, string, and object types with property mapping for conflict checking at array depth n
   if (union[n] === undefined)
@@ -1751,7 +1762,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       case "null":
 
         if (union[n].n !== null)
-          throw "SJOT schema format error: " /**/ + " union has multiple null types";
+          sjot_schema_error("union has multiple null types"/**/);
         union[n].n = type;
         break;
 
@@ -1760,7 +1771,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       case "false":
 
         if (n > 1 && union[n].b !== null)
-          throw "SJOT schema format error: " /**/ + " union has multiple boolean types";
+          sjot_schema_error("union has multiple boolean types"/**/);
         union[n].b = type;
         break;
 
@@ -1778,7 +1789,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       case "number":
 
         if (n > 1 && union[n].x !== null)
-          throw "SJOT schema format error: " /**/ + " union has multiple numeric array types";
+          sjot_schema_error("union has multiple numeric types"/**/);
         union[n].x = type;
         break;
 
@@ -1793,7 +1804,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       case "char":
 
         if (n > 1 && union[n].s !== null)
-          throw "SJOT schema format error: " /**/ + " union has multiple string array types";
+          sjot_schema_error("union has multiple string types"/**/);
         union[n].s = type;
         break;
 
@@ -1801,14 +1812,14 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
 
         for (var i = n; i < union.length; i++)
           if (union[i] !== undefined && (union[i].n !== null || union[i].b !== null || union[i].x !== null || union[i].s !== null || union[i].o !== null || union[i].p !== null))
-            throw "SJOT schema format error: " /**/ + " union requires distinct types";
+            sjot_schema_error("union requires distinct types"/**/);
         union[0] = n;
         break;
 
       case "atom":
 
         if (union[n].b !== null || union[n].x !== null || union[n].s !== null)
-          throw "SJOT schema format error: " /**/ + " union has multiple atomic types";
+          sjot_schema_error("union has multiple atomic types"/**/);
         union[n].b = type;
         union[n].x = type;
         union[n].s = type;
@@ -1817,7 +1828,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       case "object":
 
         if (union[n].o !== null || union[n].p !== null)
-          throw "SJOT schema format error: " /**/ + " union has multiple object types";
+          sjot_schema_error("union has multiple object types"/**/);
         union[n].o = type;
         break;
 
@@ -1826,13 +1837,13 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
         if (itemtype.startsWith("(")) {
 
           if (n > 1 && union[n].s !== null)
-            throw "SJOT schema format error: " /**/ + " union has multiple string array types";
+            sjot_schema_error("union has multiple string array types"/**/);
           union[n].s = type;
 
         } else {
 
           if (n > 1 && union[n].x !== null)
-            throw "SJOT schema format error: " /**/ + " union has multiple numeric array types";
+            sjot_schema_error("union has multiple numeric array types"/**/);
           union[n].x = type;
 
         }
@@ -1842,7 +1853,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
   } else if (typeof itemtype === "object") {
 
     if (union[n].o !== null)
-      throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+      sjot_schema_error("union requires distinct object types"/**/);
 
     if (union[n].p === null)
       union[n].p = {};
@@ -1855,7 +1866,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
 
           // object with regex property means only one such object is permitted in the union to ensure uniqueness
           if (union[n].o !== null)
-            throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+            sjot_schema_error("union requires distinct object types"/**/);
           union[n].o = type;
           break;
 
@@ -1866,7 +1877,7 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
           if (i !== -1)
             prop = prop.slice(0, i);
           if (union[n].p.hasOwnProperty(prop))
-            throw "SJOT schema format error: " /**/ + " union requires distinct object types";
+            sjot_schema_error("union requires distinct object types"/**/);
           union[n].p[prop] = type;
 
         }
@@ -1874,9 +1885,13 @@ function sjot_check_union(sjots, type, itemtype, sjot /**/, union, n) {
       }
 
     }
-    
+
   }
 
+}
+
+function sjot_schema_error(msg, /**/) {
+  throw "SJOT schema error: "/**/ + msg;
 }
 
 /*LEAN[*/

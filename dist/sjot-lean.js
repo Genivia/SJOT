@@ -3,51 +3,33 @@
  * lightweight schemas and compact validators.  SJOT schemas have the look and
  * feel of object templates and are easy to use.
  *
- * See the README.md
+ * See README.md
  *
  * @module      sjot
  * @version     1.3.11
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
- * @license     BSD3
- * @link        http://sjot.org
+ * @license     BSD 3-Clause
+ * @link        http:
  */
-
 "use strict";
-
 class SJOT {
-
-  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
   static valid(data, type, schema) {
-
     try {
-
       return this.validate(data, type, schema);
-
     } catch (e) {
-
-      /*LOG[*/ console.log(e); // report error /*LOG]*/
+      console.log(e);
       return false;
-
     }
-
   }
-
-  // validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
   static validate(data, type, schema) {
-
     var sjots = schema;
-
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
-
-    // types "#" and "@root" are synonymous to null: all look for the SJOT @root
     if (type === "#" || type === "@root")
       type = null;
-
     if (type === undefined || type === null) {
-
       if (sjots === undefined || sjots === null)
         type = "any";
       else if (Array.isArray(sjots) && sjots.length > 0)
@@ -55,1094 +37,620 @@ class SJOT {
       else if (typeof sjots === "object")
         type = sjot_roottype(sjots);
       else
-        throw "SJOT schema expected but " + typeof sjots + " found";
-
+        sjot_schema_error("is not a SJOT schema object", typeof sjots);
     }
-
     if (Array.isArray(sjots) && sjots.length > 0)
-      sjot_validate(sjots, data, type, sjots[0] /*FAST[*/, "#", "#" /*FAST]*/);
+      sjot_validate(sjots, data, type, sjots[0], "$", "/@root");
     else
-      sjot_validate([sjots], data, type, sjots /*FAST[*/, "#", "#" /*FAST]*/);
-
+      sjot_validate([sjots], data, type, sjots, "$", "/@root");
     return true;
-
   }
-
-  // check(schema)
   static check(schema) {
-
     var sjots = schema;
-
     if (typeof schema === "string")
       sjots = JSON.parse(schema);
-
-
   }
-
 }
-
-// one validation function that is tail recursive
-function sjot_validate(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*FAST]*/) {
-
+function sjot_validate(sjots, data, type, sjot, datapath, typepath) {
   if (type === "any") {
-
-    // check if object has a @sjot attribute with an embedded SJOT schema
     if (typeof data === "object" && data !== null && data.hasOwnProperty('@sjot')) {
-
-      // sjoot: validate this object using the embedded SJOT schema or schemas
       var sjoot = data['@sjot'];
-
       if (Array.isArray(sjoot))
-        return sjot_validate(sjots.concat(sjoot), data, sjot_roottype(sjoot[0]), sjoot[0] /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
+        return sjot_validate(sjots.concat(sjoot), data, sjot_roottype(sjoot[0]), sjoot[0], datapath, typepath + "{" + datapath + ".@sjot}");
       else if (typeof sjoot === "string" && sjoot !== "any" && sjoot !== "object")
-        return sjot_validate(sjots, data, sjoot, sjot /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
+        return sjot_validate(sjots, data, sjoot, sjot, datapath, typepath + "{" + datapath + ".@sjot}");
       else if (typeof sjoot === "object")
-        return sjot_validate(sjots.concat([sjoot]), data, sjot_roottype(sjoot), sjoot /*FAST[*/, datapath, typepath + "{" + datapath + "/@sjot}" /*FAST]*/);
-      throw "Invalid @sjot schema " /*FAST[*/ + datapath  /*FAST]*/;
-
+        return sjot_validate(sjots.concat([sjoot]), data, sjot_roottype(sjoot), sjoot, datapath, typepath + "{" + datapath + ".@sjot}");
+      throw "Invalid @sjot schema " + datapath;
     }
-
     return;
-
   }
-
   if (typeof type === "string") {
-
     var h = type.indexOf("#");
-
-    if (h >= 0 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
+    if (h >= 0 && !type.startsWith("(") && !type.endsWith("]") && !type.endsWith("}"))
       return sjot_validate(
           sjots,
           data,
-          sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/),
-          sjot /*FAST[*/, datapath, typepath + "/" + type /*FAST]*/);
-
+          sjot_reftype(sjots, type, sjot, typepath),
+          sjot, datapath, typepath + "/" + type);
   }
-
-  // check unions
   if (sjot_is_union(type))
-    return sjot_validate_union(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*FAST]*/);
-
+    return sjot_validate_union(sjots, data, type, sjot, datapath, typepath);
   switch (typeof data) {
-
     case "object":
-
-      // catch null and undefined, null validates against the "null" type
       if (data === null || data === undefined) {
-
         if (data === null && type === "null")
           return;
-        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+        sjot_error("value", data, type, datapath, typepath);
       } else if (Array.isArray(data)) {
-
-        // validate an array
         if (type === "array" || type === "any[]")
           return;
-
         if (Array.isArray(type)) {
-
+          if (type.length === 0)
+            return;
           if (type.length === 1) {
-
-            // validate an array [type] or [n] (fixed size array)
             if (typeof type[0] === "number") {
-
               if (data.length !== type[0])
-                sjot_error("length", type[0], "any" /*FAST[*/, datapath, typepath + "/[" + type[0] + "]" /*FAST]*/);
-
+                sjot_error("length", type[0], "any", datapath, typepath + "[" + type[0] + "]");
             } else {
-
-              // validate array and replace nulls in array with primitive type default value
               for (var i = 0; i < data.length; i++) {
-
                 if (data[i] === null)
-                  data[i] = sjot_default("null", sjots, null, type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "]" /*FAST]*/);
-                sjot_validate(sjots, data[i], type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "]" /*FAST]*/);
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot, datapath + "[" + i + "]", typepath + "[" + type[0] + "]");
+                sjot_validate(sjots, data[i], type[0], sjot, datapath + "[" + i + "]", typepath + "[" + type[0] + "]");
               }
-
             }
-
           } else if (typeof type[1] === "number") {
-            
-            // validate an array [n,m]
             if (data.length > type[1])
-              sjot_error("length", type[1], type[0] /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-
+              sjot_error("length", type[1], type[0], datapath, typepath + "[" + type[0] + "," + type[1] + "]");
             if (typeof type[0] === "number") {
-
               if (data.length < type[0])
-                sjot_error("length", type[0], "any" /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-
+                sjot_error("length", type[0], "any", datapath, typepath + "[" + type[0] + "," + type[1] + "]");
             } else {
-
-              // validate an array [type,m] and replace nulls in array with primitive type default value
               for (var i = 0; i < data.length; i++) {
-
                 if (data[i] === null)
-                  data[i] = sjot_default("null", sjots, null, type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-                sjot_validate(sjots, data[i], type[0], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]");
+                sjot_validate(sjots, data[i], type[0], sjot, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]");
               }
-
             }
-
           } else if (typeof type[0] === "number") {
-            
-            // validate an array [n,type] or [n,type,m]
             if (data.length < type[0])
-              sjot_error("length", type[0], type[1] /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-
-            // validate an array [n,type,m]
+              sjot_error("length", type[0], type[1], datapath, typepath + "[" + type[0] + "," + type[1] + "]");
             if (type.length > 2 && typeof type[2] === "number") {
-
               if (data.length > type[2])
-                sjot_error("length", type[2], type[1] /*FAST[*/, datapath, typepath + "/[" + type[0] + "," + type[1] + "," + type[2] + "]" /*FAST]*/);
-
+                sjot_error("length", type[2], type[1], datapath, typepath + "[" + type[0] + "," + type[1] + "," + type[2] + "]");
             }
-
-            // validate an array [n,type] or [n,type,m]
             for (var i = 0; i < data.length; i++) {
-
               if (data[i] === null)
-                data[i] = sjot_default("null", sjots, null, type[1], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-              sjot_validate(sjots, data[i], type[1], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "/[" + type[0] + "," + type[1] + "]" /*FAST]*/);
-
+                data[i] = sjot_default("null", sjots, null, type[1], sjot, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]");
+              sjot_validate(sjots, data[i], type[1], sjot, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]");
             }
-
           } else if (type.length > 0) {
-
-            // validate a tuple [type, type, ...] and replace nulls with primitive type default value
             if (data.length != type.length)
-              throw /*FAST[*/ datapath + /*FAST]*/ " tuple length " + data.length + " is not the required " + /*FAST[*/ typepath + /*FAST]*/ " length " + type.length;
-
+              sjot_error("array of length", data.length, type, datapath, typepath);
             for (var i = 0; i < data.length; i++) {
-
               if (data[i] === null)
-                data[i] = sjot_default("null", sjots, null, type[i], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]" /*FAST]*/);
-              sjot_validate(sjots, data[i], type[i], sjot /*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]" /*FAST]*/);
-
+                data[i] = sjot_default("null", sjots, null, type[i], sjot, datapath + "[" + i + "]", typepath + "[" + i + "]");
+              sjot_validate(sjots, data[i], type[i], sjot, datapath + "[" + i + "]", typepath + "[" + i + "]");
             }
-
           }
-
           return;
-
         } else if (typeof type === "string") {
-
           if (type.endsWith("]")) {
-
-            // validate an array
             var i = type.lastIndexOf("[");
             var itemtype = type.slice(0, i);
-
-            sjot_validate_bounds(data.length, type, i + 1 /*FAST[*/, datapath, typepath /*FAST]*/);
-
-            // validate an array "type[n,m]" and replace nulls with primitive type default value
+            sjot_validate_bounds(data.length, type, i + 1, datapath, typepath);
             for (var j = 0; j < data.length; j++) {
-
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
-              sjot_validate(sjots, data[j], itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
-
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot, datapath + "[" + j + "]", typepath);
+              sjot_validate(sjots, data[j], itemtype, sjot, datapath + "[" + j + "]", typepath);
             }
-
             return;
-
           } else if (type.endsWith("}")) {
-
-            // validate a set
             var i = type.lastIndexOf("{");
             var itemtype = type.slice(0, i);
-
-            if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !(itemtype.endsWith("]") || itemtype.endsWith("}"))) {
-
-              // get referenced URI#name type
-              itemtype = sjot_reftype(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/);
+            if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("(") && !itemtype.endsWith("]") && !itemtype.endsWith("}")) {
+              itemtype = sjot_reftype(sjots, itemtype, sjot, typepath);
               if (typeof itemtype !== "string")
-                sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+                sjot_error("value", data, type, datapath, typepath);
             }
-
-            // check uniqueness of items in the set
             var len = data.length;
-
-            data = data.sort().filter(function (e, i, a) { return i === 0 || e !== a[i-1]; });
+            data = data.sort().filter(function (e, i, a) { return i === 0 || e !== a[i - 1]; });
             if (data.length !== len)
-              sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
-            sjot_validate_bounds(data.length, type, i + 1 /*FAST[*/, datapath, typepath /*FAST]*/);
-
-            // validate a set "type{n,m}" and replace nulls with primitive type default value
+              sjot_error("value", data, type, datapath, typepath);
+            sjot_validate_bounds(data.length, type, i + 1, datapath, typepath);
             for (var j = 0; j < data.length; j++) {
-
               if (data[j] === null)
-                data[j] = sjot_default("null", sjots, null, itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
-              sjot_validate(sjots, data[j], itemtype, sjot /*FAST[*/, datapath + "[" + j + "]", typepath /*FAST]*/);
-
+                data[j] = sjot_default("null", sjots, null, itemtype, sjot, datapath + "[" + j + "]", typepath);
+              sjot_validate(sjots, data[j], itemtype, sjot, datapath + "[" + j + "]", typepath);
             }
-
             return;
-
           }
-
         }
-
-        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+        sjot_error("value", data, type, datapath, typepath);
       } else {
-
-        // validate an object
         if (type === "object") {
-
-          // validate this object using the embedded @sjot, if present
-          return sjot_validate(sjots, data, "any", sjot /*FAST[*/, datapath, typepath /*FAST]*/);
-
+          return sjot_validate(sjots, data, "any", sjot, datapath, typepath);
         }
-
         if (type === "date" || type === "time" || type === "datetime") {
-
-          // special case for JS (not JSON), check for Date object
           if (!data.constructor.name != "Date")
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         } else if (typeof type === "object") {
-
-          // put @extends base properties into this object type
           if (type.hasOwnProperty('@extends'))
-            sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
-
+            sjot_extends(sjots, type, sjot, typepath);
           var isfinal = type.hasOwnProperty('@final') && type['@final'];
           var props = {};
-
-          // check object properties and property types
           for (var prop in type) {
-
             if (prop.startsWith("@")) {
-
               var proptype = type[prop];
-
               switch (prop) {
-
                 case "@one":
-
                   for (var propset of proptype)
                     if (propset.reduce( function (sum, prop) { return sum + data.hasOwnProperty(prop); }, 0) !== 1)
-                      throw datapath + " requires one of " + propset;
+                      sjot_error("requires one of " + propset + " properties", data, "", datapath, typepath + "/@one");
                   break;
-
                 case "@any":
-
                   for (var propset of proptype)
                     if (!propset.some(function (prop) { return data.hasOwnProperty(prop); }))
-                      throw datapath + " requires any of " + propset;
+                      sjot_error("requires any of " + propset + " properties", data, "", datapath, typepath + "/@any");
                   break;
-
                 case "@all":
-
                   for (var propset of proptype)
                     if (propset.some(function (prop) { return data.hasOwnProperty(prop); }) &&
                         !propset.every(function (prop) { return data.hasOwnProperty(prop); }))
-                      throw datapath + " requires all or none of " + propset;
+                      sjot_error("requires all or none of " + propset + " properties", data, "", datapath, typepath + "/@all");
                   break;
-
                 case "@dep":
-
                   for (var name in proptype)
                     if (data.hasOwnProperty(name) &&
                         (typeof proptype[name] !== "string" || !data.hasOwnProperty(proptype[name])) &&
                         (!Array.isArray(proptype[name]) || !proptype[name].every(function (prop) { return data.hasOwnProperty(prop); })))
-                      throw datapath + "/" + name + " requires " + proptype[name];
+                      sjot_error("requires " + proptype[name], data, "", datapath + "." + name, typepath + "/@dep");
                   break;
-
               }
-
             } else if (prop.startsWith("(")) {
-
-              // regex property name
               var proptype = type[prop];
               var matcher = RegExp("^" + prop + "$");
-
               for (var name in data) {
-
                 if (data.hasOwnProperty(name) && matcher.test(name)) {
-
-                  sjot_validate(sjots, data[name], proptype, sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
+                  sjot_validate(sjots, data[name], proptype, sjot, datapath + "." + name, typepath + "/" + prop);
                   if (isfinal)
                     props[name] = null;
-
                 }
-
               }
-
-
             } else {
-
               var i = prop.indexOf("?");
-
               if (i === -1) {
-
-                // validate required property
                 if (!data.hasOwnProperty(prop))
-                  throw datapath + "/" + prop + " is required by " /*FAST[*/ + typepath + "/" /*FAST]*/ + prop;
-                sjot_validate(sjots, data[prop], type[prop], sjot /*FAST[*/, datapath + "/" + prop, typepath + "/" + prop /*FAST]*/);
+                  sjot_error("should be present", data, "", datapath + "." + prop, typepath);
+                sjot_validate(sjots, data[prop], type[prop], sjot, datapath + "." + prop, typepath + "/" + prop);
                 if (isfinal)
                   props[prop] = null;
-
               } else {
-
                 var name = prop.slice(0, i);
-
-                // validate optional property when present or set default value when absent
                 if (data.hasOwnProperty(name) && data[name] !== null && data[name] !== undefined) {
-
-                  sjot_validate(sjots, data[name], type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
-
+                  sjot_validate(sjots, data[name], type[prop], sjot, datapath + "." + name, typepath + "/" + prop);
                 } else if (i < prop.length - 1) {
-
-                  data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
-                  sjot_validate(sjots, data[name], type[prop], sjot /*FAST[*/, datapath + "/" + name, typepath + "/" + prop /*FAST]*/);
+                  data[name] = sjot_default(prop.slice(i + 1), sjots, data, type[prop], sjot, datapath + "." + name, typepath + "/" + prop);
+                  sjot_validate(sjots, data[name], type[prop], sjot, datapath + "." + name, typepath + "/" + prop);
                 } else {
-
                   delete data[name];
-
                 }
-
                 if (isfinal)
                   props[name] = null;
-
               }
-
             }
-
           }
-
           if (isfinal)
             for (var prop in data)
               if (data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
-                throw "Extra property " + datapath + "/" + prop + " in final object " /*FAST[*/ + typepath /*FAST]*/;
-
+                sjot_error("additional property should not be present", data, "", datapath + "." + prop, typepath + "/@final");
         } else {
-
-          sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+          sjot_error("value", data, type, datapath, typepath);
         }
-
       }
-
       return;
-
     case "boolean":
-
-      // validate a boolean value
       if (type === "boolean" || type === "atom" || (data && type === "true") || (!data && type === "false"))
         return;
-      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("value", data, type, datapath, typepath);
     case "number":
-
-      // validate a number
-      if (type === "number" || type === "float" || type === "double" || type === "atom")
-        return;
-      if (typeof type !== "string")
-        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
       switch (type) {
-
+        case "atom":
+        case "number":
+        case "float":
+        case "double":
+          return;
         case "integer":
-
           if (!Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "byte":
-
           if (data < -128 || data > 127 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "short":
-
           if (data < -32768 || data > 32767 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "int":
-
           if (data < -2147483648 || data > 2147483647 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "long":
-
           if (data < -140737488355328 || data > 140737488355327 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "ubyte":
-
           if (data < 0 || data > 255 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "ushort":
-
           if (data < 0 || data > 65535 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "uint":
-
           if (data < 0 || data > 4294967295 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         case "ulong":
-
           if (data < 0 || data > 18446744073709551615 || !Number.isInteger(data))
-            sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
+            sjot_error("value", data, type, datapath, typepath);
           return;
-
         default:
-
-          // check numeric ranges n..m,n..,..m,<n..m>,<n..,..m>,n
-          // may not reject non-integers in e.g. "1.0" or non-floats in e.g. "1" because JS numbers are floats
-          // TODO perhaps use a regex instead of (or with) a loop to improve performance?
+          if (typeof type !== "string")
+            sjot_error("value", data, type, datapath, typepath);
           for (var i = 0; i < type.length; i++) {
-
             var isfloat = !Number.isInteger(data);
             var exclusive = false;
-
             if (type.charCodeAt(i) === 0x3C) {
-
               exclusive = true;
               i++;
-
             }
-
             var j = type.indexOf("..", i);
             var k = type.indexOf(",", i);
-
             if (k === -1)
               k = type.length;
-
             if (i === j) {
-
-              // check if ..m is integer, error if data is not integer
               if (isfloat) {
-
                 var p = type.indexOf(".", j + 2);
-
                 if (p === -1 || p >= k)
                   break;
-
               }
-
               if (type.charCodeAt(k - 1) === 0x3E) {
-
-                // check ..m>
                 if (data < Number.parseFloat(type.slice(j + 2, k - 1)))
                   return;
-
               } else {
-
-                // check ..m
                 if (data <= Number.parseFloat(type.slice(j + 2, k)))
                   return;
-
               }
-
             } else if (j < k && j !== -1) {
-
-              // check if n.. is integer, error if data is not integer
               if (isfloat) {
-
                 var p = type.indexOf(".", i);
-
                 if (p === -1 || p >= j)
                   break;
-
               }
-
               if (j + 2 === k) {
-
-                // check n.. and <n..
                 var n = Number.parseFloat(type.slice(i, j));
-
                 if (data > n || (!exclusive && data === n))
                   return;
-
               } else {
-
-                // check if ..m is integer, error if data is not integer
                 if (isfloat) {
-
                   var p = type.indexOf(".", j + 2);
-
                   if (p === -1 || p >= k)
                     break;
-
                 }
-
                 var n = Number.parseFloat(type.slice(i, j));
-
                 if (type.charCodeAt(k - 1) === 0x3E) {
-
-                  // check n..m> and <n..m>
                   if ((data > n || (!exclusive && data === n)) && data < Number.parseFloat(type.slice(j + 2, k - 1)))
                     return;
-
                 } else {
-
-                  // check n..m and <n..m
                   if ((data > n || (!exclusive && data === n)) && data <= Number.parseFloat(type.slice(j + 2, k)))
                     return;
-
                 }
-
               }
-
             } else {
-
-              // check if n is integer, error if data is not integer
               if (isfloat) {
-
                 var p = type.indexOf(".", i);
-
                 if (p === -1 || p >= k)
                   break;
-
               }
-
-              // check n
               if (data === Number.parseFloat(type.slice(i, k)))
                 return;
-
             }
-
             i = k;
-
           }
-
       }
-
-      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("value", data, type, datapath, typepath);
     case "string":
-
-      // validate a string
       if (type === "string" || type === "char[]" || type === "atom")
         return;
       if (typeof type !== "string")
-        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+        sjot_error("value", data, type, datapath, typepath);
       if (type.startsWith("(")) {
-
-        // check regex
         if (RegExp("^" + type + "$").test(data))
           return;
-
       } else if (type.startsWith("char")) {
-
         if (type === "char") {
-
           if (data.length === 1)
             return;
-
         } else {
-
-          return sjot_validate_bounds(data.length, type, 5 /*FAST[*/, datapath, typepath /*FAST]*/);
-
+          return sjot_validate_bounds(data.length, type, 5, datapath, typepath);
         }
-
       } else {
-
         switch (type) {
-
           case "base64":
-
-            // check base64
             if (/^[0-9A-Za-z+\/]*=?=?$/.test(data))
               return;
             break;
-
           case "hex":
-
-            // check hex
             if (/^[0-9A-Fa-f]*$/.test(data))
               return;
             break;
-
           case "uuid":
-
-            // check uuid
             if (/^(urn:uuid:)?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/.test(data))
               return;
             break;
-
           case "date":
-
-            // check RFC3999 date part
             if (/^\d{4}-\d{2}-\d{2}$/.test(data))
               return;
             break;
-
           case "time":
-
-            // check RFC3999 time part
             if (/^\d{2}:\d{2}:\d{2}(\.\d{1,6})?([-+]\d{2}:?\d{2}|Z)?$/.test(data))
               return;
             break;
-
           case "datetime":
-
-            // check RFC3999 datetime
             if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([-+]\d{2}:?\d{2}|Z)?$/.test(data))
               return;
             break;
-
           case "duration":
-
-            // check ISO 8601 duration
             if (/^-?P(-?[0-9,.]*Y)?(-?[0-9,.]*M)?(-?[0-9,.]*W)?(-?[0-9,.]*D)?(T(-?[0-9,.]*H)?(-?[0-9,.]*M)?(-?[0-9,.]*S)?)?$/.test(data))
               return;
             break;
-
         }
-
       }
-
-      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("value", data, type, datapath, typepath);
     default:
-
-      throw "SJOT schema format error in " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-
+      sjot_schema_error("is not a valid type", typepath + "/" + type);
   }
-
 }
-
-// union validation, used in sjot_validate()
-function sjot_validate_union(sjots, data, type, sjot /*FAST[*/, datapath, typepath /*FAST]*/) {
-
+function sjot_validate_union(sjots, data, type, sjot, datapath, typepath) {
   var union = [];
-
-  // check if union has distinct arrays and objects, this tells us which type we can pick to validate data against
   for (var itemtype of type[0])
-    sjot_check_union(sjots, itemtype, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/, union, 1);
-
-  // n is the depth of array nestings + 1
+    sjot_check_union(sjots, itemtype, itemtype, sjot, typepath + "/" + itemtype, union, 1);
   var n = 1;
   var item = data;
-
   while (Array.isArray(item)) {
-
     n++;
-
     if (item.length === 0) {
-
       if ((union[0] !== undefined && n >= union[0]) || union[n] !== undefined)
         return;
-      sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("value", data, type, datapath, typepath);
     }
-
     item = item[0];
-
   }
-
-  // everything is "any" when array depth n >= union[0], so we're done
   if (union[0] !== undefined && n >= union[0])
     return;
-
   if (union[n] !== undefined) {
-
     if (item === null) {
-
       if (union[n].n === null)
-        sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-      return sjot_validate(sjots, data, union[n].n, sjot /*FAST[*/, typepath + "/" + union[n].n /*FAST]*/);
-
+        sjot_error("value", data, type, datapath, typepath);
+      return sjot_validate(sjots, data, union[n].n, sjot, typepath + "/" + union[n].n);
     }
-    
     switch (typeof item) {
-
       case "boolean":
-
         if (union[n].b !== null) {
-
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].b, sjot /*FAST[*/, typepath + "/" + union[n].b /*FAST]*/);
-
+            return sjot_validate(sjots, data, union[n].b, sjot, typepath + "/" + union[n].b);
           for (var itemtype of type[0]) {
-
             try {
-
-              return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
-
+              return sjot_validate(sjots, data, itemtype, sjot, typepath + "/" + itemtype);
             } catch (e) {
-
             }
-
           }
-
         }
-
         break;
-
       case "number":
-
         if (union[n].x !== null) {
-
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].x, sjot /*FAST[*/, typepath + "/" + union[n].x /*FAST]*/);
-
+            return sjot_validate(sjots, data, union[n].x, sjot, typepath + "/" + union[n].x);
           for (var itemtype of type[0]) {
-
             try {
-
-              return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
-
+              return sjot_validate(sjots, data, itemtype, sjot, typepath + "/" + itemtype);
             } catch (e) {
-
             }
-
           }
-
         }
-
         break;
-
       case "string":
-
         if (union[n].s !== null) {
-
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].s, sjot /*FAST[*/, typepath + "/" + union[n].s /*FAST]*/);
-
+            return sjot_validate(sjots, data, union[n].s, sjot, typepath + "/" + union[n].s);
           for (var itemtype of type[0]) {
-
             try {
-
-              return sjot_validate(sjots, data, itemtype, sjot /*FAST[*/, typepath + "/" + itemtype /*FAST]*/);
-
+              return sjot_validate(sjots, data, itemtype, sjot, typepath + "/" + itemtype);
             } catch (e) {
-
             }
-
           }
-
         }
-
         break;
-
       case "object":
-
         if (union[n].o !== null)
-          return sjot_validate(sjots, data, union[n].o, sjot /*FAST[*/, typepath + "/" + union[n].o /*FAST]*/);
-
+          return sjot_validate(sjots, data, union[n].o, sjot, typepath + "/" + union[n].o);
         if (union[n].p !== null) {
-
           for (var prop in item)
             if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot /*FAST[*/, typepath + "/" + union[n].p[prop] /*FAST]*/);
+              return sjot_validate(sjots, data, union[n].p[prop], sjot, typepath + "/" + union[n].p[prop]);
           for (var prop in union[n].p)
             if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot /*FAST[*/, typepath + "/" + union[n].p[prop] /*FAST]*/);
-
+              return sjot_validate(sjots, data, union[n].p[prop], sjot, typepath + "/" + union[n].p[prop]);
         }
-
     }
-
   }
-
-  sjot_error("value", data, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+  sjot_error("value", data, type, datapath, typepath);
 }
-
-// check array/set/string bounds, used in sjot_validate()
-function sjot_validate_bounds(len, type, i /*FAST[*/, datapath, typepath /*FAST]*/) {
-
+function sjot_validate_bounds(len, type, i, datapath, typepath) {
   var j = type.indexOf("]", i);
   var k = type.indexOf(",", i);
-
-  // return if no bounds or [] or {}
   if (j === -1)
     j = type.indexOf("}", i);
   if (j === -1 || i === j)
     return;
-
   if (k === -1)
   {
-    // check [n]
     var n = Number.parseInt(type.slice(i, j));
-
     if (len !== n)
-      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("length", len, type, datapath, typepath);
   } else if (k + 1 === j) {
-
-    // check [n,]
     var n = Number.parseInt(type.slice(i, k));
-
     if (len < n)
-      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("length", len, type, datapath, typepath);
   } else if (i === k) {
-
-    // check [,m]
     var m = Number.parseInt(type.slice(k + 1, j));
-
     if (len > m)
-      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("length", len, type, datapath, typepath);
   } else {
-
-    // check [n,m]
     var n = Number.parseInt(type.slice(i, k));
     var m = Number.parseInt(type.slice(k + 1, j));
-
     if (len < n || len > m)
-      sjot_error("length", len, type /*FAST[*/, datapath, typepath /*FAST]*/);
-
+      sjot_error("length", len, type, datapath, typepath);
   }
-
 }
-
-// extends object types by recursively expanding base object types
-function sjot_extends(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
-
-  // put @extends base properties into this object type
+function sjot_extends(sjots, type, sjot, typepath) {
   if (type.hasOwnProperty('@extends')) {
-
     var basetype = type['@extends'];
-
-    // mark visited/expanded
     type['@extends'] = undefined;
-
     if (basetype === undefined)
       return;
-
     if (typeof basetype !== "string")
-      throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@extends is not an object";
-
-    // get referenced URI#name base type
-    var base = sjot_reftype(sjots, basetype, sjot /*FAST[*/, typepath /*FAST]*/);
-
+      sjot_schema_error("@extends does not refer to an object", typepath);
+    var base = sjot_reftype(sjots, basetype, sjot, typepath);
     if (typeof base !== "object")
-      throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/@extends is not an object";
-
-    // recursively expand
-    sjot_extends(sjots, base, sjot /*FAST[*/, typepath /*FAST]*/);
-
+      sjot_schema_error("@extends does not refer to an object", typepath);
+    sjot_extends(sjots, base, sjot, typepath);
     for (var prop in base) {
-
       if (base.hasOwnProperty(prop)) {
-
         if (prop.startsWith("@")) {
-
           switch (prop) {
-
             case "@final":
-
               if (base[prop])
-                throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " @extends " + basetype + " that is final";
+                sjot_schema_error("@extends " + basetype + " that is final", typepath);
               break;
-
             case "@one":
             case "@any":
             case "@all":
-
               if (type.hasOwnProperty(prop))
                 type[prop] = type[prop].concat(base[prop]);
               else
                 type[prop] = base[prop];
               break;
-
             case "@dep":
-
               if (!type.hasOwnProperty("@dep"))
                 type[prop] = {};
-
               for (var name in base[prop]) {
-
                 if (base[prop].hasOwnProperty(name)) {
-
                   if (type[prop].hasOwnProperty(name)) {
-
                     if (typeof type[prop][name] === "string")
                       type[prop][name] = [type[prop][name]];
                     if (typeof base[prop][name] === "string")
                       type[prop][name] = type[prop][name].concat([base[prop][name]]);
                     else
                       type[prop][name] = type[prop][name].concat(base[prop][name]);
-
                   } else {
-
                     type[prop][name] = base[prop][name];
-
                   }
-
                 }
-
               }
-
               break;
-
           }
-
         } else {
-
           if (type.hasOwnProperty(prop))
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + "/" + prop + " overriding of " + basetype + "/" + prop + " is not permitted";
-
+            sjot_schema_error("overriding of " + basetype + "/" + prop + " is not permitted", typepath + "/" + prop);
           type[prop] = base[prop];
-
         }
-
       }
-
     }
-
   }
-
 }
-
-// get schema root type
 function sjot_roottype(sjot) {
-
   if (sjot.hasOwnProperty('@root')) {
-
     var type = sjot['@root'];
-
     if (typeof type !== "string" || !type.endsWith("#"))
       return type;
-    throw "SJOT schema root refers to a root";
-
+    sjot_schema_error("root refers to a root", "schema");
   }
-
   for (var prop in sjot)
     if (sjot.hasOwnProperty(prop) && !prop.startsWith("@"))
       return sjot[prop];
-
-  throw "SJOT schema has no root type";
-
+  sjot_schema_error("has no root type", "schema");
 }
-
-// get referenced type from type reference [URI]#[type]
-function sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/) {
-
+function sjot_reftype(sjots, type, sjot, typepath) {
   var h = type.indexOf("#");
   var prop = type.slice(h + 1);
-
   if (h <= 0) {
-
-    // local reference to root # in non-id schema
     if (prop === "")
       return sjot_roottype(sjot);
-    // local reference #type in non-id schema (prop = type)
     if (!sjot.hasOwnProperty(prop))
-      throw "SJOT schema has no type " + prop + " referenced by " /*FAST[*/ + typepath /*FAST]*/ + "/" + type;
+      sjot_schema_error("missing named type referenced by " + prop, typepath + "/" + type);
     type = sjot[prop];
     if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
-      throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + type + " spaghetti type references not permitted";
+      sjot_schema_error("spaghetti references to named types not permitted", typepath + "/" + type);
     return type;
-
   } else {
-
-    // reference URI#[type]
     for (var sjoot of sjots) {
-
       if (sjoot.hasOwnProperty('@id') && type.startsWith(sjoot['@id']) && sjoot['@id'].length === h) {
-
-        // type reference # to root
         if (prop === "")
           return sjot_roottype(sjoot);
-        // reference URI#type (prop = type)
         if (!sjoot.hasOwnProperty(prop))
-          throw "SJOT schema " + sjoot['@id'] + " has no type " + prop + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
+          sjot_schema_error("schema " + sjoot['@id'] + " missing named type referenced by " + prop, typepath + "/" + type);
         type = sjoot[prop];
         if (typeof type === "string" && type.indexOf("#") !== -1 && !type.startsWith("(") && !(type.endsWith("]") || type.endsWith("}")))
-          throw "SJOT schema format error: " /*FAST[*/ + typepath + "/" /*FAST]*/ + type + " spaghetti type references not permitted";
+          sjot_schema_error("spaghetti references to named types not permitted", typepath + "/" + type);
         return type;
-
       }
-
     }
-
-    // TODO get external URI type reference when URI is a URL, load and put in sjots array
-    // throw "No type " + prop + " found at " + type.slice(0, h - 1) + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type;
-
     var URL = type.slice(0, h);
-
     try {
-
       var sjoot = sjot_load(URL);
-
       if (sjoot.hasOwnProperty('@id') && sjoot['@id'] !== URL)
-        throw "SJOT schema " + URL + " load error: @id mismatch";
+        sjot_schema_error("schema \"" + URL + "\" load error due to @id URL mismatch", typepath + "/" + type);
       sjoot['@id'] = URL;
       sjots = sjots.concat(sjoot);
-      return sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
-
+      return sjot_reftype(sjots, type, sjot, typepath);
     } catch (e) {
-
-      throw "No type " + prop + " found at " + URL + " referenced by " /*FAST[*/ + typepath + "/" /*FAST]*/ + type + " error: " + e;
+      sjot_schema_error("no type " + prop + " found in \"" + URL + "\" " + e, typepath + "/" + type);
     }
-
   }
-
 }
-
-// load JSON from file
 function sjot_load(file) {
-  
   var json;
-  var load = function(file, callback) {   
-
+  var load = function(file, callback) {
     var xobj = new XMLHttpRequest();
-
     xobj.overrideMimeType("application/json");
-    xobj.open('GET', file, false); // uses deprecated synchronous load, WHICH IS WHAT WE WANT
-
+    xobj.open('GET', file, false); 
     xobj.onreadystatechange = function() {
-
       if (xobj.readyState == 4 && xobj.status == "200")
         callback(xobj.responseText);
-
     };
-
-    xobj.send(null);  
-
+    xobj.send(null);
   }
- 
   load(file, function(response) { json = JSON.parse(response); });
   return json;
-
 }
-
-// return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null" and anything else)
-function sjot_default(value, sjots, data, type, sjot /*FAST[*/, datapath, typepath /*FAST]*/) {
-
+function sjot_default(value, sjots, data, type, sjot, datapath, typepath) {
   if (typeof type !== "string" || type.endsWith("]") || type.endsWith("}"))
     return null;
   if (type.indexOf("#") !== -1 && !type.startsWith("("))
-    type = sjot_reftype(sjots, type, sjot /*FAST[*/, typepath /*FAST]*/);
+    type = sjot_reftype(sjots, type, sjot, typepath);
   if (typeof type !== "string" || type.endsWith("]") || type.endsWith("}"))
     return null;
-
   switch (type) {
-
     case "null":
-
       return null;
-
     case "boolean":
     case "true":
     case "false":
-
       return (value === "true");
-
     case "number":
     case "float":
     case "double":
@@ -1155,69 +663,46 @@ function sjot_default(value, sjots, data, type, sjot /*FAST[*/, datapath, typepa
     case "ushort":
     case "uint":
     case "ulong":
-
       return value === "null" ? 0 : Number.parseFloat(value);
-
     case "object":
     case "array":
-
       return null;
-
     default:
-
-      // check type for numeric range and if so set number, not string
       if (!type.startsWith("(") && /\d/.test(type))
         return value === "null" ? 0 : Number.parseFloat(value);
       return value === "null" ? "" : value;
-
   }
-
 }
-
-// throw descriptive error message
-function sjot_error(what, data, type /*FAST[*/, datapath, typepath /*FAST]*/) {
-
-  var a = "a";
-
-  if (Array.isArray(type))
-    a = type.length === 1 && Array.isArray(type[0]) ? "one of" : "a tuple of";
+function sjot_error(what, data, type, datapath, typepath) {
+  var a = "is not an object ";
+  if (type === "")
+    a = "";
+  else if (Array.isArray(type))
+    a = type.length === 0 ? "is not an array " : type.length === 1 && Array.isArray(type[0]) ? "is not one of " : "is not an array of ";
   else if (typeof type === "string")
-    a = type.endsWith("]") ? "an array" : type.endsWith("}") ? "a set" : "of type"
-
-  var b = /*FAST[*/ typepath !== "" ? " required by " + typepath : /*FAST]*/ "";
-
-  if (typeof data === "string")
-    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " \"" + data + "\" is not " + a + " " + type + b;
-  else if (typeof data === "number" || typeof data === "boolean" || data === null)
-    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " " + data + " is not " + a + " " + type + b;
+    a = type.endsWith("]") ? "is not an array " : type.endsWith("}") ? "is not a set " : "is not of type "
   else
-    throw /*FAST[*/ datapath + /*FAST]*/ " " + what + " is not " + a + " " + type + b;
-
+    type = "";
+  var b = typepath !== "" ? (type === "" ? "as required by " : " required by ") + typepath : "";
+  if (typeof data === "string")
+    throw datapath + " " + what + " \"" + data + "\" " + a + type + b;
+  else if (typeof data === "number" || typeof data === "boolean" || data === null)
+    throw datapath + " " + what + " " + data + " " + a + type + b;
+  else
+    throw datapath + " " + what + " " + a + type + b;
 }
-
-
-// returns true if type is a union [[ type, type, ... ]]
 function sjot_is_union(type) {
-
   return Array.isArray(type) &&
     type.length === 1 &&
     Array.isArray(type[0]) &&
     type[0].length > 1 &&
     typeof type[0] !== "number" &&
     typeof type[1] !== "number";
-
 }
-
-// check if union [[ type, type, ... ]] has distinct array and object types
-function sjot_check_union(sjots, type, itemtype, sjot /*FAST[*/, typepath /*FAST]*/, union, n) {
-
-  // count array depth, each depth has its own type conflict set
+function sjot_check_union(sjots, type, itemtype, sjot, typepath, union, n) {
   if (typeof itemtype === "string") {
-
     var i = itemtype.length;
-
     while (i > 0) {
-
       if (itemtype.charCodeAt(i - 1) === 0x5D)
         i = itemtype.lastIndexOf("[", i - 1);
       else if (type.charCodeAt(i - 1) === 0x7D)
@@ -1225,101 +710,65 @@ function sjot_check_union(sjots, type, itemtype, sjot /*FAST[*/, typepath /*FAST
       else
         break;
       n++;
-
     }
-
-    // n is array depth, now get item type and check if this is a type reference
     itemtype = itemtype.slice(0, i);
-
     if (itemtype.indexOf("#") !== -1 && !itemtype.startsWith("("))
       return sjot_check_union(
           sjots,
           type,
-          sjot_reftype(sjots, itemtype, sjot /*FAST[*/, typepath /*FAST]*/),
+          sjot_reftype(sjots, itemtype, sjot, typepath),
           sjot,
-          /*FAST[*/ typepath, /*FAST]*/
+          typepath,
           union,
           n);
-
   }
-
   if (itemtype === "char" && n > 0) {
-
-    // "char[]" is a special case, synonymous to "string"
     n--;
     itemtype = "string";
-
   } else if (itemtype === "array") {
-
-    // "array" is synonymous to "any[]"
     n++;
     itemtype = "any";
-
   } else if (Array.isArray(itemtype)) {
-    
     if (itemtype.length === 0 || itemtype === "array") {
-
       n++;
       itemtype = "any";
-
     } else if (itemtype.length === 1 || typeof itemtype[1] === "number") {
-
-      // nested unions, including arrays of unions, are not permitted
       if (sjot_is_union(itemtype))
-        throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " nested unions are not permitted";
-
+        sjot_schema_error("nested unions are not permitted", typepath);
       n++;
       if (typeof itemtype[0] === "number")
         itemtype = "any";
       else
-        return sjot_check_union(sjots, type, itemtype[0], sjot /*FAST[*/, typepath /*FAST]*/, union, n);
-
+        return sjot_check_union(sjots, type, itemtype[0], sjot, typepath, union, n);
     } else if (typeof itemtype[0] === "number") {
-
       n++;
       if (typeof itemtype[1] === "number")
         itemtype = "any";
       else
-        return sjot_check_union(sjots, type, itemtype[1], sjot /*FAST[*/, typepath /*FAST]*/, union, n);
-
+        return sjot_check_union(sjots, type, itemtype[1], sjot, typepath, union, n);
     } else {
-
-      // tuple is represented by "any[]"
       n++;
       itemtype = "any";
-
     }
-
   }
-
-  // union[0] is the cut-off array depth where everything is "any" and will conflict
   if (union[0] !== undefined && n >= union[0])
-    throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct types";
-
-  // record null, boolean, number, string, and object types with property mapping for conflict checking at array depth n
+    sjot_schema_error("union requires distinct types", typepath);
   if (union[n] === undefined)
     union[n] = { n: null, b: null, x: null, s: null, o: null, p: null };
-
   if (typeof itemtype === "string") {
-
     switch (itemtype) {
-
       case "null":
-
         if (union[n].n !== null)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple null types";
+          sjot_schema_error("union has multiple null types", typepath);
         union[n].n = type;
         break;
-
       case "boolean":
       case "true":
       case "false":
-
         if (n > 1 && union[n].b !== null)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple boolean types";
+          sjot_schema_error("union has multiple boolean types", typepath);
         union[n].b = type;
         break;
-
       case "byte":
       case "short":
       case "int":
@@ -1332,12 +781,10 @@ function sjot_check_union(sjots, type, itemtype, sjot /*FAST[*/, typepath /*FAST
       case "float":
       case "double":
       case "number":
-
         if (n > 1 && union[n].x !== null)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple numeric array types";
+          sjot_schema_error("union has multiple numeric types", typepath);
         union[n].x = type;
         break;
-
       case "string":
       case "base64":
       case "hex":
@@ -1347,92 +794,63 @@ function sjot_check_union(sjots, type, itemtype, sjot /*FAST[*/, typepath /*FAST
       case "datetime":
       case "duration":
       case "char":
-
         if (n > 1 && union[n].s !== null)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple string array types";
+          sjot_schema_error("union has multiple string types", typepath);
         union[n].s = type;
         break;
-
       case "any":
-
         for (var i = n; i < union.length; i++)
           if (union[i] !== undefined && (union[i].n !== null || union[i].b !== null || union[i].x !== null || union[i].s !== null || union[i].o !== null || union[i].p !== null))
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct types";
+            sjot_schema_error("union requires distinct types", typepath);
         union[0] = n;
         break;
-
       case "atom":
-
         if (union[n].b !== null || union[n].x !== null || union[n].s !== null)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple atomic types";
+          sjot_schema_error("union has multiple atomic types", typepath);
         union[n].b = type;
         union[n].x = type;
         union[n].s = type;
         break;
-
       case "object":
-
         if (union[n].o !== null || union[n].p !== null)
-          throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple object types";
+          sjot_schema_error("union has multiple object types", typepath);
         union[n].o = type;
         break;
-
       default:
-
         if (itemtype.startsWith("(")) {
-
           if (n > 1 && union[n].s !== null)
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple string array types";
+            sjot_schema_error("union has multiple string array types", typepath);
           union[n].s = type;
-
         } else {
-
           if (n > 1 && union[n].x !== null)
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union has multiple numeric array types";
+            sjot_schema_error("union has multiple numeric array types", typepath);
           union[n].x = type;
-
         }
-
     }
-
   } else if (typeof itemtype === "object") {
-
     if (union[n].o !== null)
-      throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct object types";
-
+      sjot_schema_error("union requires distinct object types", typepath);
     if (union[n].p === null)
       union[n].p = {};
-
     for (var prop in itemtype) {
-
       if (!prop.startsWith('@') && itemtype.hasOwnProperty(prop)) {
-
         if (prop.startsWith("(")) {
-
-          // object with regex property means only one such object is permitted in the union to ensure uniqueness
           if (union[n].o !== null)
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct object types";
+            sjot_schema_error("union requires distinct object types", typepath);
           union[n].o = type;
           break;
-
         } else {
-
           var i = prop.indexOf("?");
-
           if (i !== -1)
             prop = prop.slice(0, i);
           if (union[n].p.hasOwnProperty(prop))
-            throw "SJOT schema format error: " /*FAST[*/ + typepath /*FAST]*/ + " union requires distinct object types";
+            sjot_schema_error("union requires distinct object types", typepath);
           union[n].p[prop] = type;
-
         }
-
       }
-
     }
-    
   }
-
 }
-
-
+function sjot_schema_error(msg, typepath) {
+  throw "SJOT schema error: " + typepath + " " + msg;
+}
