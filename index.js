@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.3.12
+ * @version     1.3.13
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -1898,7 +1898,7 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
 }
 
-function sjot_schema_error(msg, /*FAST[*/typepath/*FAST]*/) {
+function sjot_schema_error(msg/*FAST[*/, typepath/*FAST]*/) {
   throw "SJOT schema error: "/*FAST[*/ + typepath + " "/*FAST]*/ + msg;
 }
 
