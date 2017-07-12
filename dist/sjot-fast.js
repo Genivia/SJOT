@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.3.12
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -1890,7 +1890,7 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
 
 }
 
-function sjot_schema_error(msg, /**/) {
+function sjot_schema_error(msg/**/) {
   throw "SJOT schema error: "/**/ + msg;
 }
 

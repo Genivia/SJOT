@@ -1898,7 +1898,7 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
 }
 
-function sjot_schema_error(msg, /*FAST[*/typepath/*FAST]*/) {
+function sjot_schema_error(msg/*FAST[*/, typepath/*FAST]*/) {
   throw "SJOT schema error: "/*FAST[*/ + typepath + " "/*FAST]*/ + msg;
 }
 
