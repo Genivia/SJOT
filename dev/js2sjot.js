@@ -55,12 +55,14 @@
 class JS2SJOT {
   static toSJOT(schema, version) {
     var js = schema;
-    if (typeof js === "string")
+    if (typeof js === "string") {
       js = JSON.parse(js);
+    }
     if (Array.isArray(js)) {
       var schemas = [];
-      for (var i = 0; i < js.length; i++)
+      for (var i = 0; i < js.length; i++) {
         schemas.push(js_2sjot(js[i], version));
+      }
       return schemas;
     }
     else {
@@ -68,8 +70,6 @@ class JS2SJOT {
     }
   }
 }
-
-//module.exports = JS2SJOT;
 
 var js_2sjot = function(js, version) {
   var sjot = {};
@@ -140,8 +140,9 @@ var getSJOTPropertyFromNode = function(jsRoot, jsNode, jPropName, optional) {
     s += "?";
     if (node.hasOwnProperty("default")) {
       var def = node["default"];
-      if (def === "")
+      if (def === "") {
         def = "null";
+      }
       s += def;
     }
   }
@@ -162,12 +163,15 @@ var resolveJSONPointer = function(jsRoot, jsNode, ptr) {
     nextProp = ptr.substring(0, endIndex);
     ptr = ptr.substring(endIndex+1);
   }
-  if (nextProp === "#")
+  if (nextProp === "#") {
     return resolveJSONPointer(jsRoot, jsRoot, ptr);
-  if (nextProp.length)
+  }
+  if (nextProp.length) {
     return resolveJSONPointer(jsRoot, jsNode[nextProp], ptr);
-  if (jsNode.hasOwnProperty("$ref"))
+  }
+  if (jsNode.hasOwnProperty("$ref")) {
     return resolveJSONPointer(jsRoot, jsRoot, jsNode["$ref"]);
+  }
   return jsNode;
 };
 
@@ -186,16 +190,19 @@ var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot)  {
   }
 
   /* renaming "additionalProperties" */
-  if (jPropName === "(.*)")
+  if (jPropName === "(.*)") {
     jPropName = "addProps";
+  }
 
   /* enum types */
-  if (jsNode.hasOwnProperty("enum"))
+  if (jsNode.hasOwnProperty("enum")) {
     return getSJOTEnumTypeFromNode(jsRoot, jsNode, jPropName, sjotRoot);
+  }
 
   /* get the reference type */
-  if (jsNode.hasOwnProperty("$ref"))
+  if (jsNode.hasOwnProperty("$ref")) {
     return getSJOTTypeFromReference(jsNode["$ref"]);
+  }
 
   /* no specified type */
   if (!jsNode.hasOwnProperty("type")) {
@@ -205,26 +212,31 @@ var getSJOTTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot)  {
         jsNode.hasOwnProperty("required") ||
         jsNode.hasOwnProperty("additionalProperties") ||
         jsNode.hasOwnProperty("patternProperties") ||
-        jsNode.hasOwnProperty("dependencies"))
+        jsNode.hasOwnProperty("dependencies")) {
       jsNode["type"] = "object";
+    }
     else if (jsNode.hasOwnProperty("items") ||
              jsNode.hasOwnProperty("minItems") ||
              jsNode.hasOwnProperty("maxItems") ||
-             jsNode.hasOwnProperty("uniqueItems"))
+             jsNode.hasOwnProperty("uniqueItems")) {
       jsNode["type"] = "array";
+    }
     else if (jsNode.hasOwnProperty("minLength") ||
              jsNode.hasOwnProperty("maxLength") ||
-             jsNode.hasOwnProperty("pattern"))
+             jsNode.hasOwnProperty("pattern")) {
       jsNode["type"] = "string";
+    }
     else if (jsNode.hasOwnProperty("multipleOf") ||
              jsNode.hasOwnProperty("divisibleBy") ||
              jsNode.hasOwnProperty("minimum") ||
              jsNode.hasOwnProperty("maximum") ||
              jsNode.hasOwnProperty("exclusiveMinimum") ||
-             jsNode.hasOwnProperty("exclusiveMaximum"))
+             jsNode.hasOwnProperty("exclusiveMaximum")) {
       jsNode["type"] = "number";
-    else
+    }
+    else {
       return "any";
+    }
   }
 
   /* normal type case */
@@ -285,16 +297,20 @@ var getSJOTEnumTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
   /* filter out enums that aren't in "type" */
   if (jsNode.hasOwnProperty("type")) {
     var types = jsNode["type"];
-    if (typeof(types) === "string")
+    if (typeof(types) === "string") {
       types = [ types ];
+    }
     enums = enums.filter(function(v, i, a) {
       var eType;
-      if (Array.isArray(v))
+      if (Array.isArray(v)) {
         eType = "array";
-      else if (v === null)
+      }
+      else if (v === null) {
         eType = "null";
-      else
+      }
+      else {
         eType = typeof(v);
+      }
 
       if (eType === "number" && v.toString().indexOf(".") === -1) {
         return (types.indexOf("integer") !== -1 ||
@@ -307,7 +323,9 @@ var getSJOTEnumTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
 
   /* create SJOT union */
   var sjotEnumTypes = [];
-  if (jPropName === "@root") jPropName = "root";
+  if (jPropName === "@root") {
+    jPropName = "root";
+  }
   for (var i = 0; i < enums.length; i++) {
     var t = getSJOTTypeFromLiteralObject(jsRoot, enums[i],
                                          jPropName + "_enum_type",
@@ -319,8 +337,9 @@ var getSJOTEnumTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
 };
 
 var getSJOTTypeFromLiteralObject = function(jsRoot, object, jPropName, sjotRoot) {
-  if (object === null)
+  if (object === null) {
     return "null";
+  }
 
   if (Array.isArray(object)) {
     var types = [];
@@ -342,8 +361,9 @@ var getSJOTTypeFromLiteralObject = function(jsRoot, object, jPropName, sjotRoot)
     case "integer":
       return object.toString();
     case "object":
-      if (!Object.keys(object).length)
+      if (!Object.keys(object).length) {
         return {};
+      }
 
       /* make a reference */
       var obj = {};
@@ -366,12 +386,14 @@ var getSJOTTypeFromLiteralObject = function(jsRoot, object, jPropName, sjotRoot)
 
 var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
   var s;
+  var inlineArray = false;
   var additionalItems = {};
   if (jsNode.hasOwnProperty("additionalItems")) {
     additionalItems = jsNode["additionalItems"];
   }
-  if (additionalItems === true)
+  if (additionalItems === true) {
     additionalItems = {};
+  }
 
   if (Array.isArray(jsNode["items"])) {
     var maxItems = jsNode["maxItems"];
@@ -383,8 +405,9 @@ var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
            (maxItems !== undefined) && maxItems === len))) {
       /* make a tuple */
       s = [];
-      if (maxItems !== undefined)
+      if (maxItems !== undefined) {
         len = maxItems;
+      }
       for (var i = 0; i < len; i++) {
         var t = toSJOT(jsRoot, jsNode["items"][i],
                        jPropName,
@@ -407,17 +430,15 @@ var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
     if (jsNode["items"].hasOwnProperty("enum") ||
              (jsNode["items"].hasOwnProperty("type") &&
              jsNode["items"]["type"] === "object")) {
-               if (jsNode["items"].hasOwnProperty("title"))
-                 jPropName = jsNode["items"]["title"];
-               else
-                 if (jPropName === "@root") jPropName = "root";
-      jPropName += "_type";
-      var ref = getUnconflictingSJOTType(jPropName, sjotRoot);
+      inlineArray = true;
+
+      var params = { 'jsNode': jsNode, 'objIndex': 0 }
+      s = getSJOTInlineArraySkeletonFromNode(params);
+
       toSJOT(jsRoot, jsNode["items"],
-             ref,
-             sjotRoot, sjotRoot,
+             params['objIndex'],
+             sjotRoot, s,
              false);
-      s = "#" + ref;
     }
     else {
       s = getSJOTTypeFromNode(jsRoot, jsNode["items"],
@@ -426,12 +447,35 @@ var getSJOTArrayTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
     }
   }
 
-  if (s === undefined)
+  if (s === undefined) {
     s = "any";
+  }
+  if (inlineArray === false) {
+    s += getSJOTArraySuffixFromNode(jsNode);
+  }
 
-  s += getSJOTArraySuffixFromNode(jsNode);
   return s;
 };
+
+var getSJOTInlineArraySkeletonFromNode = function(params) {
+  return getSJOTInlineArraySkeleton(params);
+}
+
+var getSJOTInlineArraySkeleton = function(params) {
+  var minItems = params['jsNode']['minItems'];
+  var maxItems = params['jsNode']['maxItems'];
+  var result = [];
+  var maxIndex = 1;
+  if (minItems !== undefined) {
+    result[0] = minItems;
+    maxIndex++;
+    params['objIndex']++;
+  }
+  if (maxItems !== undefined) {
+    result[maxIndex] = maxItems;
+  }
+  return result;
+}
 
 var getSJOTArraySuffixFromNode = function(jsNode) {
   return getSJOTArraySuffix(jsNode["minItems"],
@@ -490,8 +534,9 @@ var getSJOTObjectTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
       obj["@final"] = !jsNode["additionalProperties"];
     }
     else {
-      if (!jsNode.hasOwnProperty("patternProperties"))
+      if (!jsNode.hasOwnProperty("patternProperties")) {
         jsNode["patternProperties"] = {};
+      }
       jsNode["patternProperties"][".*"] = jsNode["additionalProperties"];
     }
   }
@@ -516,8 +561,9 @@ var getSJOTObjectTypeFromNode = function(jsRoot, jsNode, jPropName, sjotRoot) {
       if (jsNode["dependencies"].hasOwnProperty(dep)) {
 
         /* convert single strings to an array (V3 -> V4)*/
-        if (typeof(jsNode["dependencies"][dep]) === "string")
+        if (typeof(jsNode["dependencies"][dep]) === "string") {
           jsNode["dependencies"][dep] = [ jsNode["dependencies"][dep] ];
+        }
 
         if (Array.isArray(jsNode["dependencies"][dep])) {
           obj["@dep"][dep] = jsNode["dependencies"][dep];
@@ -543,11 +589,15 @@ var getSJOTNumberTypeFromNode = function(jsNode, isInteger) {
   var xMin, xMax;
   if (jsNode.hasOwnProperty("minimum")) {
     min = jsNode["minimum"];
-    if (!isInteger) min = min.toFixed(1);
+    if (!isInteger) {
+      min = min.toFixed(1);
+    }
   }
   if (jsNode.hasOwnProperty("maximum")) {
     max = jsNode["maximum"];
-    if (!isInteger) max = max.toFixed(1);
+    if (!isInteger) {
+      max = max.toFixed(1);
+    }
   }
   if (jsNode.hasOwnProperty("exclusiveMinimum") &&
         jsNode["exclusiveMinimum"] === true) {
@@ -564,17 +614,27 @@ var getSJOTNumberTypeFromNode = function(jsNode, isInteger) {
 var getSJOTNumberType = function(min, max, xMin, xMax, isInteger) {
   var s = "";
   if (min !== undefined || max !== undefined) {
-    if (xMin !== undefined) s += "<";
-    if (min !== undefined) s += min;
+    if (xMin !== undefined) {
+      s += "<";
+    }
+    if (min !== undefined) {
+      s += min;
+    }
     s += "..";
-    if (max !== undefined) s += max;
-    if (xMax !== undefined) s += ">";
+    if (max !== undefined) {
+      s += max;
+    }
+    if (xMax !== undefined) {
+      s += ">";
+    }
   }
   else {
-    if (isInteger)
+    if (isInteger) {
       s = "integer";
-    else
+    }
+    else {
       s = "number";
+    }
   }
   return s;
 };
@@ -627,11 +687,13 @@ var getSJOTStringType = function(minL, maxL) {
   var s = "";
   if (minL !== undefined  || maxL !== undefined) {
     s = "char[";
-    if (minL !== undefined)
+    if (minL !== undefined) {
       s += minL;
+    }
     s += ",";
-    if (maxL !== undefined)
+    if (maxL !== undefined) {
       s += maxL;
+    }
     s += "]";
   }
   else {
@@ -642,14 +704,17 @@ var getSJOTStringType = function(minL, maxL) {
 
 var getSJOTRegexType = function(r, doEscape) {
   var start = 0, end = r.length;
-  if (r[0] === "^")
+  if (r[0] === "^") {
     start++;
-  if (r[r.length - 1] === "$")
+  }
+  if (r[r.length - 1] === "$") {
     end--;
+  }
   r = r.substring(start, end);
   /* escape special chars */
-  if (doEscape)
+  if (doEscape) {
     r = r.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  }
   return "(" + r + ")";
 };
 
@@ -678,8 +743,9 @@ var getUnconflictingSJOTType = function(s, sjotRoot) {
     count++;
     prop = count ? s + "_" + count : s;
   }
-  if (count)
+  if (count) {
     s += "_" + count;
+  }
   return s;
 };
 
