@@ -98,7 +98,7 @@ An object property name can be expressed as a regex for property name matching.
 Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
 `@all`, `@dep`.
 
-Notes can be placed in schemas and objects with `@note`.
+Notes can be placed in schemas with `@note` property strings.
 
 SJOT explained by example
 -------------------------
@@ -124,16 +124,18 @@ street, city, state and zip, and an optional phone number specified as a regex:
 
 ### Default values
 
-When a property is omitted or is null, the default value will be assigned by
-the validator to the property (primitive types only):
+When an optional property is missing or is null, the default value will be
+assigned by the validator to this property (primitive types only).  For
+example, and object with a year since 1900 that defaults to 1900:
 
     {
       "@root": { "year?1900": "1900.." }
     }
 
-### Inheritance
+### Inheritance and referencing
 
-An array of extensible products and widgets, where `Widget` extends `Product`:
+An array of extensible products and widgets, where `Widget` extends `Product`.
+Note that `#Product` references a named type in the schema:
 
     {
       "@root": [ "#Product" ],
@@ -156,9 +158,10 @@ An array of extensible products and widgets, where `Widget` extends `Product`:
 
 ### Dependence
 
-Dependences are specified with `@dep` (if a property is present then other(s)
-must be present), `@one` (exactly one must be present), `@any` (one or more
-must be present), and `@all` (none or all must be present).   If property
+Dependences are specified with `@dep` (meaning that if a property is present
+then other(s) must be present), `@one` (exactly one of the properties must be
+present), `@any` (one or more of the properties must be present), and `@all`
+(none or all of the properties must be present).  For example, if property
 `contest` is present then property `prizes` must also be present as specified
 with `@dep`, where `prizes` is a non-empty array of unique strings:
 
@@ -184,8 +187,8 @@ A non-empty array of mixed strings and numbers:
 ### Regex
 
 A regex property name or string type opens with `(` and ends with `)` and is
-implicitly anchored with a `^` and a `$`.  An extensible dictionary object of
-word-word pairs:
+implicitly anchored with a `^` and a `$`.  For example, an extensible
+dictionary object of word-word pairs:
 
     {
       "@root": { "(\\w+)", "(\\w+)" }
@@ -294,7 +297,8 @@ Feature wish list / nice to have
 How to contribute?
 ------------------
 
-Please see [CONTRIBUTING](CONTRIBUTING.md).
+We love feedback and contributions to this project.  Please read
+[CONTRIBUTING](CONTRIBUTING.md) for details.
 
 Changelog
 ---------
@@ -336,6 +340,8 @@ Changelog
 - Jul  9, 2017: sjot.js 1.3.10 minor improvements
 - Jul  9, 2017: sjot.js 1.3.11 minor improvements
 - Jul 12, 2017: sjot.js 1.3.12 validation error messages now use JSONPath to identify JSON error locations
+- Jul 12, 2017: sjot.js 1.3.13 minor improvements
+- Jul 13, 2017: sjot.js 1.3.14 updated js2sjot.js
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
