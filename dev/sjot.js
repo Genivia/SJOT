@@ -1045,11 +1045,24 @@ function sjot_roottype(sjot) {
 
   }
 
-  for (var prop in sjot)
-    if (sjot.hasOwnProperty(prop) && !prop.startsWith("@"))
-      return sjot[prop];
+  var root = null;
 
-  sjot_schema_error("has no root type"/*FAST[*/, "schema"/*FAST]*/);
+  for (var prop in sjot)
+  {
+
+    if (sjot.hasOwnProperty(prop) && !prop.startsWith("@"))
+    {
+      if (root !== null)
+        sjot_schema_error("has no unique root " + root + ", also found " + prop/*FAST[*/, "schema"/*FAST]*/);
+      root = prop;
+    }
+
+  }
+
+  if (root !== null)
+    return sjot[root];
+
+  sjot_schema_error("has no @root"/*FAST[*/, "schema"/*FAST]*/);
 
 }
 
@@ -1094,9 +1107,7 @@ function sjot_reftype(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
     }
 
-    // TODO get external URI type reference when URI is a URL, load and put in sjots array
-    // throw "No type " + prop + " found at " + type.slice(0, h - 1) + " referenced by "/*FAST[*/ + typepath + "/"/*FAST]*/ + type;
-
+    // load sjot schema from external type reference when URI is a URL: load it and cache it in sjots array
     var URL = type.slice(0, h);
 
     try {
@@ -1127,7 +1138,7 @@ function sjot_load(file) {
     var xobj = new XMLHttpRequest();
 
     xobj.overrideMimeType("application/json");
-    xobj.open('GET', file, false); // uses deprecated synchronous load, WHICH IS WHAT WE WANT
+    xobj.open('GET', file, false); // uses deprecated synchronous load, WHICH IS WHAT WE ACTUALLY WANT!
 
     xobj.onreadystatechange = function() {
 

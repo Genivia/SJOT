@@ -31,7 +31,8 @@ Highlights
 SJOT schema basics
 ------------------
 
-A SJOT schema is a dictionary of named types, with `@root` defining the root of the JSON document:
+A SJOT schema is a dictionary of named types, with `@root` defining the root
+type of the JSON document to validate:
 
     {
       "@root":     type,
@@ -90,7 +91,7 @@ A type in a SJOT schema is one of:
 
 An object property is optional when its name ends with a `?`, which may be
 followed by an optional value for the property.  This default value will be
-assigned by the validator when the property is omitted from the object or is
+assigned by the validator when the property is not present in the object or is
 null.
 
 An object property name can be expressed as a regex for property name matching.
@@ -125,8 +126,8 @@ street, city, state and zip, and an optional phone number specified as a regex:
 ### Default values
 
 When an optional property is missing or is null, the default value will be
-assigned by the validator to this property (primitive types only).  For
-example, and object with a year since 1900 that defaults to 1900:
+assigned by the validator to this property.  For example, and object with an
+optional year since 1900 that defaults to 1900:
 
     {
       "@root": { "year?1900": "1900.." }
@@ -332,16 +333,17 @@ Changelog
 - Nov 26, 2016: sjot.js 1.3.2 fixes for minor issues
 - Nov 28, 2016: sjot.js 1.3.3 performance improvements, fixes for minor issues
 - Nov 29, 2016: sjot.js 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may also be used in `@sjot` in JSON
-- Dec  1, 2016: sjot.js 1.3.5 minor improvements
-- Dec 12, 2016: sjot.js 1.3.6 minor improvements
+- Dec  1, 2016: sjot.js 1.3.5 improvements
+- Dec 12, 2016: sjot.js 1.3.6 improvements
 - Jan  9, 2017: sjot.js 1.3.7 added remote SJOT schema loading (subject to Same Origin Policy)
-- Feb 13, 2017: sjot.js 1.3.8 minor improvements
-- Jul  8, 2017: sjot.js 1.3.9 minor improvements
-- Jul  9, 2017: sjot.js 1.3.10 minor improvements
-- Jul  9, 2017: sjot.js 1.3.11 minor improvements
+- Feb 13, 2017: sjot.js 1.3.8 improvements
+- Jul  8, 2017: sjot.js 1.3.9 improvements
+- Jul  9, 2017: sjot.js 1.3.10 improvements
+- Jul  9, 2017: sjot.js 1.3.11 improvements
 - Jul 12, 2017: sjot.js 1.3.12 validation error messages now use JSONPath to identify JSON error locations
-- Jul 12, 2017: sjot.js 1.3.13 minor improvements
+- Jul 12, 2017: sjot.js 1.3.13 improvements
 - Jul 13, 2017: sjot.js 1.3.14 updated js2sjot.js
+- Jul 16, 2017: sjot.js 1.3.15 improvements
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
