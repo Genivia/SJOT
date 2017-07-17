@@ -90,7 +90,7 @@ A type in a SJOT schema is one of:
     { "prop": type, ... } object with typed properties
 
 An object property is optional when its name ends with a `?`, which may be
-followed by an optional value for the property.  This default value will be
+followed by a default value for the property.  This default value will be
 assigned by the validator when the property is not present in the object or is
 null.
 
