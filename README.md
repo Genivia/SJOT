@@ -126,7 +126,7 @@ street, city, state and zip, and an optional phone number specified as a regex:
 ### Default values
 
 When an optional property is missing or is null, the default value will be
-assigned by the validator to this property.  For example, and object with an
+assigned by the validator to this property.  For example, an object with an
 optional year since 1900 that defaults to 1900:
 
     {
@@ -344,6 +344,7 @@ Changelog
 - Jul 12, 2017: sjot.js 1.3.13 improvements
 - Jul 13, 2017: sjot.js 1.3.14 updated js2sjot.js
 - Jul 16, 2017: sjot.js 1.3.15 improvements
+- Oct 24, 2017: sjot.js 1.3.16 ES5 compatible sjot.js update for improved browser support
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
