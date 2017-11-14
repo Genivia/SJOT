@@ -17,13 +17,13 @@ cd dev
 sed -e "s/{VERSION}/$VERSION/" -e "s/DEBUG\[.*DEBUG\]//g" -e "/DEBUG\[/,/DEBUG\]/ d" < sjot.js > ../dist/sjot.js
 
 # sjot-fast.js removes FAST[ ... FAST]
-sed -e "s/FAST\[.*FAST\]//g" -e "/FAST\[/,/FAST\]/ d" < ../dist/sjot.js > ../dist/sjot-fast.js
+sed -e "s/FAST\[.*FAST\]//g" -e "/FAST\[/,/FAST\]/ d" < ../dist/sjot.js | uglifyjs > ../dist/sjot-fast.js
 
 # sjot-lean.js removes LEAN[ ... LEAN], inline comments, and empty lines
-sed -e "s/LEAN\[.*LEAN\]//g" -e "/LEAN\[/,/LEAN\]/ d" -e "s/\/\*[^*]*\*\///g" -e "s/\/\/.*//g" -e "/^[ ]*$/ d" < ../dist/sjot.js > ../dist/sjot-lean.js
+sed -e "s/LEAN\[.*LEAN\]//g" -e "/LEAN\[/,/LEAN\]/ d" -e "s/\/\*[^*]*\*\///g" -e "s/\/\/.*//g" -e "/^[ ]*$/ d" < ../dist/sjot.js | uglifyjs > ../dist/sjot-lean.js
 
 # sjot-mean.js removes FAST[ ... FAST] and LEAN[ ... LEAN], inline comments, and empty lines
-sed -e "s/LEAN\[.*LEAN\]//g" -e "/LEAN\[/,/LEAN\]/ d" -e "s/\/\*[^*]*\*\///g" -e "s/\/\/.*//g" -e "/^[ ]*$/ d" < ../dist/sjot-fast.js > ../dist/sjot-mean.js
+sed -e "s/FAST\[.*FAST\]//g" -e "/FAST\[/,/FAST\]/ d" -e "s/LEAN\[.*LEAN\]//g" -e "/LEAN\[/,/LEAN\]/ d" -e "s/\/\*[^*]*\*\///g" -e "s/\/\/.*//g" -e "/^[ ]*$/ d" < ../dist/sjot.js | uglifyjs > ../dist/sjot-mean.js
 
 # create index.js by adding module.exports
 cp -f ../dist/sjot.js ../index.js

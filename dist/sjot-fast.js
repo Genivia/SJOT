@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.3.16
+ * @version     {VERSION}
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -21,23 +21,6 @@ var SJOT = (function () {
   var SJOT = {};
 
   SJOT.moduleProperty = 1;
-
-  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
-  // returns true when data is valid according to schema, false otherwise
-  SJOT.valid = function (data, type, schema) {
-
-    try {
-
-      return this.validate(data, type, schema);
-
-    } catch (e) {
-
-      /*LOG[*/console.log(e);/*LOG]*/
-      return false;
-
-    }
-
-  };
 
   // validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
   // throws a string exception when data is not valid according to schema
@@ -74,6 +57,23 @@ var SJOT = (function () {
 
   };
 
+  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
+  // returns true when data is valid according to schema, false otherwise
+  SJOT.valid = function (data, type, schema) {
+
+    try {
+
+      return SJOT.validate(data, type, schema);
+
+    } catch (e) {
+
+      /*LOG[*/console.log(e);/*LOG]*/
+      return false;
+
+    }
+
+  };
+
   // check(schema)
   // throws a string exception when schema has an error
   SJOT.check = function (schema) {
@@ -87,14 +87,16 @@ var SJOT = (function () {
     if (Array.isArray(sjots)) {
 
       for (var i = 0; i < sjots.length; i++)
-        sjot_check(sjots, true, false, sjots[i], sjots[i], "[" + i + "]");
+        sjot_check(sjots, true, false, sjots[i], sjots[i]/**/);
 
     } else {
 
-      sjot_check([sjots], true, false, sjots, sjots, "");
+      sjot_check([sjots], true, false, sjots, sjots/**/);
 
     }
     /*LEAN]*/
+
+    return true;
 
   };
 
@@ -131,7 +133,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
     var h = type.indexOf("#");
 
-    if (h >= 0 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/)
+    if (h >= 0 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/)
       return sjot_validate(
           sjots,
           data,
@@ -254,7 +256,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
         } else if (typeof type === "string") {
 
-          if (type.charCodeAt(type.length - 1) === 0x5D /*]*/) {
+          if (type.charCodeAt(type.length - 1) === 0x5D /*type[]*/) {
 
             // validate an array
             var i = type.lastIndexOf("[");
@@ -273,13 +275,13 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
             return;
 
-          } else if (type.charCodeAt(type.length - 1) === 0x7D /*}*/) {
+          } else if (type.charCodeAt(type.length - 1) === 0x7D /*type{}*/) {
 
             // validate a set (array of unique atoms)
             var i = type.lastIndexOf("{");
             var itemtype = type.slice(0, i);
 
-            if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x5D /*]*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x7D /*}*/) {
+            if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(type)*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x5D /*type[]*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x7D /*type{}*/) {
 
               // get referenced URI#name type
               itemtype = sjot_reftype(sjots, itemtype, sjot/**/);
@@ -343,7 +345,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
           // check object properties and property types
           for (var prop in type) {
 
-            if (prop.charCodeAt(0) === 0x40 /*@*/) {
+            if (prop.charCodeAt(0) === 0x40 /*@prop*/) {
 
               var proptype = type[prop];
 
@@ -382,7 +384,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
               }
 
-            } else if (prop.charCodeAt(0) === 0x28 /*(*/) {
+            } else if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
               // regex property name
               var proptype = type[prop];
@@ -444,7 +446,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
           if (isfinal)
             for (var prop in data)
-              if (data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
+              if (prop !== "@sjot" && data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
                 sjot_error("additional property should not be present", data, ""/**/);
 
         } else {
@@ -544,7 +546,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
             var exclusive = false;
 
-            if (type.charCodeAt(i) === 0x3C /*<*/) {
+            if (type.charCodeAt(i) === 0x3C /*<m..m*/) {
 
               exclusive = true;
               i++;
@@ -569,7 +571,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
               }
 
-              if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+              if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                 // check ..m>
                 if (data < parseFloat(type.slice(j + 2, k - 1)))
@@ -617,7 +619,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
 
                 var n = parseFloat(type.slice(i, j));
 
-                if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+                if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                   // check n..m> and <n..m>
                   if ((data > n || (!exclusive && data === n)) && data < parseFloat(type.slice(j + 2, k - 1)))
@@ -667,7 +669,7 @@ function sjot_validate(sjots, data, type, sjot/**/) {
       if (typeof type !== "string")
         sjot_error("value", data, type/**/);
 
-      if (type.charCodeAt(0) === 0x28 /*(*/) {
+      if (type.charCodeAt(0) === 0x28 /*(type)*/) {
 
         // check regex
         if (RegExp("^" + type + "$").test(data))
@@ -970,7 +972,7 @@ function sjot_extends(sjots, type, sjot/**/) {
 
       if (base.hasOwnProperty(prop)) {
 
-        if (prop.charCodeAt(0) === 0x40 /*@*/) {
+        if (prop.charCodeAt(0) === 0x40 /*@prop*/) {
 
           switch (prop) {
 
@@ -1057,7 +1059,7 @@ function sjot_roottype(sjot) {
   for (var prop in sjot)
   {
 
-    if (prop.charCodeAt(0) !== 0x40 /*@*/ && sjot.hasOwnProperty(prop))
+    if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && sjot.hasOwnProperty(prop))
     {
       if (root !== null)
         sjot_schema_error("has no unique root " + root + ", also found " + prop/**/);
@@ -1088,7 +1090,7 @@ function sjot_reftype(sjots, type, sjot/**/) {
     if (!sjot.hasOwnProperty(prop))
       sjot_schema_error("missing named type referenced by " + prop/**/);
     type = sjot[prop];
-    if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/)
+    if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/)
       sjot_schema_error("spaghetti references to named types not permitted"/**/);
     return type;
 
@@ -1106,7 +1108,7 @@ function sjot_reftype(sjots, type, sjot/**/) {
         if (!sjots[i].hasOwnProperty(prop))
           sjot_schema_error("schema " + sjots[i]['@id'] + " missing named type referenced by " + prop/**/);
         type = sjots[i][prop];
-        if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/)
+        if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/)
           sjot_schema_error("spaghetti references to named types not permitted"/**/);
         return type;
 
@@ -1167,11 +1169,11 @@ function sjot_load(file) {
 // return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null" and anything else)
 function sjot_default(value, sjots, data, type, sjot/**/) {
 
-  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*]*/ || type.charCodeAt(type.length - 1) === 0x7D /*}*/)
+  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*type[]*/ || type.charCodeAt(type.length - 1) === 0x7D /*type{}*/)
     return null;
-  if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/)
+  if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/)
     type = sjot_reftype(sjots, type, sjot/**/);
-  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*]*/ || type.charCodeAt(type.length - 1) === 0x7D /*}*/)
+  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*type[]*/ || type.charCodeAt(type.length - 1) === 0x7D /*type{}*/)
     return null;
 
   switch (type) {
@@ -1209,7 +1211,7 @@ function sjot_default(value, sjots, data, type, sjot/**/) {
     default:
 
       // check type for numeric range and if so set number, not string
-      if (type.charCodeAt(0) !== 0x28 /*(*/ && /\d/.test(type))
+      if (type.charCodeAt(0) !== 0x28 /*(type)*/ && /\d/.test(type))
         return value === "null" ? 0 : parseFloat(value);
       return value === "null" ? "" : value;
 
@@ -1227,7 +1229,7 @@ function sjot_error(what, data, type/**/) {
   else if (Array.isArray(type))
     a = type.length === 0 ? "is not an array " : type.length === 1 && Array.isArray(type[0]) ? "is not one of " : "is not an array of ";
   else if (typeof type === "string")
-    a = type.charCodeAt(type.length - 1) === 0x5D /*]*/ ? "is not an array " : type.charCodeAt(type.length - 1) === 0x7D /*}*/ ? "is not a set " : "is not of type "
+    a = type.charCodeAt(type.length - 1) === 0x5D /*type[]*/ ? "is not an array " : type.charCodeAt(type.length - 1) === 0x7D /*type{}*/ ? "is not a set " : "is not of type "
   else
     type = "";
 
@@ -1320,7 +1322,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
           // check tuple
           for (var i = 0; i < type.length; i++)
-            sjot_check(sjots, false, false, type[i], sjot,/**/ "[" + i + "]");
+            sjot_check(sjots, false, false, type[i], sjot/**/);
 
         }
 
@@ -1336,7 +1338,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
             if (!root)
               sjot_schema_error("@root is used in an object (redefine as a regex)"/**/);
-            sjot_check(sjots, false, false, type[prop], sjot,/**/ "/@root");
+            sjot_check(sjots, false, false, type[prop], sjot/**/);
 
           } else if (prop === "@id") {
 
@@ -1379,7 +1381,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
                 for (var j = 0; j < propsets[i].length; j++) {
 
-                  if (typeof propsets[i][j] !== "string" || propsets[i][j].charCodeAt(0) === 0x40 /*@*/ || propsets[i][j].charCodeAt(0) === 0x28 /*(*/)
+                  if (typeof propsets[i][j] !== "string" || propsets[i][j].charCodeAt(0) === 0x40 /*@prop*/ || propsets[i][j].charCodeAt(0) === 0x28 /*(prop)*/)
                     sjot_schema_error("is not an array of property sets"/**/);
                   if (temp[propsets[i][j]] === false)
                     sjot_schema_error("property sets are not disjoint"/**/);
@@ -1412,16 +1414,16 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
             // check if propset properties are object type properties
             for (var name in type) {
 
-              if (type.hasOwnProperty(name) && name.charCodeAt(0) !== 0x40 /*@*/) {
+              if (type.hasOwnProperty(name) && name.charCodeAt(0) !== 0x40 /*@prop*/) {
 
-                if (name.charCodeAt(0) === 0x28 /*(*/) {
+                if (name.charCodeAt(0) === 0x28 /*(prop)*/) {
 
                   var matcher = RegExp("^" + name + "$");
                   for (var tempname in temp)
                     if (temp.hasOwnProperty(tempname) && matcher.test(tempname))
                       temp[tempname] = true;
 
-                } else if (name.charCodeAt(name.length - 1) === 0x3F /*?*/) {
+                } else if (name.charCodeAt(name.length - 1) === 0x3F /*prop?*/) {
 
                   name = name.slice(0, name.length - 1);
                   if (temp.hasOwnProperty(name))
@@ -1437,7 +1439,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
               if (temp[name] === false)
                 sjot_schema_error("property set contains property " + name + " that is not an optional non-default property of this object"/**/);
 
-          } else if (prop.charCodeAt(0) === 0x28 /*(*/) {
+          } else if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
             try {
 
@@ -1449,7 +1451,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
             }
 
-          } else if (root && (prop.charCodeAt(prop.length - 1) === 0x5D /*]*/ || prop.charCodeAt(prop.length - 1) === 0x7D /*}*/)) {
+          } else if (root && (prop.charCodeAt(prop.length - 1) === 0x5D /*type[]*/ || prop.charCodeAt(prop.length - 1) === 0x7D /*type{}*/)) {
 
             // property names cannot end in a "]" or a "}" (users should use a regex in this case!)
             sjot_schema_error("name ends with a ] or a } (use a regex for this property name instead)"/**/);
@@ -1459,7 +1461,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
             var i = prop.indexOf("?");
 
             // check property type (primitive=true when optional with a default value)
-            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot,/**/ prop);
+            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot/**/);
 
           }
 
@@ -1475,7 +1477,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
       if (root)
         sjot_schema_error("is not a SJOT schema object"/**/);
 
-      if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/) {
+      if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/) {
 
         var reftype = sjot_reftype(sjots, type, sjot/**/);
 
@@ -1483,7 +1485,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
           return sjot_check(sjots, false, true, reftype, sjot/**/);
         return;
 
-      } else if (type.charCodeAt(type.length - 1) === 0x5D /*]*/) {
+      } else if (type.charCodeAt(type.length - 1) === 0x5D /*type[]*/) {
 
         var i = type.lastIndexOf("[");
 
@@ -1496,7 +1498,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
           sjot_schema_error("is not a primitive type"/**/);
         return sjot_check(sjots, false, false, type.slice(0, i), sjot/**/);
 
-      } else if (type.charCodeAt(type.length - 1) === 0x7D /*}*/) {
+      } else if (type.charCodeAt(type.length - 1) === 0x7D /*type{}*/) {
 
         if (prim)
           sjot_schema_error("is not a primitive type"/**/);
@@ -1551,7 +1553,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
           default:
 
-            if (type.charCodeAt(0) === 0x28 /*(*/) {
+            if (type.charCodeAt(0) === 0x28 /*(type)*/) {
 
               try {
 
@@ -1571,7 +1573,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
                 var e = false;
 
-                if (type.charCodeAt(i) === 0x3C /*<*/) {
+                if (type.charCodeAt(i) === 0x3C /*<n..m*/) {
 
                   e = true;
                   i++;
@@ -1586,7 +1588,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
 
                 if (i === j) {
 
-                  if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+                  if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                     // check ..m>
                     if (isNaN(parseFloat(type.slice(j + 2, k - 1))))
@@ -1616,7 +1618,7 @@ function sjot_check(sjots, root, prim, type, sjot/**/) {
                     if (isNaN(n))
                       sjot_schema_error("is not a valid range"/**/);
 
-                    if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+                    if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                       // check n..m> and <n..m>
                       e = true;
@@ -1692,9 +1694,9 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
 
     while (i > 0) {
 
-      if (itemtype.charCodeAt(i - 1) === 0x5D /*]*/)
+      if (itemtype.charCodeAt(i - 1) === 0x5D /*type[]*/)
         i = itemtype.lastIndexOf("[", i - 1);
-      else if (type.charCodeAt(i - 1) === 0x7D /*}*/)
+      else if (itemtype.charCodeAt(i - 1) === 0x7D /*type{}*/)
         i = itemtype.lastIndexOf("{", i - 1);
       else
         break;
@@ -1705,7 +1707,7 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
     // n is array depth, now get item type and check if this is a type reference
     itemtype = itemtype.slice(0, i);
 
-    if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(*/)
+    if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(type)*/)
       return sjot_check_union(
           sjots,
           type,
@@ -1847,13 +1849,13 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
       case "object":
 
         if (union[n].o !== null || union[n].p !== null)
-          sjot_schema_error("union has multiple object types"/**/);
+          sjot_schema_error("union requires distinct object types"/**/);
         union[n].o = type;
         break;
 
       default:
 
-        if (itemtype.charCodeAt(0) === 0x28 /*(*/) {
+        if (itemtype.charCodeAt(0) === 0x28 /*(type)*/) {
 
           if (n > 1 && union[n].s !== null)
             sjot_schema_error("union has multiple string array types"/**/);
@@ -1874,15 +1876,16 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
     if (union[n].o !== null)
       sjot_schema_error("union requires distinct object types"/**/);
 
-    if (union[n].p === null)
-      union[n].p = {};
+    var utype = {};
+    var k = 0;
 
     for (var prop in itemtype) {
 
-      if (prop.charCodeAt(0) !== 0x40 /*@*/ && itemtype.hasOwnProperty(prop)) {
+      if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && itemtype.hasOwnProperty(prop)) {
 
-        if (prop.charCodeAt(0) === 0x28 /*(*/) {
+        if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
+          k++;
           // object with regex property means only one such object is permitted in the union to ensure uniqueness
           if (union[n].o !== null)
             sjot_schema_error("union requires distinct object types"/**/);
@@ -1895,9 +1898,12 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
 
           if (i !== -1)
             prop = prop.slice(0, i);
-          if (union[n].p.hasOwnProperty(prop))
+          else
+            k++;
+
+          if (union[n].p !== null && union[n].p.hasOwnProperty(prop))
             sjot_schema_error("union requires distinct object types"/**/);
-          union[n].p[prop] = type;
+          utype[prop] = type;
 
         }
 
@@ -1905,12 +1911,25 @@ function sjot_check_union(sjots, type, itemtype, sjot/**/, union, n) {
 
     }
 
+    if (k === 0) {
+
+      if (union[n].o !== null || union[n].p !== null)
+        sjot_schema_error("union requires distinct object types"/**/);
+      union[n].o = type;
+
+    }
+
+    if (union[n].p === null)
+      union[n].p = utype;
+
   }
 
 }
 
 function sjot_schema_error(msg/**/) {
+
   throw "SJOT schema error: "/**/ + msg;
+
 }
 
 /*LEAN[*/

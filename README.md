@@ -13,7 +13,7 @@ feel of object templates and are easy to use.
 Highlights
 ----------
 
-- SJOT schemas are compact and have the appearance of JSON templates.
+- SJOT schemas are compact and have the look-and-feel of JSON templates.
 
 - JSON validation with SJOT is fast: the worst-case running time is
   asymptotically linear in the size of the JSON document to validate.
@@ -24,7 +24,8 @@ Highlights
 
 - SJOT schemas translate to JSON schema draft v4 without loss of schema details.
 
-- Live validator and converter at <https://www.genivia.com/get-sjot.html#demo>
+- Live SJOT validator, schema converters and snapSJOT creator at
+  <https://www.genivia.com/get-sjot.html#demo>
 
 - Full documentation at <http://sjot.org>
 
@@ -73,7 +74,7 @@ A type in a SJOT schema is one of:
     "duration"            string with ISO-8601 duration
     "char"                string with a single character
     "char[n,m]"           string of n to m characters (n, m are optional)
-    "(regex)"             string that matches the regex
+    "(regex)"             string that matches the regex (regex is anchored)
     "type[]"              array of values of named type
     "type[n,m]"           array of n to m values of named type (n, m are optional)
     "type{}"              set of atoms (array of unique atoms)
@@ -94,12 +95,13 @@ followed by a default value for the property.  This default value will be
 assigned by the validator when the property is not present in the object or is
 null.
 
-An object property name can be expressed as a regex for property name matching.
+An object property name can be expressed as a regex string "(regex)" for
+property name matching.  The regex is anchored.
 
 Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
 `@all`, `@dep`.
 
-Notes can be placed in schemas with `@note` property strings.
+Notes can be placed in schemas and objects with `@note` property strings.
 
 SJOT explained by example
 -------------------------
@@ -210,14 +212,14 @@ Why another JSON schema "standard"?
 - JSON schema offers very **few predeclared primitive types**.  By contrast,
   SJOT offers a wider choice of pre-defined types.
 - JSON schema is **non-strict by default**.  By contrast, SJOT is strict by
-  default since properties are required by default.
+  default since object properties are required by default.
 - JSON schemas are **not extensible**.  By contrast, SJOT objects are
-  extensible or final.
+  either extensible or final.
 - JSON schema **violates the encapsulation principle** because it permits
   referencing local schema types.  By contrast, SJOT groups all types at the
-  top level in the schema.
+  top level in the schema as a dictionary of named types.
 - JSON schema design **violates the orthogonality principle**.  There should
-  only be one simple and independent way to combine constructs as in SJOT.
+  only be one simple and independent way to combine constructs.
 - The **principle of least surprise** may not apply to JSON schema.
 
 JSON validation JS API
@@ -268,32 +270,41 @@ try {
 }
 ```
 
-Notes
------
+What's included?
+----------------
 
-Three alternative versions of sjot.js are included:
+Three alternative versions of `sjot.js` are included:
 
-- sjot-fast.js is optimized for speed but validation error messages are less informative
-- sjot-lean.js is optimized for size but lacks `SJOT.check(schema)`
-- sjot-mean.js is optimized for speed and size
-- dev/sjot2js.js is a SJOT to JSON schema converter.  Visit
-  <https://www.genivia.com/get-sjot.html#demo> to try the interactive converter.
-- dev.js2sjot.js is a JSON schema to SJOT converter.
+- `sjot-fast.js` is optimized for speed but validation error messages are less informative
+- `sjot-lean.js` is optimized for size but lacks `SJOT.check(schema)`
+- `sjot-mean.js` is optimized for speed and size
 
-sjot.js is fully functional to validate JSON data, with some limitations:
+Also included are the following utilities:
 
-- The SJOT model checker `SJOT.check()` checks schema satisfiability for up to 20 distinct properties collected from the @one, @any, @all, and @dep of an object type. The model checker stays silent for over 20 properties due to the excessive computational expense (the model satisfiability problem is NP-complete).
+- `dev/sjot2js.js` is a SJOT to JSON schema converter.
+- `dev/js2sjot.js` is a JSON schema to SJOT converter.
+- `dev/snapsjot.js` is the snapSJOT schema creator from JSON data.
 
-JSON validation C/C++ API
--------------------------
+You can use these utilities interactively at
+<https://genivia.com/get-sjot.html#demo>
 
-sjot.c and sjot.cpp initial release for gSOAP is expected in 2017.
+Limitations
+-----------
+
+`sjot.js` is fully functional to validate JSON data, with one minor practical
+limitation:
+
+- The SJOT model checker `SJOT.check()` checks schema satisfiability for up to
+  20 distinct properties collected from the `@one`, `@any`, `@all`, and `@dep`
+  of an object type. The model checker stays silent for over 20 properties due
+  to the excessive computational expense (the model satisfiability problem is
+  NP-complete).  The model checker is optional and is not used by the SJOT
+  validator.
 
 Feature wish list / nice to have
 --------------------------------
 
 - Random JSON data generator from SJOT schemas for testing
-- Tool to generate SJOT schema from JSON data samples
 
 How to contribute?
 ------------------
@@ -345,6 +356,7 @@ Changelog
 - Jul 13, 2017: sjot.js 1.3.14 updated js2sjot.js
 - Jul 16, 2017: sjot.js 1.3.15 improvements
 - Oct 24, 2017: sjot.js 1.3.16 ES5 compatible sjot.js update for improved browser support
+- Nov 14, 2017: sjot.js 1.3.17 added snapSJOT snapsjot.js schema creator to convert JSON data to SJOT schemas, improvements
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
