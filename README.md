@@ -1,6 +1,8 @@
 
 [![logo][logo-url]][sjot-url]
 
+[![browser support][testling-image]][testling-url]
+
 [![npm version][npm-image]][npm-url] [![build status][travis-image]][travis-url] [![license][bsd-3-image]][bsd-3-url]
 
 SJOT: Schemas for JSON Objects
@@ -382,3 +384,5 @@ Changelog
 [travis-url]: https://travis-ci.org/Genivia/SJOT
 [bsd-3-image]: https://img.shields.io/badge/license-BSD%203--Clause-blue.svg
 [bsd-3-url]: https://opensource.org/licenses/BSD-3-Clause
+[testling-image]: https://ci.testling.com/genivia-inc/SJOT.png
+[testling-url]: https://ci.testling.com/genivia-inc/SJOT
