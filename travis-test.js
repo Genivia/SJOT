@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.3.16
+ * @version     1.3.17
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -21,23 +21,6 @@ var SJOT = (function () {
   var SJOT = {};
 
   SJOT.moduleProperty = 1;
-
-  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
-  // returns true when data is valid according to schema, false otherwise
-  SJOT.valid = function (data, type, schema) {
-
-    try {
-
-      return this.validate(data, type, schema);
-
-    } catch (e) {
-
-      /*LOG[*/console.log(e);/*LOG]*/
-      return false;
-
-    }
-
-  };
 
   // validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
   // throws a string exception when data is not valid according to schema
@@ -74,6 +57,23 @@ var SJOT = (function () {
 
   };
 
+  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
+  // returns true when data is valid according to schema, false otherwise
+  SJOT.valid = function (data, type, schema) {
+
+    try {
+
+      return SJOT.validate(data, type, schema);
+
+    } catch (e) {
+
+      /*LOG[*/console.log(e);/*LOG]*/
+      return false;
+
+    }
+
+  };
+
   // check(schema)
   // throws a string exception when schema has an error
   SJOT.check = function (schema) {
@@ -87,14 +87,16 @@ var SJOT = (function () {
     if (Array.isArray(sjots)) {
 
       for (var i = 0; i < sjots.length; i++)
-        sjot_check(sjots, true, false, sjots[i], sjots[i], "[" + i + "]");
+        sjot_check(sjots, true, false, sjots[i], sjots[i]/*FAST[*/, "[" + i + "]"/*FAST]*/);
 
     } else {
 
-      sjot_check([sjots], true, false, sjots, sjots, "");
+      sjot_check([sjots], true, false, sjots, sjots/*FAST[*/, ""/*FAST]*/);
 
     }
     /*LEAN]*/
+
+    return true;
 
   };
 
@@ -131,7 +133,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
     var h = type.indexOf("#");
 
-    if (h >= 0 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/)
+    if (h >= 0 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/)
       return sjot_validate(
           sjots,
           data,
@@ -172,7 +174,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
             if (typeof type[0] === "number") {
 
               if (data.length !== type[0])
-                sjot_error("length", type[0], "any"/*FAST[*/, datapath, typepath + "[" + type[0] + "]"/*FAST]*/);
+                sjot_error("length", type[0], "any"/*FAST[*/, datapath, typepath + "[]"/*FAST]*/);
 
             } else {
 
@@ -180,8 +182,8 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
-                  data[i] = sjot_default("null", sjots, null, type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + type[0] + "]"/*FAST]*/);
-                sjot_validate(sjots, data[i], type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + type[0] + "]"/*FAST]*/);
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
+                sjot_validate(sjots, data[i], type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
               }
 
             }
@@ -190,13 +192,13 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
             // validate an array [type,m] or [n,m]
             if (data.length > type[1])
-              sjot_error("length", type[1], type[0]/*FAST[*/, datapath, typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+              sjot_error("length", type[1], type[0]/*FAST[*/, datapath, typepath + "[]"/*FAST]*/);
 
             if (typeof type[0] === "number") {
 
               // validate an array [n,m]
               if (data.length < type[0])
-                sjot_error("length", type[0], "any"/*FAST[*/, datapath, typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+                sjot_error("length", type[0], "any"/*FAST[*/, datapath, typepath + "[]"/*FAST]*/);
 
             } else {
 
@@ -204,8 +206,8 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
               for (var i = 0; i < data.length; i++) {
 
                 if (data[i] === null)
-                  data[i] = sjot_default("null", sjots, null, type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
-                sjot_validate(sjots, data[i], type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+                  data[i] = sjot_default("null", sjots, null, type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
+                sjot_validate(sjots, data[i], type[0], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
 
               }
 
@@ -215,13 +217,13 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
             // validate an array [n,type] or [n,type,m]
             if (data.length < type[0])
-              sjot_error("length", type[0], type[1]/*FAST[*/, datapath, typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+              sjot_error("length", type[0], type[1]/*FAST[*/, datapath, typepath + "[]"/*FAST]*/);
 
             // validate an array [n,type,m]
             if (type.length > 2 && typeof type[2] === "number") {
 
               if (data.length > type[2])
-                sjot_error("length", type[2], type[1]/*FAST[*/, datapath, typepath + "[" + type[0] + "," + type[1] + "," + type[2] + "]"/*FAST]*/);
+                sjot_error("length", type[2], type[1]/*FAST[*/, datapath, typepath + "[]"/*FAST]*/);
 
             }
 
@@ -229,8 +231,8 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
             for (var i = 0; i < data.length; i++) {
 
               if (data[i] === null)
-                data[i] = sjot_default("null", sjots, null, type[1], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
-              sjot_validate(sjots, data[i], type[1], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+                data[i] = sjot_default("null", sjots, null, type[1], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
+              sjot_validate(sjots, data[i], type[1], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
 
             }
 
@@ -243,8 +245,8 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
             for (var i = 0; i < data.length; i++) {
 
               if (data[i] === null)
-                data[i] = sjot_default("null", sjots, null, type[i], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]"/*FAST]*/);
-              sjot_validate(sjots, data[i], type[i], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[" + i + "]"/*FAST]*/);
+                data[i] = sjot_default("null", sjots, null, type[i], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
+              sjot_validate(sjots, data[i], type[i], sjot/*FAST[*/, datapath + "[" + i + "]", typepath + "[]"/*FAST]*/);
 
             }
 
@@ -254,7 +256,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
         } else if (typeof type === "string") {
 
-          if (type.charCodeAt(type.length - 1) === 0x5D /*]*/) {
+          if (type.charCodeAt(type.length - 1) === 0x5D /*type[]*/) {
 
             // validate an array
             var i = type.lastIndexOf("[");
@@ -273,13 +275,13 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
             return;
 
-          } else if (type.charCodeAt(type.length - 1) === 0x7D /*}*/) {
+          } else if (type.charCodeAt(type.length - 1) === 0x7D /*type{}*/) {
 
             // validate a set (array of unique atoms)
             var i = type.lastIndexOf("{");
             var itemtype = type.slice(0, i);
 
-            if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x5D /*]*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x7D /*}*/) {
+            if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(type)*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x5D /*type[]*/ && itemtype.charCodeAt(itemtype.length - 1) !== 0x7D /*type{}*/) {
 
               // get referenced URI#name type
               itemtype = sjot_reftype(sjots, itemtype, sjot/*FAST[*/, typepath/*FAST]*/);
@@ -343,7 +345,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
           // check object properties and property types
           for (var prop in type) {
 
-            if (prop.charCodeAt(0) === 0x40 /*@*/) {
+            if (prop.charCodeAt(0) === 0x40 /*@prop*/) {
 
               var proptype = type[prop];
 
@@ -382,7 +384,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
               }
 
-            } else if (prop.charCodeAt(0) === 0x28 /*(*/) {
+            } else if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
               // regex property name
               var proptype = type[prop];
@@ -444,7 +446,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
           if (isfinal)
             for (var prop in data)
-              if (data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
+              if (prop !== "@sjot" && data.hasOwnProperty(prop) && !props.hasOwnProperty(prop))
                 sjot_error("additional property should not be present", data, ""/*FAST[*/, datapath + "." + prop, typepath + "/@final"/*FAST]*/);
 
         } else {
@@ -544,7 +546,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
             var exclusive = false;
 
-            if (type.charCodeAt(i) === 0x3C /*<*/) {
+            if (type.charCodeAt(i) === 0x3C /*<m..m*/) {
 
               exclusive = true;
               i++;
@@ -569,7 +571,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
               }
 
-              if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+              if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                 // check ..m>
                 if (data < parseFloat(type.slice(j + 2, k - 1)))
@@ -617,7 +619,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
 
                 var n = parseFloat(type.slice(i, j));
 
-                if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+                if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                   // check n..m> and <n..m>
                   if ((data > n || (!exclusive && data === n)) && data < parseFloat(type.slice(j + 2, k - 1)))
@@ -667,7 +669,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
       if (typeof type !== "string")
         sjot_error("value", data, type/*FAST[*/, datapath, typepath/*FAST]*/);
 
-      if (type.charCodeAt(0) === 0x28 /*(*/) {
+      if (type.charCodeAt(0) === 0x28 /*(type)*/) {
 
         // check regex
         if (RegExp("^" + type + "$").test(data))
@@ -760,7 +762,7 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
 
   // check if union has distinct arrays and objects, this tells us which type we can pick to validate data against
   for (var i = 0; i < type[0].length; i++)
-    sjot_check_union(sjots, type[0][i], type[0][i], sjot/*FAST[*/, typepath + "/" + type[0][i]/*FAST]*/, union, 1);
+    sjot_check_union(sjots, type[0][i], type[0][i], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/, union, 1);
 
   // n is the depth of array nestings + 1
   var n = 1;
@@ -792,7 +794,7 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
 
       if (union[n].n === null)
         sjot_error("value", data, type/*FAST[*/, datapath, typepath/*FAST]*/);
-      return sjot_validate(sjots, data, union[n].n, sjot/*FAST[*/, typepath + "/" + union[n].n/*FAST]*/);
+      return sjot_validate(sjots, data, union[n].n, sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
     }
 
@@ -803,13 +805,13 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
         if (union[n].b !== null) {
 
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].b, sjot/*FAST[*/, typepath + "/" + union[n].b/*FAST]*/);
+            return sjot_validate(sjots, data, union[n].b, sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
           for (var i = 0; i < type[0].length; i++) {
 
             try {
 
-              return sjot_validate(sjots, data, type[0][i], sjot/*FAST[*/, typepath + "/" + type[0][i]/*FAST]*/);
+              return sjot_validate(sjots, data, type[0][i], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
             } catch (e) {
 
@@ -826,13 +828,13 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
         if (union[n].x !== null) {
 
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].x, sjot/*FAST[*/, typepath + "/" + union[n].x/*FAST]*/);
+            return sjot_validate(sjots, data, union[n].x, sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
           for (var i = 0; i < type[0].length; i++) {
 
             try {
 
-              return sjot_validate(sjots, data, type[0][i], sjot/*FAST[*/, typepath + "/" + type[0][i]/*FAST]*/);
+              return sjot_validate(sjots, data, type[0][i], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
             } catch (e) {
 
@@ -849,13 +851,13 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
         if (union[n].s !== null) {
 
           if (n > 1)
-            return sjot_validate(sjots, data, union[n].s, sjot/*FAST[*/, typepath + "/" + union[n].s/*FAST]*/);
+            return sjot_validate(sjots, data, union[n].s, sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
           for (var i = 0; i < type[0].length; i++) {
 
             try {
 
-              return sjot_validate(sjots, data, type[0][i], sjot/*FAST[*/, typepath + "/" + type[0][1]/*FAST]*/);
+              return sjot_validate(sjots, data, type[0][i], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
             } catch (e) {
 
@@ -870,16 +872,16 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
       case "object":
 
         if (union[n].o !== null)
-          return sjot_validate(sjots, data, union[n].o, sjot/*FAST[*/, typepath + "/" + union[n].o/*FAST]*/);
+          return sjot_validate(sjots, data, union[n].o, sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
         if (union[n].p !== null) {
 
           for (var prop in item)
             if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot/*FAST[*/, typepath + "/" + union[n].p[prop]/*FAST]*/);
+              return sjot_validate(sjots, data, union[n].p[prop], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
           for (var prop in union[n].p)
             if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot/*FAST[*/, typepath + "/" + union[n].p[prop]/*FAST]*/);
+              return sjot_validate(sjots, data, union[n].p[prop], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
         }
 
@@ -970,7 +972,7 @@ function sjot_extends(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
       if (base.hasOwnProperty(prop)) {
 
-        if (prop.charCodeAt(0) === 0x40 /*@*/) {
+        if (prop.charCodeAt(0) === 0x40 /*@prop*/) {
 
           switch (prop) {
 
@@ -1057,7 +1059,7 @@ function sjot_roottype(sjot) {
   for (var prop in sjot)
   {
 
-    if (prop.charCodeAt(0) !== 0x40 /*@*/ && sjot.hasOwnProperty(prop))
+    if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && sjot.hasOwnProperty(prop))
     {
       if (root !== null)
         sjot_schema_error("has no unique root " + root + ", also found " + prop/*FAST[*/, "schema"/*FAST]*/);
@@ -1088,7 +1090,7 @@ function sjot_reftype(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/) {
     if (!sjot.hasOwnProperty(prop))
       sjot_schema_error("missing named type referenced by " + prop/*FAST[*/, typepath + "/" + type/*FAST]*/);
     type = sjot[prop];
-    if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/)
+    if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/)
       sjot_schema_error("spaghetti references to named types not permitted"/*FAST[*/, typepath + "/" + type/*FAST]*/);
     return type;
 
@@ -1106,7 +1108,7 @@ function sjot_reftype(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/) {
         if (!sjots[i].hasOwnProperty(prop))
           sjot_schema_error("schema " + sjots[i]['@id'] + " missing named type referenced by " + prop/*FAST[*/, typepath + "/" + type/*FAST]*/);
         type = sjots[i][prop];
-        if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/)
+        if (typeof type === "string" && type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/)
           sjot_schema_error("spaghetti references to named types not permitted"/*FAST[*/, typepath + "/" + type/*FAST]*/);
         return type;
 
@@ -1167,11 +1169,11 @@ function sjot_load(file) {
 // return default value of a type (0 for numbers, "" for strings, false for boolean, null for "null" and anything else)
 function sjot_default(value, sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAST]*/) {
 
-  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*]*/ || type.charCodeAt(type.length - 1) === 0x7D /*}*/)
+  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*type[]*/ || type.charCodeAt(type.length - 1) === 0x7D /*type{}*/)
     return null;
-  if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/)
+  if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/)
     type = sjot_reftype(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/);
-  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*]*/ || type.charCodeAt(type.length - 1) === 0x7D /*}*/)
+  if (typeof type !== "string" || type.charCodeAt(type.length - 1) === 0x5D /*type[]*/ || type.charCodeAt(type.length - 1) === 0x7D /*type{}*/)
     return null;
 
   switch (type) {
@@ -1209,7 +1211,7 @@ function sjot_default(value, sjots, data, type, sjot/*FAST[*/, datapath, typepat
     default:
 
       // check type for numeric range and if so set number, not string
-      if (type.charCodeAt(0) !== 0x28 /*(*/ && /\d/.test(type))
+      if (type.charCodeAt(0) !== 0x28 /*(type)*/ && /\d/.test(type))
         return value === "null" ? 0 : parseFloat(value);
       return value === "null" ? "" : value;
 
@@ -1227,7 +1229,7 @@ function sjot_error(what, data, type/*FAST[*/, datapath, typepath/*FAST]*/) {
   else if (Array.isArray(type))
     a = type.length === 0 ? "is not an array " : type.length === 1 && Array.isArray(type[0]) ? "is not one of " : "is not an array of ";
   else if (typeof type === "string")
-    a = type.charCodeAt(type.length - 1) === 0x5D /*]*/ ? "is not an array " : type.charCodeAt(type.length - 1) === 0x7D /*}*/ ? "is not a set " : "is not of type "
+    a = type.charCodeAt(type.length - 1) === 0x5D /*type[]*/ ? "is not an array " : type.charCodeAt(type.length - 1) === 0x7D /*type{}*/ ? "is not a set " : "is not of type "
   else
     type = "";
 
@@ -1268,8 +1270,8 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
           for (var i = 0; i < type[0].length; i++) {
 
-            sjot_check(sjots, false, prim, type[0][i], sjot/*FAST[*/, typepath + "/" + type[0][i]/*FAST]*/);
-            sjot_check_union(sjots, type[0][i], type[0][i], sjot/*FAST[*/, typepath + "/" + type[0][i]/*FAST]*/, union, 1);
+            sjot_check(sjots, false, prim, type[0][i], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/);
+            sjot_check_union(sjots, type[0][i], type[0][i], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/, union, 1);
 
           }
 
@@ -1281,7 +1283,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
           if (typeof type[0] === "number") {
 
             if (type[0] < 0)
-              sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[" + type[0] + "]"/*FAST]*/);
+              sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[]"/*FAST]*/);
 
           } else {
 
@@ -1293,12 +1295,12 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
           // check array [n,m] or [type,m]
           if (type[1] < 0)
-            sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+            sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[]"/*FAST]*/);
 
           if (typeof type[0] === "number") {
 
             if (type[0] < 0)
-              sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+              sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[]"/*FAST]*/);
 
           } else {
 
@@ -1310,9 +1312,9 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
           // check array [n,type] or [n,type,m]
           if (type[0] < 0)
-            sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[" + type[0] + "," + type[1] + "]"/*FAST]*/);
+            sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[]"/*FAST]*/);
           if (type.length > 2 && typeof type[2] === "number" && type[2] < type[0])
-            sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[" + type[0] + "," + type[1] + "," + type[2] + "]"/*FAST]*/);
+            sjot_schema_error("array size is negative"/*FAST[*/, typepath + "[]"/*FAST]*/);
           sjot_check(sjots, false, false, type[1], sjot/*FAST[*/, typepath/*FAST]*/);
 
 
@@ -1320,7 +1322,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
           // check tuple
           for (var i = 0; i < type.length; i++)
-            sjot_check(sjots, false, false, type[i], sjot,/*FAST[*/ typepath +/*FAST]*/ "[" + i + "]");
+            sjot_check(sjots, false, false, type[i], sjot/*FAST[*/, typepath + "[" + i + "]"/*FAST]*/);
 
         }
 
@@ -1336,7 +1338,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
             if (!root)
               sjot_schema_error("@root is used in an object (redefine as a regex)"/*FAST[*/, typepath/*FAST]*/);
-            sjot_check(sjots, false, false, type[prop], sjot,/*FAST[*/ typepath +/*FAST]*/ "/@root");
+            sjot_check(sjots, false, false, type[prop], sjot/*FAST[*/, typepath + "/@root"/*FAST]*/);
 
           } else if (prop === "@id") {
 
@@ -1379,7 +1381,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
                 for (var j = 0; j < propsets[i].length; j++) {
 
-                  if (typeof propsets[i][j] !== "string" || propsets[i][j].charCodeAt(0) === 0x40 /*@*/ || propsets[i][j].charCodeAt(0) === 0x28 /*(*/)
+                  if (typeof propsets[i][j] !== "string" || propsets[i][j].charCodeAt(0) === 0x40 /*@prop*/ || propsets[i][j].charCodeAt(0) === 0x28 /*(prop)*/)
                     sjot_schema_error("is not an array of property sets"/*FAST[*/, typepath + "/" + prop/*FAST]*/);
                   if (temp[propsets[i][j]] === false)
                     sjot_schema_error("property sets are not disjoint"/*FAST[*/, typepath + "/" + prop/*FAST]*/);
@@ -1412,16 +1414,16 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
             // check if propset properties are object type properties
             for (var name in type) {
 
-              if (type.hasOwnProperty(name) && name.charCodeAt(0) !== 0x40 /*@*/) {
+              if (type.hasOwnProperty(name) && name.charCodeAt(0) !== 0x40 /*@prop*/) {
 
-                if (name.charCodeAt(0) === 0x28 /*(*/) {
+                if (name.charCodeAt(0) === 0x28 /*(prop)*/) {
 
                   var matcher = RegExp("^" + name + "$");
                   for (var tempname in temp)
                     if (temp.hasOwnProperty(tempname) && matcher.test(tempname))
                       temp[tempname] = true;
 
-                } else if (name.charCodeAt(name.length - 1) === 0x3F /*?*/) {
+                } else if (name.charCodeAt(name.length - 1) === 0x3F /*prop?*/) {
 
                   name = name.slice(0, name.length - 1);
                   if (temp.hasOwnProperty(name))
@@ -1437,7 +1439,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
               if (temp[name] === false)
                 sjot_schema_error("property set contains property " + name + " that is not an optional non-default property of this object"/*FAST[*/, typepath + "/" + prop/*FAST]*/);
 
-          } else if (prop.charCodeAt(0) === 0x28 /*(*/) {
+          } else if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
             try {
 
@@ -1449,7 +1451,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
             }
 
-          } else if (root && (prop.charCodeAt(prop.length - 1) === 0x5D /*]*/ || prop.charCodeAt(prop.length - 1) === 0x7D /*}*/)) {
+          } else if (root && (prop.charCodeAt(prop.length - 1) === 0x5D /*type[]*/ || prop.charCodeAt(prop.length - 1) === 0x7D /*type{}*/)) {
 
             // property names cannot end in a "]" or a "}" (users should use a regex in this case!)
             sjot_schema_error("name ends with a ] or a } (use a regex for this property name instead)"/*FAST[*/, typepath + "/" + prop/*FAST]*/);
@@ -1459,7 +1461,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
             var i = prop.indexOf("?");
 
             // check property type (primitive=true when optional with a default value)
-            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot,/*FAST[*/ typepath + "/" +/*FAST]*/ prop);
+            sjot_check(sjots, false, (i !== -1 && i < prop.length - 1), type[prop], sjot/*FAST[*/, typepath + "/" + prop/*FAST]*/);
 
           }
 
@@ -1483,7 +1485,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
       if (root)
         sjot_schema_error("is not a SJOT schema object"/*FAST[*/, typepath + "/" + typeof type/*FAST]*/);
 
-      if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(*/ && type.charCodeAt(type.length - 1) !== 0x5D /*]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*}*/) {
+      if (type.indexOf("#") !== -1 && type.charCodeAt(0) !== 0x28 /*(type)*/ && type.charCodeAt(type.length - 1) !== 0x5D /*type[]*/ && type.charCodeAt(type.length - 1) !== 0x7D /*type{}*/) {
 
         var reftype = sjot_reftype(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/);
 
@@ -1491,7 +1493,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
           return sjot_check(sjots, false, true, reftype, sjot/*FAST[*/, typepath + "/" + type/*FAST]*/);
         return;
 
-      } else if (type.charCodeAt(type.length - 1) === 0x5D /*]*/) {
+      } else if (type.charCodeAt(type.length - 1) === 0x5D /*type[]*/) {
 
         var i = type.lastIndexOf("[");
 
@@ -1504,7 +1506,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
           sjot_schema_error("is not a primitive type"/*FAST[*/, typepath + "/" + type/*FAST]*/);
         return sjot_check(sjots, false, false, type.slice(0, i), sjot/*FAST[*/, typepath/*FAST]*/);
 
-      } else if (type.charCodeAt(type.length - 1) === 0x7D /*}*/) {
+      } else if (type.charCodeAt(type.length - 1) === 0x7D /*type{}*/) {
 
         if (prim)
           sjot_schema_error("is not a primitive type"/*FAST[*/, typepath + "/" + type/*FAST]*/);
@@ -1559,7 +1561,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
           default:
 
-            if (type.charCodeAt(0) === 0x28 /*(*/) {
+            if (type.charCodeAt(0) === 0x28 /*(type)*/) {
 
               try {
 
@@ -1579,7 +1581,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
                 var e = false;
 
-                if (type.charCodeAt(i) === 0x3C /*<*/) {
+                if (type.charCodeAt(i) === 0x3C /*<n..m*/) {
 
                   e = true;
                   i++;
@@ -1594,7 +1596,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
                 if (i === j) {
 
-                  if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+                  if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                     // check ..m>
                     if (isNaN(parseFloat(type.slice(j + 2, k - 1))))
@@ -1624,7 +1626,7 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
                     if (isNaN(n))
                       sjot_schema_error("is not a valid range"/*FAST[*/, typepath + "/" + type/*FAST]*/);
 
-                    if (type.charCodeAt(k - 1) === 0x3E /*>*/) {
+                    if (type.charCodeAt(k - 1) === 0x3E /*n..m>*/) {
 
                       // check n..m> and <n..m>
                       e = true;
@@ -1700,9 +1702,9 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
     while (i > 0) {
 
-      if (itemtype.charCodeAt(i - 1) === 0x5D /*]*/)
+      if (itemtype.charCodeAt(i - 1) === 0x5D /*type[]*/)
         i = itemtype.lastIndexOf("[", i - 1);
-      else if (type.charCodeAt(i - 1) === 0x7D /*}*/)
+      else if (itemtype.charCodeAt(i - 1) === 0x7D /*type{}*/)
         i = itemtype.lastIndexOf("{", i - 1);
       else
         break;
@@ -1713,7 +1715,7 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
     // n is array depth, now get item type and check if this is a type reference
     itemtype = itemtype.slice(0, i);
 
-    if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(*/)
+    if (itemtype.indexOf("#") !== -1 && itemtype.charCodeAt(0) !== 0x28 /*(type)*/)
       return sjot_check_union(
           sjots,
           type,
@@ -1855,13 +1857,13 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
       case "object":
 
         if (union[n].o !== null || union[n].p !== null)
-          sjot_schema_error("union has multiple object types"/*FAST[*/, typepath/*FAST]*/);
+          sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
         union[n].o = type;
         break;
 
       default:
 
-        if (itemtype.charCodeAt(0) === 0x28 /*(*/) {
+        if (itemtype.charCodeAt(0) === 0x28 /*(type)*/) {
 
           if (n > 1 && union[n].s !== null)
             sjot_schema_error("union has multiple string array types"/*FAST[*/, typepath/*FAST]*/);
@@ -1882,15 +1884,16 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
     if (union[n].o !== null)
       sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
 
-    if (union[n].p === null)
-      union[n].p = {};
+    var utype = {};
+    var k = 0;
 
     for (var prop in itemtype) {
 
-      if (prop.charCodeAt(0) !== 0x40 /*@*/ && itemtype.hasOwnProperty(prop)) {
+      if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && itemtype.hasOwnProperty(prop)) {
 
-        if (prop.charCodeAt(0) === 0x28 /*(*/) {
+        if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
+          k++;
           // object with regex property means only one such object is permitted in the union to ensure uniqueness
           if (union[n].o !== null)
             sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
@@ -1903,9 +1906,12 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
           if (i !== -1)
             prop = prop.slice(0, i);
-          if (union[n].p.hasOwnProperty(prop))
+          else
+            k++;
+
+          if (union[n].p !== null && union[n].p.hasOwnProperty(prop))
             sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
-          union[n].p[prop] = type;
+          utype[prop] = type;
 
         }
 
@@ -1913,12 +1919,25 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
     }
 
+    if (k === 0) {
+
+      if (union[n].o !== null || union[n].p !== null)
+        sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
+      union[n].o = type;
+
+    }
+
+    if (union[n].p === null)
+      union[n].p = utype;
+
   }
 
 }
 
 function sjot_schema_error(msg/*FAST[*/, typepath/*FAST]*/) {
+
   throw "SJOT schema error: "/*FAST[*/ + typepath + " "/*FAST]*/ + msg;
+
 }
 
 /*LEAN[*/
@@ -2021,9 +2040,11 @@ var schema =
     "char10":       "char[1,10]",
     "regex":        "(regex)",
     "strings":      "string[]",
+    "stringss":     "string[][]",
     "strings10":    "string[1,10]",
     "stringset":    "string{}",
     "stringset10":  "string{1,10}",
+    "n..m{}":       "-10..10{}",
     "#ref":         "#ref",
     "#?":           "#",
     "object":       "object",
@@ -2077,9 +2098,11 @@ var data =
   "char10":       "char[1,10]",
   "regex":        "regex",
   "strings":      [ "string1", "string2", "string3" ],
+  "stringss":     [ ["string1", "string2"], ["string3"] ],
   "strings10":    [ "string1", "string2", "string3" ],
   "stringset":    [ "string1", "string2", "string3" ],
   "stringset10":  [ "string1", "string2", "string3" ],
+  "n..m{}":       [ -1, 0, 2 ],
   "#ref":         true,
   "object":       { "some": "data" },
   "array":        [ 1, "a", null, true ],
