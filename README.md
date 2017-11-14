@@ -222,10 +222,10 @@ Why another JSON schema "standard"?
   only be one simple and independent way to combine constructs.
 - The **principle of least surprise** may not apply to JSON schema.
 
-JSON validation JS API
-----------------------
+JSON validation with SJOT
+-------------------------
 
-Usage:
+SJOT validates JSON data.  Usage:
 
 ```js
 // <script src="sjot.js"></script>    add this to your web page to load sjot.js
@@ -268,6 +268,22 @@ try {
 } catch (e) {
   window.alert(e); // FAIL: schema is not compliant or is incorrect or is not satisfiable (see notes)
 }
+```
+
+SnapSJOT JSON data
+------------------
+
+SnapSJOT creates a SJOT schema from JSON data.  Usage with node.js:
+
+```js
+var snapSJOT = require("snapsjot");
+var data = {
+    "name":    "SJOT",
+    "v":       1.1,
+    "tags":    [ "JSON", "SJOT" ],
+    "package": { "id": 1, "name": "sjot" }
+  };
+snapSJOT(data);
 ```
 
 What's included?
