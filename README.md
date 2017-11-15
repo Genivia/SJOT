@@ -1,8 +1,6 @@
 
 [![logo][logo-url]][sjot-url]
 
-[![browser support][testling-image]][testling-url]
-
 [![npm version][npm-image]][npm-url] [![build status][travis-image]][travis-url] [![license][bsd-3-image]][bsd-3-url]
 
 SJOT: Schemas for JSON Objects
@@ -11,6 +9,11 @@ SJOT: Schemas for JSON Objects
 Schemas for JSON Objects, or simply SJOT, offers faster JSON validation with
 lightweight schemas and compact validators.  SJOT schemas have the look and
 feel of object templates and are easy to use.
+
+Installation
+------------
+
+    npm install sjot
 
 Highlights
 ----------
@@ -199,13 +202,8 @@ dictionary object of word-word pairs:
       "@root": { "(\\w+)", "(\\w+)" }
     }
 
-Installation
-------------
-
-    npm install sjot
-
-Why another JSON schema "standard"?
------------------------------------
+How does SJOT compare to JSON schema?
+-------------------------------------
 
 - JSON schema is **verbose**, doubling the nesting level compared to JSON data.
   By contrast, SJOT schema levels are one-on-one with JSON data.
@@ -224,14 +222,14 @@ Why another JSON schema "standard"?
   only be one simple and independent way to combine constructs.
 - The **principle of least surprise** may not apply to JSON schema.
 
-JSON validation with SJOT
--------------------------
+How to validate JSON with SJOT
+------------------------------
 
-SJOT validates JSON data.  Usage:
+SJOT validates JSON data.  Use the SJOT module as follows:
 
 ```js
-// <script src="sjot.js"></script>    add this to your web page to load sjot.js
-var SJOT = require("sjot");     //    or use the npm sjot package for node.js
+// <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
+var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
 
 var schema = {
   "Data": {                     // root of JSON data is a "Data" object
@@ -272,20 +270,52 @@ try {
 }
 ```
 
-SnapSJOT JSON data
-------------------
+How to snapSJOT JSON
+--------------------
 
-SnapSJOT creates a SJOT schema from JSON data.  Usage with node.js:
+SnapSJOT creates a SJOT schema for the given JSON data.  Use snapSJOT with node.js as follows:
 
 ```js
 var snapSJOT = require("snapsjot");
-var data = {
+var data =
+[
+  {
     "name":    "SJOT",
-    "v":       1.1,
-    "tags":    [ "JSON", "SJOT" ],
+    "v":       "1.3.7",
+    "tags":    [ "JSON", "SJOT", "validator" ],
     "package": { "id": 1, "name": "sjot" }
-  };
-snapSJOT(data);
+  },
+  {
+    "name":    "SNAPSJOT",
+    "v":       1.3,
+    "tags":    [ "JSON", "SJOT", "converter" ],
+    "package": { "id": 2, "name": "snapsjot", "opt": true }
+  }
+];
+var schema = snapSJOT.convert(data);
+console.log(JSON.stringify(schema, null, 2));
+```
+
+This creates the following SJOT schema:
+
+```js
+{
+  "@note": "SJOT schema created from JSON data by snapSJOT",
+  "@root": [
+    {
+      "@final": true,
+      "name": "string",
+      "v": [[ "string", "number" ]],
+      "tags": [ "string" ],
+      "package": {
+        "@final": true,
+        "id": "number",
+        "name": "string",
+        "opt?": "boolean"
+      }
+    }
+  ]
+}
 ```
 
 What's included?
