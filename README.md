@@ -30,7 +30,7 @@ Highlights
 - SJOT schemas translate to JSON schema draft v4 without loss of schema details.
 
 - Live SJOT validator, schema converters and snapSJOT creator at
-  <https://www.genivia.com/get-sjot.html#demo>
+  <https://genivia.com/get-sjot.html#demo>
 
 - Full documentation at <http://sjot.org>
 
@@ -208,16 +208,17 @@ How does SJOT compare to JSON schema?
 - JSON schema is **verbose**, doubling the nesting level compared to JSON data.
   By contrast, SJOT schema levels are one-on-one with JSON data.
 - JSON schema validation performance is **not scalable**.  By contrast, SJOT
-  takes linear time to validate JSON data, linear in the size of the JSON data.
+  validators are very fast and scalable.  The asymptotic running time of JSON
+  validity checking is linear in the size of the given JSON data.
 - JSON schema offers very **few predeclared primitive types**.  By contrast,
-  SJOT offers a wider choice of pre-defined types.
+  SJOT offers a wide choice of pre-defined types.
 - JSON schema is **non-strict by default**.  By contrast, SJOT is strict by
   default since object properties are required by default.
 - JSON schemas are **not extensible**.  By contrast, SJOT objects are
-  either extensible or final.
+  extensible or final.
 - JSON schema **violates the encapsulation principle** because it permits
   referencing local schema types.  By contrast, SJOT groups all types at the
-  top level in the schema as a dictionary of named types.
+  top level in the schema as a simple dictionary of named types.
 - JSON schema design **violates the orthogonality principle**.  There should
   only be one simple and independent way to combine constructs.
 - The **principle of least surprise** may not apply to JSON schema.
@@ -363,50 +364,51 @@ We love feedback and contributions to this project.  Please read
 Changelog
 ---------
 
-- Oct  1, 2016: sjot.js 0.0.2 released
-- Oct  2, 2016: sjot.js 0.1.0 added `@extends` and fixed minor issues
-- Oct  3, 2016: sjot.js 0.1.1 fixes for minor issues
-- Oct  3, 2016: sjot.js 0.1.2 fixes for minor issues
-- Oct  3, 2016: sjot.js 0.1.3 fixed JS RegExp features not supported by Safari
-- Oct  4, 2016: sjot.js 0.1.4 added `@final`, added validation error reporting, fixed minor issues
-- Oct  5, 2016: sjot.js 0.1.5 minor fixes
-- Oct  5, 2016: sjot.js 0.1.6 API update: `SJOT.valid(data)` returns true (valid) or false (invalid), `SJOT.validate(data)` throws exception string with error details when validation fails
-- Oct  6, 2016: sjot.js 0.1.7 improvements and fixes for minor issues
-- Oct  7, 2016: sjot.js 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
-- Oct  8, 2016: sjot.js 1.0.2 fixes for minor issues
-- Oct  9, 2016: sjot.js 1.0.4 fixes for minor issues
-- Oct 10, 2016: sjot.js 1.1.0 fast, lean, and mean scripts included
-- Oct 11, 2016: sjot.js 1.1.1 datetime RFC3339 validation fixed
-- Oct 12, 2016: sjot.js 1.2.0 regex property names added
-- Oct 13, 2016: sjot.js 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
-- Oct 18, 2016: sjot.js 1.2.2 fix for `SJOT.check()` `#type` cycling and added `"null"` type
-- Oct 19, 2016: sjot.js 1.2.3 updated `SJOT.check()` for union types and validation rules
-- Oct 20, 2016: sjot.js 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
-- Oct 21, 2016: sjot.js 1.2.5 improvements and dev/sjot2js.js added
-- Oct 22, 2016: sjot.js 1.2.6 added new `@dep` constraints and new built-in `"true"` and `"false"` types
-- Oct 24, 2016: sjot.js 1.2.7 added SJOT schema model checker to `SJOT.check()` that checks for non-satisfiable schemas which reject all data
-- Oct 25, 2016: sjot.js 1.2.8 minor updates
-- Oct 25, 2016: sjot.js 1.2.9 minor updates
-- Nov 22, 2016: sjot.js 1.3.0 merged dev/js2sjot thanks to Chris Moutsos for helping out
-- Nov 25, 2016: sjot.js 1.3.1 added `"uuid"` type and inline arrays with `[type]` and `[n,type,m]`
-- Nov 26, 2016: sjot.js 1.3.2 fixes for minor issues
-- Nov 28, 2016: sjot.js 1.3.3 performance improvements, fixes for minor issues
-- Nov 29, 2016: sjot.js 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may also be used in `@sjot` in JSON
-- Dec  1, 2016: sjot.js 1.3.5 improvements
-- Dec 12, 2016: sjot.js 1.3.6 improvements
-- Jan  9, 2017: sjot.js 1.3.7 added remote SJOT schema loading (subject to Same Origin Policy)
-- Feb 13, 2017: sjot.js 1.3.8 improvements
-- Jul  8, 2017: sjot.js 1.3.9 improvements
-- Jul  9, 2017: sjot.js 1.3.10 improvements
-- Jul  9, 2017: sjot.js 1.3.11 improvements
-- Jul 12, 2017: sjot.js 1.3.12 validation error messages now use JSONPath to identify JSON error locations
-- Jul 12, 2017: sjot.js 1.3.13 improvements
-- Jul 13, 2017: sjot.js 1.3.14 updated js2sjot.js
-- Jul 16, 2017: sjot.js 1.3.15 improvements
-- Oct 24, 2017: sjot.js 1.3.16 ES5 compatible sjot.js update for improved browser support
-- Nov 14, 2017: sjot.js 1.3.17 added snapSJOT snapsjot.js schema creator to convert JSON data to SJOT schemas, improvements
+- Oct  1, 2016: sjot 0.0.2 released
+- Oct  2, 2016: sjot 0.1.0 added `@extends` and fixed minor issues
+- Oct  3, 2016: sjot 0.1.1 fixes for minor issues
+- Oct  3, 2016: sjot 0.1.2 fixes for minor issues
+- Oct  3, 2016: sjot 0.1.3 fixed JS RegExp features not supported by Safari
+- Oct  4, 2016: sjot 0.1.4 added `@final`, added validation error reporting, fixed minor issues
+- Oct  5, 2016: sjot 0.1.5 minor fixes
+- Oct  5, 2016: sjot 0.1.6 API update: `SJOT.valid(data)` returns true (valid) or false (invalid), `SJOT.validate(data)` throws exception string with error details when validation fails
+- Oct  6, 2016: sjot 0.1.7 improvements and fixes for minor issues
+- Oct  7, 2016: sjot 1.0.0 added `SJOT.check(schema)`, uniqueness check for sets, and many other additions and improvements that makes the API compliant with the SJOT specification (except for support for external URL#name schema references)
+- Oct  8, 2016: sjot 1.0.2 fixes for minor issues
+- Oct  9, 2016: sjot 1.0.4 fixes for minor issues
+- Oct 10, 2016: sjot 1.1.0 fast, lean, and mean scripts included
+- Oct 11, 2016: sjot 1.1.1 datetime RFC3339 validation fixed
+- Oct 12, 2016: sjot 1.2.0 regex property names added
+- Oct 13, 2016: sjot 1.2.1 fixes numeric range validation issue (float data for integer range type is invalid)
+- Oct 18, 2016: sjot 1.2.2 fix for `SJOT.check()` `#type` cycling and added `"null"` type
+- Oct 19, 2016: sjot 1.2.3 updated `SJOT.check()` for union types and validation rules
+- Oct 20, 2016: sjot 1.2.4 improved handling of default values for properties and tuples with nulls, so that the validator adds default values in place of missing data
+- Oct 21, 2016: sjot 1.2.5 improvements and dev/sjot2js.js added
+- Oct 22, 2016: sjot 1.2.6 added new `@dep` constraints and new built-in `"true"` and `"false"` types
+- Oct 24, 2016: sjot 1.2.7 added SJOT schema model checker to `SJOT.check()` that checks for non-satisfiable schemas which reject all data
+- Oct 25, 2016: sjot 1.2.8 minor updates
+- Oct 25, 2016: sjot 1.2.9 minor updates
+- Nov 22, 2016: sjot 1.3.0 merged dev/js2sjot thanks to Chris Moutsos for helping out
+- Nov 25, 2016: sjot 1.3.1 added `"uuid"` type and inline arrays with `[type]` and `[n,type,m]`
+- Nov 26, 2016: sjot 1.3.2 fixes for minor issues
+- Nov 28, 2016: sjot 1.3.3 performance improvements, fixes for minor issues
+- Nov 29, 2016: sjot 1.3.4 added support for schema root references `URI#` and `#` in addition to `URI#type` and `#type`, root references may also be used in `@sjot` in JSON
+- Dec  1, 2016: sjot 1.3.5 improvements
+- Dec 12, 2016: sjot 1.3.6 improvements
+- Jan  9, 2017: sjot 1.3.7 added remote SJOT schema loading (subject to Same Origin Policy)
+- Feb 13, 2017: sjot 1.3.8 improvements
+- Jul  8, 2017: sjot 1.3.9 improvements
+- Jul  9, 2017: sjot 1.3.10 improvements
+- Jul  9, 2017: sjot 1.3.11 improvements
+- Jul 12, 2017: sjot 1.3.12 validation error messages now use JSONPath to identify JSON error locations
+- Jul 12, 2017: sjot 1.3.13 improvements
+- Jul 13, 2017: sjot 1.3.14 updated js2sjot.js
+- Jul 16, 2017: sjot 1.3.15 improvements
+- Oct 24, 2017: sjot 1.3.16 ES5 compatible sjot.js update for improved browser support
+- Nov 14, 2017: sjot 1.3.17 added snapSJOT snapsjot.js schema creator to convert JSON data to SJOT schemas, improvements
+- Nov 15, 2017: sjot 1.3.18 npm package snapsjot released
 
-[logo-url]: https://www.genivia.com/images/sjot-logo.png
+[logo-url]: https://genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
 [npm-image]: https://badge.fury.io/js/sjot.svg
 [npm-url]: https://www.npmjs.com/package/sjot

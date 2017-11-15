@@ -1,8 +1,16 @@
 {
   "name": "sjot",
+  "author": "Robert van Engelen and Chris Moutsos",
   "version": "1.3.17",
   "description": "Schemas for JSON Objects, or simply SJOT, offers faster JSON validation with lightweight schemas and compact validators.  SJOT schemas have the look and feel of object templates and are easy to use.",
+  "license": "BSD-3-Clause",
   "main": "sjot.js",
+  "devDependencies": {
+    "tape": "~2.4.0"
+  },
+  "peerDependencies": {
+    "snapsjot": ">=1.3.17"
+  },
   "scripts": {
     "preversion": "npm test",
     "version": "./build.sh && git add -A dist",
@@ -37,8 +45,6 @@
     "validator",
     "library"
   ],
-  "author": "Robert van Engelen",
-  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/Genivia/SJOT/issues"
   },
