@@ -18,15 +18,15 @@ Installation
 Highlights
 ----------
 
-- Use SJOT to efficiently validate and type-check JSON data with compact SJOT
-  schemas.  SJOT schemas are compact and have the look-and-feel of JSON
-  templates.
+- Use SJOT to efficiently validate and type-check JSON and JS values with
+  compact types and schemas.  SJOT schemas are compact and have the
+  look-and-feel of JSON templates.
 
 - JSON validation with `SJOT.valid(data, typeref, schema)` and
   `SJOT.validate(data, typeref, schema)` is fast: the worst-case running time
-  is asymptotically linear in the size of the JSON document to validate.
+  is asymptotically linear in the size of the JSON value to validate.
 
-- Type check JSON with `SJOT.valid_type(data, type)`.
+- Type check JSON and JS values with `SJOT.valid(data, type)`.
 
 - `SJOT.check(schema)` verifies a schema and its satisfiability, so you never
   have to worry about schemas with conflicting one/any/all/dep constraints that
@@ -52,7 +52,7 @@ type of the JSON document to validate:
       ...
     }
 
-A type in a SJOT schema is one of:
+A SJOT type is one of:
 
     "any"                 any type (wildcard)
     "atom"                non-null primitive type
@@ -217,7 +217,7 @@ Use the SJOT module as follows to validate JSON and JS values with a SJOT schema
 var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
 
 var schema = {
-  "Data": {                     // root of JSON data is a "Data" object
+  "@root": {                    // root of JSON data
     "name":    "string",        // required name of type string
     "v?1.0":   "number",        // optional v with default 1.0
     "tags?":   "string{1,}",    // optional non-empty set of string tags
@@ -227,7 +227,7 @@ var schema = {
 
 var data = {
     "name":    "SJOT",
-    "v":       1.1,
+    "v":       1.4,
     "tags":    [ "JSON", "SJOT" ],
     "package": { "id": 1, "name": "sjot" }
   };
@@ -256,8 +256,8 @@ try {
 }
 ```
 
-How to type check JSON
-----------------------
+How to type check JSON and JS values
+------------------------------------
 
 Type checking JSON and JS values with SJOT is simple too.
 `SJOT.valid(data, type)` tests if `data` is of the correct `type`:
