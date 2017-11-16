@@ -127,8 +127,8 @@ if (SJOT.valid(value3, "int[3,5]") === false)
   ... // FAIL (result is false)
 if (SJOT.valid(value4, {x:"number"}) === false)
   ... // FAIL (result is false)
-if (SJOT.valid(value5, {"@final":true,a:["int"]}))
-  ... // OK (result is true)
+if (SJOT.valid(value5, {"@final":true,a:["int"]}) === false)
+  ... // FAIL (result is false)
 ```
 
 How to snapSJOT JSON
