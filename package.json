@@ -37,12 +37,13 @@
   "keywords": [
     "JSON",
     "SJOT",
-    "lightweight",
     "schema",
     "validation",
     "compact",
-    "checker",
     "validator",
+    "type",
+    "checker",
+    "lightweight",
     "library"
   ],
   "bugs": {
