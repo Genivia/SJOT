@@ -6,9 +6,9 @@
 SJOT: Schemas for JSON Objects
 ==============================
 
-Schemas for JSON Objects, or simply SJOT, offers faster JSON validation with
-lightweight schemas and compact validators.  SJOT schemas have the look and
-feel of object templates and are easy to use.
+Schemas for JSON Objects, or simply SJOT, offers faster JSON validation and
+type checking with lightweight schemas and compact validators.  SJOT schemas
+have the look and feel of object templates and are easy to use.
 
 Installation
 ------------
@@ -102,34 +102,33 @@ var value1 = 2;
 var value2 = true;
 var value3 = [1,2];
 var value4 = {a:"x",b:2};
+var value5 = {a:[1,2],b:{"x":3.14}};
 
 // examples: these all succeed to type check
 
 if (SJOT.valid(value1, "1..10"))
   ... // OK (result is true)
-
 if (SJOT.valid([value1,value2], ["1..10","boolean"]))
   ... // OK (result is true)
-
 if (SJOT.valid(value3, ["int"]))
   ... // OK (result is true)
-
 if (SJOT.valid(value4, {a:"char[1]",b:"1..10"}))
+  ... // OK (result is true)
+if (SJOT.valid(value5, {"@final":true,a:["int"],b:{x:"float"}}))
   ... // OK (result is true)
 
 // examples: these fail to type check
 
 if (SJOT.valid(value1, "-1..0") === false)
   ... // FAIL (result is false)
-
 if (SJOT.valid(value2, "number") === false)
   ... // FAIL (result is false)
-
 if (SJOT.valid(value3, "int[3,5]") === false)
   ... // FAIL (result is false)
-
 if (SJOT.valid(value4, {x:"number"}) === false)
   ... // FAIL (result is false)
+if (SJOT.valid(value5, {"@final":true,a:["int"]}))
+  ... // OK (result is true)
 ```
 
 How to snapSJOT JSON
