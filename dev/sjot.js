@@ -22,8 +22,9 @@ var SJOT = (function () {
 
   SJOT.moduleProperty = 1;
 
-  // validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
-  // throws a string exception when data is not valid according to schema
+  // validate(data, type|"[URI]#[type]"|"@root"|null [, schema ])
+  // throws a string exception when data is not valid according to the specified type and schema (optional)
+  // type should be specified or type and schema when type refers to a schema type
   SJOT.validate = function (data, type, schema) {
 
     var sjots = schema;
@@ -57,8 +58,9 @@ var SJOT = (function () {
 
   };
 
-  // valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ])
-  // returns true when data is valid according to schema, false otherwise
+  // valid(data, type|"[URI]#[type]"|"@root"|null [, schema ])
+  // returns true when data is valid according to the specified type and schema (optional), false otherwise
+  // type should be specified or type and schema when type refers to a schema type
   SJOT.valid = function (data, type, schema) {
 
     try {
@@ -67,7 +69,6 @@ var SJOT = (function () {
 
     } catch (e) {
 
-      /*LOG[*/console.log(e);/*LOG]*/
       return false;
 
     }

@@ -18,19 +18,24 @@ Installation
 Highlights
 ----------
 
-- SJOT schemas are compact and have the look-and-feel of JSON templates.
+- Use SJOT to efficiently validate and type-check JSON data with compact SJOT
+  schemas.  SJOT schemas are compact and have the look-and-feel of JSON
+  templates.
 
-- JSON validation with SJOT is fast: the worst-case running time is
-  asymptotically linear in the size of the JSON document to validate.
+- JSON validation with `SJOT.valid(data, typeref, schema)` and
+  `SJOT.validate(data, typeref, schema)` is fast: the worst-case running time
+  is asymptotically linear in the size of the JSON document to validate.
 
-- The `SJOT.check()` SJOT API runs a schema checker that verifies schema
-  satisfiability, so you never have to worry about schemas with conflicting
-  one/any/all/dep constraints that reject all data.
+- Type check JSON with `SJOT.valid_type(data, type)`.
+
+- `SJOT.check(schema)` verifies a schema and its satisfiability, so you never
+  have to worry about schemas with conflicting one/any/all/dep constraints that
+  reject all data.
 
 - SJOT schemas translate to JSON schema draft v4 without loss of schema details.
 
 - Live SJOT validator, schema converters and snapSJOT creator at
-  <https://genivia.com/get-sjot.html#demo>
+  <https://www.genivia.com/get-sjot.html#demo>
 
 - Full documentation at <http://sjot.org>
 
@@ -202,31 +207,10 @@ dictionary object of word-word pairs:
       "@root": { "(\\w+)", "(\\w+)" }
     }
 
-How does SJOT compare to JSON schema?
--------------------------------------
+How to validate JSON
+--------------------
 
-- JSON schema is **verbose**, doubling the nesting level compared to JSON data.
-  By contrast, SJOT schema levels are one-on-one with JSON data.
-- JSON schema validation performance is **not scalable**.  By contrast, SJOT
-  validators are very fast and scalable.  The asymptotic running time of JSON
-  validity checking is linear in the size of the given JSON data.
-- JSON schema offers very **few predeclared primitive types**.  By contrast,
-  SJOT offers a wide choice of pre-defined types.
-- JSON schema is **non-strict by default**.  By contrast, SJOT is strict by
-  default since object properties are required by default.
-- JSON schemas are **not extensible**.  By contrast, SJOT objects are
-  extensible or final.
-- JSON schema **violates the encapsulation principle** because it permits
-  referencing local schema types.  By contrast, SJOT groups all types at the
-  top level in the schema as a simple dictionary of named types.
-- JSON schema design **violates the orthogonality principle**.  There should
-  only be one simple and independent way to combine constructs.
-- The **principle of least surprise** may not apply to JSON schema.
-
-How to validate JSON with SJOT
-------------------------------
-
-SJOT validates JSON data.  Use the SJOT module as follows:
+Use the SJOT module as follows to validate JSON and JS values with a SJOT schema:
 
 ```js
 // <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
@@ -248,22 +232,23 @@ var data = {
     "package": { "id": 1, "name": "sjot" }
   };
 
-// SJOT.valid(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) tests if data is valid:
+// example 1: SJOT.valid(data, type|"[URI]#[type]"|"@root", schema) tests if data is valid:
 
 if (SJOT.valid(data, "@root", schema))
   ... // OK: data validated against schema
+else
+  ... // FAIL: data is not valid
 
-if (SJOT.valid(data))
-  ... // OK: self-validated data against its embedded @sjot schema (only if a @sjot is present in data, not in this example)
+// example 2: SJOT.validate(data, type|"[URI]#[type]"|"@root", schema) validates data, if validation fails throws an exception with diagnostics:
 
-// SJOT.validate(data [, type|"[URI]#[type]"|"@root"|null [, schema ] ]) validates data, if validation fails throws an exception with diagnostics:
 try {
   SJOT.validate(data, "@root", schema);
 } catch (e) {
-  window.alert(e); // FAIL: validation failed
+  window.alert(e); // FAIL: data is not valid
 }
 
-// SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
+// example 3: SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
+
 try {
   SJOT.check(schema);
 } catch (e) {
@@ -271,10 +256,45 @@ try {
 }
 ```
 
+How to type check JSON
+----------------------
+
+Type checking JSON and JS values with SJOT is simple too.
+`SJOT.valid(data, type)` tests if `data` is of the correct `type`:
+
+```js
+// <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
+var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
+
+var value1 = 2;
+var value2 = true;
+var value3 = [1,2];
+var value4 = {a:"x",b:2};
+
+// examples: these all succeed to type check
+
+if (SJOT.valid(value1, "1..10"))
+  ... // OK
+
+if (SJOT.valid([value1,value2], ["1..10","boolean"]))
+  ... // OK
+
+if (SJOT.valid(value3, ["int"]))
+  ... // OK
+
+if (SJOT.valid(value4, {a:"char[1]",b:"1..10"}))
+  ... // OK
+```
+
 How to snapSJOT JSON
 --------------------
 
-SnapSJOT creates a SJOT schema for the given JSON data.  Use snapSJOT with node.js as follows:
+SnapSJOT creates a SJOT schema for the given JSON data.  First, install
+snapSJOT with:
+
+    npm install snapsjot
+
+Then use snapSJOT with node.js as follows:
 
 ```js
 var snapSJOT = require("snapsjot");
@@ -335,7 +355,28 @@ Also included are the following utilities:
 - `dev/snapsjot.js` is the snapSJOT schema creator from JSON data.
 
 You can use these utilities interactively at
-<https://genivia.com/get-sjot.html#demo>
+<https://www.genivia.com/get-sjot.html#demo>
+
+How does SJOT compare to JSON schema?
+-------------------------------------
+
+- JSON schema is **verbose**, doubling the nesting level compared to JSON data.
+  By contrast, SJOT schema levels are one-on-one with JSON data.
+- JSON schema validation performance is **not scalable**.  By contrast, SJOT
+  validators are very fast and scalable.  The asymptotic running time of JSON
+  validity checking is linear in the size of the given JSON data.
+- JSON schema offers very **few predeclared primitive types**.  By contrast,
+  SJOT offers a wide choice of pre-defined types.
+- JSON schema is **non-strict by default**.  By contrast, SJOT is strict by
+  default since object properties are required by default.
+- JSON schemas are **not extensible**.  By contrast, SJOT objects are
+  extensible or final.
+- JSON schema **violates the encapsulation principle** because it permits
+  referencing local schema types.  By contrast, SJOT groups all types at the
+  top level in the schema as a simple dictionary of named types.
+- JSON schema design **violates the orthogonality principle**.  There should
+  only be one simple and independent way to combine constructs.
+- The **principle of least surprise** may not apply to JSON schema.
 
 Limitations
 -----------
@@ -407,8 +448,9 @@ Changelog
 - Oct 24, 2017: sjot 1.3.16 ES5 compatible sjot.js update for improved browser support
 - Nov 14, 2017: sjot 1.3.17 added snapSJOT snapsjot.js schema creator to convert JSON data to SJOT schemas, improvements
 - Nov 15, 2017: sjot 1.3.18 npm package snapsjot released
+- Nov 16, 2017: sjot 1.4.0  sjot and snapsjot updates, easy type checking with `SJOT.valid(data, type)`, removed `console.log()`
 
-[logo-url]: https://genivia.com/images/sjot-logo.png
+[logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
 [npm-image]: https://badge.fury.io/js/sjot.svg
 [npm-url]: https://www.npmjs.com/package/sjot
