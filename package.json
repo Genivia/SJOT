@@ -1,7 +1,7 @@
 {
   "name": "sjot",
   "author": "Robert van Engelen and Chris Moutsos",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Schemas for JSON Objects, or simply SJOT, offers faster JSON validation and type checking with lightweight schemas and compact validators.  SJOT schemas have the look and feel of object templates and are easy to use.",
   "license": "BSD-3-Clause",
   "main": "sjot.js",
