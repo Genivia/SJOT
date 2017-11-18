@@ -10,6 +10,9 @@ Schemas for JSON Objects, or simply SJOT, offers faster JSON validation and
 type checking with lightweight schemas and compact validators.  SJOT schemas
 have the look and feel of object templates and are easy to use.
 
+[Live demo](https://www.genivia.com/get-sjot.html#demo) SJOT validator, schema
+converters and snapSJOT creator.
+
 Installation
 ------------
 
@@ -33,9 +36,6 @@ Highlights
   reject all data.
 
 - SJOT schemas translate to JSON schema draft v4 without loss of schema details.
-
-- Live SJOT validator, schema converters and snapSJOT creator at
-  <https://www.genivia.com/get-sjot.html#demo>
 
 - Full documentation at <http://sjot.org>
 
@@ -103,6 +103,7 @@ var value2 = true;
 var value3 = [1,2];
 var value4 = {a:"x",b:2};
 var value5 = {a:[1,2],b:{"x":3.14}};
+var value6 = null;
 
 // examples: these all succeed to type check
 
@@ -116,6 +117,8 @@ if (SJOT.valid(value4, {a:"char[1]",b:"1..10"}))
   ... // OK (result is true)
 if (SJOT.valid(value5, {"@final":true,a:["int"],b:{x:"float"}}))
   ... // OK (result is true)
+if (SJOT.valid(value6, [["string","boolean","null"]])
+  ... // OK (result is true)
 
 // examples: these fail to type check
 
@@ -128,6 +131,8 @@ if (SJOT.valid(value3, "int[3,5]") === false)
 if (SJOT.valid(value4, {x:"number"}) === false)
   ... // FAIL (result is false)
 if (SJOT.valid(value5, {"@final":true,a:["int"]}) === false)
+  ... // FAIL (result is false)
+if (SJOT.valid(value6, [["string","number"]]) === false)
   ... // FAIL (result is false)
 ```
 
@@ -230,8 +235,8 @@ A SJOT type is one of:
     "char"                string with a single character
     "char[n,m]"           string of n to m characters (n, m are optional)
     "(regex)"             string that matches the regex (regex is anchored)
-    "type[]"              array of values of named type
-    "type[n,m]"           array of n to m values of named type (n, m are optional)
+    "type[]"              array of values of named type, shorthand for [ type ]
+    "type[n,m]"           array of n to m values of named type, shorthand for [ n, type, m ]
     "type{}"              set of atoms (array of unique atoms)
     "type{n,m}"           set of n to m atoms (n, m are optional)
     "URI#name"            reference to named type in schema "@id": "URI"
@@ -242,7 +247,7 @@ A SJOT type is one of:
     [ type ]              array of values of type (type is optional)
     [ n, type, m ]        array of n to m values of type (n, type, m are optional)
     [ type, ..., type ]   tuple of typed values
-    [[ type, ..., type ]] union (choice) of types
+    [[ type, ..., type ]] union of types (choice of one of these types)
     { "prop": type, ... } object with typed properties
 
 An object property is optional when its name ends with a `?`, which may be
@@ -462,6 +467,7 @@ Changelog
 - Nov 14, 2017: sjot 1.3.17 added snapSJOT snapsjot.js schema creator to convert JSON data to SJOT schemas, improvements
 - Nov 15, 2017: sjot 1.3.18 npm package snapsjot released
 - Nov 16, 2017: sjot 1.4.0  sjot and snapsjot updates, easy type checking with `SJOT.valid(data, type)`, removed `console.log()`
+- Nov 18, 2017: sjot 1.4.1  minor updates
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
