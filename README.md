@@ -468,6 +468,8 @@ Changelog
 - Nov 15, 2017: sjot 1.3.18 npm package snapsjot released
 - Nov 16, 2017: sjot 1.4.0  sjot and snapsjot updates, easy type checking with `SJOT.valid(data, type)`, removed `console.log()`
 - Nov 18, 2017: sjot 1.4.1  minor updates
+- Nov 18, 2017: sjot 1.4.2  minor updates
+- Nov 18, 2017: sjot 1.4.3  minor updates
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
