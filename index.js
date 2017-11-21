@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.4.2
+ * @version     1.4.3
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -1742,8 +1742,9 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
   } else if (Array.isArray(itemtype)) {
 
-    if (itemtype.length === 0 || itemtype === "array") {
+    if (itemtype.length === 0) {
 
+      // [] is synonymous to "any[]"
       n++;
       itemtype = "any";
 
@@ -1885,8 +1886,8 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
     if (union[n].o !== null)
       sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
 
-    var utype = {};
-    var k = 0;
+    var prevp = union[n].p;
+    var empty = true;
 
     for (var prop in itemtype) {
 
@@ -1894,11 +1895,11 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
         if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
 
-          k++;
           // object with regex property means only one such object is permitted in the union to ensure uniqueness
           if (union[n].o !== null)
             sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
           union[n].o = type;
+          empty = false;
           break;
 
         } else {
@@ -1908,11 +1909,13 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
           if (i !== -1)
             prop = prop.slice(0, i);
           else
-            k++;
+            empty = false;
 
-          if (union[n].p !== null && union[n].p.hasOwnProperty(prop))
+          if (prevp !== null && prevp.hasOwnProperty(prop))
             sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
-          utype[prop] = type;
+          if (union[n].p === null)
+            union[n].p = {};
+          union[n].p[prop] = type;
 
         }
 
@@ -1920,16 +1923,13 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
     }
 
-    if (k === 0) {
+    if (empty) {
 
-      if (union[n].o !== null || union[n].p !== null)
+      if (union[n].o !== null || prevp !== null)
         sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
       union[n].o = type;
 
     }
-
-    if (union[n].p === null)
-      union[n].p = utype;
 
   }
 
