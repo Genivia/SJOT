@@ -6,7 +6,7 @@
  * See README.md
  *
  * @module      sjot
- * @version     1.4.3
+ * @version     1.4.4
  * @class       SJOT
  * @author      Robert van Engelen, engelen@genivia.com
  * @copyright   Robert van Engelen, Genivia Inc, 2016-2017. All Rights Reserved.
@@ -334,7 +334,7 @@ function sjot_validate(sjots, data, type, sjot/*FAST[*/, datapath, typepath/*FAS
             sjot_error("value", data, type/*FAST[*/, datapath, typepath/*FAST]*/);
           return;
 
-        } else if (typeof type === "object") {
+        } else if (type !== null && typeof type === "object") {
 
           // put @extends base properties into this object type to speed up repeated validation
           if (type.hasOwnProperty('@extends'))
@@ -875,12 +875,34 @@ function sjot_validate_union(sjots, data, type, sjot/*FAST[*/, datapath, typepat
         if (union[n].o !== null)
           return sjot_validate(sjots, data, union[n].o, sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
+        if (union[n].t !== null) {
+
+          for (var i = 0; i < union[n].t.length; i++) {
+
+            if (item.hasOwnProperty(union[n].t[i])) {
+
+              try {
+
+                sjot_validate(sjots, item[union[n].t[i]], union[n].v[i], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
+
+              } catch (e) {
+
+                continue;
+
+              }
+
+              return sjot_validate(sjots, data, union[n].d[i], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
+
+            }
+
+          }
+
+        }
+
         if (union[n].p !== null) {
 
+          // check from first to last property (aligns with streaming model)
           for (var prop in item)
-            if (union[n].p.hasOwnProperty(prop))
-              return sjot_validate(sjots, data, union[n].p[prop], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
-          for (var prop in union[n].p)
             if (union[n].p.hasOwnProperty(prop))
               return sjot_validate(sjots, data, union[n].p[prop], sjot/*FAST[*/, datapath, typepath/*FAST]*/);
 
@@ -963,7 +985,7 @@ function sjot_extends(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/) {
     // get referenced URI#name base type
     var base = sjot_reftype(sjots, basetype, sjot/*FAST[*/, typepath/*FAST]*/);
 
-    if (typeof base !== "object")
+    if (typeof base === null || typeof base !== "object")
       sjot_schema_error("@extends does not refer to an object"/*FAST[*/, typepath/*FAST]*/);
 
     // recursively expand
@@ -1133,6 +1155,7 @@ function sjot_reftype(sjots, type, sjot/*FAST[*/, typepath/*FAST]*/) {
     } catch (e) {
 
       sjot_schema_error("no type " + prop + " found in \"" + URL + "\" " + e/*FAST[*/, typepath + "/" + type/*FAST]*/);
+
     }
 
   }
@@ -1271,7 +1294,16 @@ function sjot_check(sjots, root, prim, type, sjot/*FAST[*/, typepath/*FAST]*/) {
 
           for (var i = 0; i < type[0].length; i++) {
 
-            sjot_check(sjots, false, prim, type[0][i], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/);
+            if (type[0][i].hasOwnProperty("@if") && type[0][i].hasOwnProperty("@then")) {
+              
+              sjot_check(sjots, false, prim, type[0][i]["@then"], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/);
+
+            } else {
+
+              sjot_check(sjots, false, prim, type[0][i], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/);
+
+            }
+
             sjot_check_union(sjots, type[0][i], type[0][i], sjot/*FAST[*/, typepath + "[[" + i + "]]"/*FAST]*/, union, 1);
 
           }
@@ -1694,6 +1726,7 @@ function sjot_is_union(type) {
 }
 
 // check if union [[ type, type, ... ]] has distinct array and object types
+// TODO: cache union[] results to speed up checking
 function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*/, union, n) {
 
   // count array depth, each depth has its own type conflict set
@@ -1784,7 +1817,7 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
   // record null, boolean, number, string, and object types with property mapping for conflict checking at array depth n
   if (union[n] === undefined)
-    union[n] = { n: null, b: null, x: null, s: null, o: null, p: null };
+    union[n] = { n: null, b: null, x: null, s: null, o: null, p: null, t: null, v: null, d: null };
 
   if (typeof itemtype === "string") {
 
@@ -1881,53 +1914,127 @@ function sjot_check_union(sjots, type, itemtype, sjot/*FAST[*/, typepath/*FAST]*
 
     }
 
-  } else if (typeof itemtype === "object") {
+  } else if (itemtype !== null && typeof itemtype === "object") {
 
-    if (union[n].o !== null)
-      sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
+    if (itemtype.hasOwnProperty("@if")) {
 
-    var prevp = union[n].p;
-    var empty = true;
+      // check if @if value is a valid property
+      var when = itemtype["@if"];
 
-    for (var prop in itemtype) {
+      if (typeof when !== "string")
+        sjot_schema_error("@if value is not a property name"/*FAST[*/, typepath/*FAST]*/);
+      if (!itemtype.hasOwnProperty("@then"))
+        sjot_schema_error("@if \"" + when + "\" has no @then object"/*FAST[*/, typepath/*FAST]*/);
 
-      if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && itemtype.hasOwnProperty(prop)) {
+      var then = itemtype["@then"];
 
-        if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
+      if (typeof then === "string" && then.indexOf("#") !== -1 && then.charCodeAt(0) !== 0x28 /*(type)*/ && then.charCodeAt(then.length - 1) !== 0x5D /*type[]*/ && then.charCodeAt(then.length - 1) !== 0x7D /*type{}*/)
+        then = sjot_reftype(sjots, then, sjot/*FAST[*/, typepath/*FAST]*/);
 
-          // object with regex property means only one such object is permitted in the union to ensure uniqueness
-          if (union[n].o !== null)
-            sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
-          union[n].o = type;
-          empty = false;
-          break;
+      if (then === null || typeof then !== "object")
+        sjot_schema_error("@then value is not an object type"/*FAST[*/, typepath/*FAST]*/);
 
-        } else {
+      var found = false;
+
+      for (var prop in then) {
+
+        if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && prop.charCodeAt(0) !== 0x28 /*(prop)*/ && then.hasOwnProperty(prop)) {
 
           var i = prop.indexOf("?");
 
-          if (i !== -1)
-            prop = prop.slice(0, i);
-          else
-            empty = false;
+          if ((i !== -1 && prop.slice(0, i) === when) || (i === -1 && prop === when)) {
 
-          if (prevp !== null && prevp.hasOwnProperty(prop))
-            sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
-          if (union[n].p === null)
-            union[n].p = {};
-          union[n].p[prop] = type;
+            found = true;
+            break;
+
+          }
 
         }
 
       }
 
-    }
+      if (!found)
+        sjot_schema_error("@if \"" + when + "\" is not a property of @then object"/*FAST[*/, typepath/*FAST]*/);
 
-    if (empty) {
+      for (var prop in then) {
 
-      if (union[n].o !== null || prevp !== null)
+        if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && prop.charCodeAt(0) !== 0x28 /*(prop)*/ && then.hasOwnProperty(prop)) {
+
+          var i = prop.indexOf("?");
+
+          if ((i !== -1 && prop.slice(0, i) === when) || (i === -1 && prop === when)) {
+
+            if (union[n].t === null) {
+
+              union[n].t = [when];
+              union[n].v = [then[prop]];
+              union[n].d = [then];
+
+            } else {
+
+              union[n].t.push(when);
+              union[n].v.push(then[prop]);
+              union[n].d.push(then);
+
+            }
+
+            break;
+
+          }
+
+        }
+
+      }
+
+    } else {
+
+      if (union[n].o !== null)
         sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
-      union[n].o = type;
+
+      var prevp = union[n].p;
+      var empty = true;
+
+      for (var prop in itemtype) {
+
+        if (prop.charCodeAt(0) !== 0x40 /*@prop*/ && itemtype.hasOwnProperty(prop)) {
+
+          if (prop.charCodeAt(0) === 0x28 /*(prop)*/) {
+
+            // object with regex property means only one such object is permitted in the union to ensure uniqueness
+            if (union[n].o !== null)
+              sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
+            union[n].o = type;
+            empty = false;
+            break;
+
+          } else {
+
+            var i = prop.indexOf("?");
+
+            if (i !== -1)
+              prop = prop.slice(0, i);
+            else
+              empty = false;
+
+            if (prevp !== null && prevp.hasOwnProperty(prop))
+              sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
+            if (union[n].p === null)
+              union[n].p = {};
+            union[n].p[prop] = type;
+
+          }
+
+        }
+
+      }
+
+      if (empty) {
+
+        if (union[n].o !== null || prevp !== null)
+          sjot_schema_error("union requires distinct object types"/*FAST[*/, typepath/*FAST]*/);
+        union[n].o = type;
+
+      }
 
     }
 
