@@ -103,8 +103,15 @@ function sjot_2js(sjots, root, version, type, sjot) {
           // convert union
           var union = [];
 
-          for (var itemtype of type[0])
-            union.push(sjot_2js(sjots, false, version, itemtype, sjot));
+          for (var itemtype of type[0]) {
+
+            if (typeof itemtype !== null && typeof itemtype === "object" && itemtype.hasOwnProperty("@if") && itemtype.hasOwnProperty("@then"))
+                union.push(sjot_2js(sjots, false, version, itemtype["@then"], sjot));
+            else
+              union.push(sjot_2js(sjots, false, version, itemtype, sjot));
+            
+          }
+
           if (version >= 4)
             return { anyOf: union };
           else
@@ -269,7 +276,7 @@ function sjot_2js(sjots, root, version, type, sjot) {
                 var proptype = type[prop];
 
                 if (typeof proptype === "string" && proptype.indexOf("#") !== -1 && !proptype.startsWith("(") && !(proptype.endsWith("]") || proptype.endsWith("}")))
-                  proptype = sjot_reftype(sjots, proptype, sjot /*FAST[*/, "#" /*FAST]*/);
+                  proptype = sjot_reftype(sjots, proptype, sjot/*FAST[*/, "#"/*FAST]*/);
 
                 switch (proptype) {
 

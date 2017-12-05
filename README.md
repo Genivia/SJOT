@@ -221,9 +221,9 @@ A SJOT type is one of:
     "float"               single precision decimal
     "double"              double precision decimal
     "number"              decimal number (unconstrained)
-    "n,m,..."             numeric enumeration
     "n..m"                inclusive numeric range (n or m is optional)
     "<n..m>"              exclusive numeric range (n or m is optional)
+    "n,m..k,l"            numeric enumeration with inclusive ranges
     "string"              string
     "base64"              string with base64 content
     "hex"                 string with hexadecimal content
@@ -341,11 +341,70 @@ with `@dep`, where `prizes` is a non-empty array of unique strings:
 
 ### Union
 
-A non-empty array of mixed strings and numbers:
+A union (choice of types) is specified with `[[` `]]` and can be used anywhere
+a type is expected.  For example, this schema defines a non-empty array of
+mixed strings and numbers:
 
     {
       "@root": [1, [["string", "number"]] ]
     }
+
+Objects in a union should be distinct, meaning they cannot share properties.
+This permits streaming-fast checking based on the first property observed in
+JSON.  For example, this schema defines a choice of two distinct objects:
+
+    {
+      "@root": [[
+        { "a": "number" },
+        { "b": "string" }
+      ]]
+    }
+
+But the following is incorrect:
+
+    {
+      "@root": [[
+        { "a": "number" },
+        { "a": "number", "b": "string" }
+      ]]
+    }
+
+because both objects match the JSON data `{ "a": 1, "b": "foo" }`.
+
+To choose an object type among potentially overlapping objects, use one or
+more `{ "@if": ... "@then": ...  }` at the start of the union:
+
+    {
+      "@root": [[
+        {
+          "@if": "b",
+          "@then": { "a": "number", "b": "string" },
+        },
+        { "a": "number" }
+      ]]
+    }
+
+where in this example the `@then` object is selected if the JSON object has
+property `b` of type `string`.
+
+To match both property name and value, use an enumeration or regex:
+
+    {
+      "@root": [[
+        {
+          "@if": "b",
+          "@then": { "a": "number", "b": "1,3..5" },
+        },
+        {
+          "@if": "b",
+          "@then": { "a": "number", "b": "(foo)" },
+        },
+        { "a": "number" }
+      ]]
+    }
+
+where `"1,3..5"` enumerates integer values and `"(foo)"` is a regex that
+matches string `"foo"`, see below.
 
 ### Regex
 
@@ -470,6 +529,7 @@ Changelog
 - Nov 18, 2017: sjot 1.4.1  minor updates
 - Nov 18, 2017: sjot 1.4.2  minor updates
 - Nov 18, 2017: sjot 1.4.3  minor updates
+- Dec  5, 2017: sjot 1.4.4  extended unions with `@if` `@then` constructs to validate non-distinct objects by property name and property value
 
 [logo-url]: https://www.genivia.com/images/sjot-logo.png
 [sjot-url]: http://sjot.org
