@@ -21,179 +21,28 @@ Installation
 Highlights
 ----------
 
-- Use SJOT to efficiently validate and type-check JSON and JS values with
-  compact types and schemas.  SJOT schemas are compact and have the
-  look-and-feel of JSON templates.
+Use SJOT to efficiently validate and type-check JSON and JS values with compact
+schemas that have the look-and-feel of JSON templates.
 
-- JSON validation with `SJOT.valid(data, typeref, schema)` and
-  `SJOT.validate(data, typeref, schema)` is fast: the worst-case running time
-  is asymptotically linear in the size of the JSON value to validate.
+JSON validation with `SJOT.valid(data, typeref, schema)` and
+`SJOT.validate(data, typeref, schema)` is fast: the worst-case running time is
+asymptotically linear in the size of the JSON value to validate.
 
-- Type check JSON and JS values with `SJOT.valid(data, type)`.
+Type check JSON and JS values with `SJOT.valid(data, type)`.
 
-- `SJOT.check(schema)` verifies a schema and its satisfiability, so you never
-  have to worry about schemas with conflicting one/any/all/dep constraints that
-  reject all data.
+`SJOT.check(schema)` verifies a schema and its satisfiability, so you never
+have to worry about schemas with conflicting one/any/all/dep constraints that
+reject all data.
 
-- SJOT schemas translate to JSON schema draft v4 without loss of schema details.
+SJOT schemas translate to JSON schema draft v4 without loss.
 
-- Full documentation at <http://sjot.org>
-
-How to validate JSON
---------------------
-
-Some examples to validate JSON and JS values with a SJOT schema:
-
-```js
-// <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
-var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
-
-var schema = {
-  "@root": {                    // root type is an object:
-    "name":    "string",        // required name of type string
-    "v?1.0":   "number",        // optional v with default 1.0
-    "tags?":   "string{1,}",    // optional non-empty set of string tags
-    "package": { "id": "1..", "name": "char[1,]" }
-   }                            // package.id >= 1, non-empty package.name
-};
-
-var data = {
-    "name":    "SJOT",
-    "v":       1.4,
-    "tags":    [ "JSON", "SJOT" ],
-    "package": { "id": 1, "name": "sjot" }
-  };
-
-// example 1: SJOT.valid(data, type|"[URI]#[type]"|"@root", schema) tests if data is valid:
-
-if (SJOT.valid(data, "@root", schema))
-  ... // OK: data validated against schema
-else
-  ... // FAIL: data is not valid
-
-// example 2: SJOT.validate(data, type|"[URI]#[type]"|"@root", schema) validates data, if validation fails throws an exception with diagnostics:
-
-try {
-  SJOT.validate(data, "@root", schema);
-} catch (e) {
-  window.alert(e); // FAIL: data is not valid
-}
-
-// example 3: SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
-
-try {
-  SJOT.check(schema);
-} catch (e) {
-  window.alert(e); // FAIL: schema is not compliant or is incorrect or is not satisfiable (see notes)
-}
-```
-
-How to type check JSON and JS values
-------------------------------------
-
-Type checking JSON and JS values with SJOT is simple too with
-`SJOT.valid(data, type)` that tests if `data` is of the correct `type`:
-
-```js
-// <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
-var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
-
-var value1 = 2;
-var value2 = true;
-var value3 = [1,2];
-var value4 = {a:"x",b:2};
-var value5 = {a:[1,2],b:{"x":3.14}};
-var value6 = null;
-
-// examples: these all succeed to type check
-
-if (SJOT.valid(value1, "1..10"))
-  ... // OK (result is true)
-if (SJOT.valid([value1,value2], ["1..10","boolean"]))
-  ... // OK (result is true)
-if (SJOT.valid(value3, ["int"]))
-  ... // OK (result is true)
-if (SJOT.valid(value4, {a:"char[1]",b:"1..10"}))
-  ... // OK (result is true)
-if (SJOT.valid(value5, {"@final":true,a:["int"],b:{x:"float"}}))
-  ... // OK (result is true)
-if (SJOT.valid(value6, [["string","boolean","null"]])
-  ... // OK (result is true)
-
-// examples: these fail to type check
-
-if (SJOT.valid(value1, "-1..0") === false)
-  ... // FAIL (result is false)
-if (SJOT.valid(value2, "number") === false)
-  ... // FAIL (result is false)
-if (SJOT.valid(value3, "int[3,5]") === false)
-  ... // FAIL (result is false)
-if (SJOT.valid(value4, {x:"number"}) === false)
-  ... // FAIL (result is false)
-if (SJOT.valid(value5, {"@final":true,a:["int"]}) === false)
-  ... // FAIL (result is false)
-if (SJOT.valid(value6, [["string","number"]]) === false)
-  ... // FAIL (result is false)
-```
-
-How to snapSJOT JSON
---------------------
-
-SnapSJOT creates a SJOT schema for the given JSON data.  First, install
-snapSJOT with:
-
-    npm install snapsjot
-
-Then use snapSJOT with node.js as follows:
-
-```js
-var snapSJOT = require("snapsjot");
-var data =
-[
-  {
-    "name":    "SJOT",
-    "v":       "1.3.7",
-    "tags":    [ "JSON", "SJOT", "validator" ],
-    "package": { "id": 1, "name": "sjot" }
-  },
-  {
-    "name":    "SNAPSJOT",
-    "v":       1.3,
-    "tags":    [ "JSON", "SJOT", "converter" ],
-    "package": { "id": 2, "name": "snapsjot", "opt": true }
-  }
-];
-var schema = snapSJOT.convert(data);
-console.log(JSON.stringify(schema, null, 2));
-```
-
-This creates the following SJOT schema:
-
-```js
-{
-  "@note": "SJOT schema created from JSON data by snapSJOT",
-  "@root": [
-    {
-      "@final": true,
-      "name": "string",
-      "v": [[ "string", "number" ]],
-      "tags": [ "string" ],
-      "package": {
-        "@final": true,
-        "id": "number",
-        "name": "string",
-        "opt?": "boolean"
-      }
-    }
-  ]
-}
-```
+Full documentation at <http://sjot.org>
 
 SJOT schema basics
 ------------------
 
-A SJOT schema is a dictionary of named types, with `@root` defining the root
-type of the JSON document to validate:
+A SJOT schema is simply speaking a dictionary of named types, with `@root`
+defining the root type of the JSON document to validate:
 
     {
       "@root":     type,
@@ -263,8 +112,8 @@ Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
 
 Notes can be placed in schemas and objects with `@note` property strings.
 
-SJOT explained by example
--------------------------
+SJOT schemas explained by example
+---------------------------------
 
 ### Arrays and objects
 
@@ -416,23 +265,155 @@ dictionary object of word-word pairs:
       "@root": { "(\\w+)", "(\\w+)" }
     }
 
-What's included?
-----------------
+How to validate JSON
+--------------------
 
-Three alternative versions of `sjot.js` are included:
+Some examples to validate JSON and JS values with a SJOT schema:
 
-- `sjot-fast.js` is optimized for speed but validation error messages are less informative
-- `sjot-lean.js` is optimized for size but lacks `SJOT.check(schema)`
-- `sjot-mean.js` is optimized for speed and size
+```js
+// <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
+var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
 
-Also included are the following utilities:
+var schema = {
+  "@root": {                    // root type is an object:
+    "name":    "string",        // required name of type string
+    "v?1.0":   "number",        // optional v with default 1.0
+    "tags?":   "string{1,}",    // optional non-empty set of string tags
+    "package": { "id": "1..", "name": "char[1,]" }
+   }                            // package.id >= 1, non-empty package.name
+};
 
-- `dev/sjot2js.js` is a SJOT to JSON schema converter.
-- `dev/js2sjot.js` is a JSON schema to SJOT converter.
-- `dev/snapsjot.js` is the snapSJOT schema creator from JSON data.
+var data = {
+    "name":    "SJOT",
+    "v":       1.4,
+    "tags":    [ "JSON", "SJOT" ],
+    "package": { "id": 1, "name": "sjot" }
+  };
 
-You can use these utilities interactively at
-<https://www.genivia.com/get-sjot.html#demo>
+// example 1: SJOT.valid(data, type|"[URI]#[type]"|"@root", schema) tests if data is valid:
+
+if (SJOT.valid(data, "@root", schema))
+  ... // OK: data validated against schema
+else
+  ... // FAIL: data is not valid
+
+// example 2: SJOT.validate(data, type|"[URI]#[type]"|"@root", schema) validates data, if validation fails throws an exception with diagnostics:
+
+try {
+  SJOT.validate(data, "@root", schema);
+} catch (e) {
+  window.alert(e); // FAIL: data is not valid
+}
+
+// example 3: SJOT.check(schema) checks if schema is compliant and correct and if it has satisfiable constraints (does not reject all data), if not throws an exception with diagnostics:
+
+try {
+  SJOT.check(schema);
+} catch (e) {
+  window.alert(e); // FAIL: schema is not compliant or is incorrect or is not satisfiable (see notes)
+}
+```
+
+How to type check JSON and JS values
+------------------------------------
+
+Type checking JSON and JS values with SJOT is simple too with
+`SJOT.valid(data, type)` that tests if `data` is of the correct `type`:
+
+```js
+// <script src="sjot.js"></script>  add this to your web page to load sjot.js, or...
+var SJOT = require("sjot");     //  ... use the npm sjot package for node.js
+
+var value1 = 2;
+var value2 = true;
+var value3 = [1,2];
+var value4 = {a:"x",b:2};
+var value5 = {a:[1,2],b:{"x":3.14}};
+var value6 = null;
+
+// examples: these all succeed to type check
+
+if (SJOT.valid(value1, "1..10"))
+  ... // OK (result is true)
+if (SJOT.valid([value1,value2], ["1..10","boolean"]))
+  ... // OK (result is true)
+if (SJOT.valid(value3, ["int"]))
+  ... // OK (result is true)
+if (SJOT.valid(value4, {a:"char[1]",b:"1..10"}))
+  ... // OK (result is true)
+if (SJOT.valid(value5, {"@final":true,a:["int"],b:{x:"float"}}))
+  ... // OK (result is true)
+if (SJOT.valid(value6, [["string","boolean","null"]])
+  ... // OK (result is true)
+
+// examples: these fail to type check
+
+if (SJOT.valid(value1, "-1..0") === false)
+  ... // FAIL (result is false)
+if (SJOT.valid(value2, "number") === false)
+  ... // FAIL (result is false)
+if (SJOT.valid(value3, "int[3,5]") === false)
+  ... // FAIL (result is false)
+if (SJOT.valid(value4, {x:"number"}) === false)
+  ... // FAIL (result is false)
+if (SJOT.valid(value5, {"@final":true,a:["int"]}) === false)
+  ... // FAIL (result is false)
+if (SJOT.valid(value6, [["string","number"]]) === false)
+  ... // FAIL (result is false)
+```
+
+How to snapSJOT JSON
+--------------------
+
+SnapSJOT creates a SJOT schema for the given JSON data.  First, install
+snapSJOT with:
+
+    npm install snapsjot
+
+Then use snapSJOT with node.js as follows:
+
+```js
+var snapSJOT = require("snapsjot");
+var data =
+[
+  {
+    "name":    "SJOT",
+    "v":       "1.3.7",
+    "tags":    [ "JSON", "SJOT", "validator" ],
+    "package": { "id": 1, "name": "sjot" }
+  },
+  {
+    "name":    "SNAPSJOT",
+    "v":       1.3,
+    "tags":    [ "JSON", "SJOT", "converter" ],
+    "package": { "id": 2, "name": "snapsjot", "opt": true }
+  }
+];
+var schema = snapSJOT.convert(data);
+console.log(JSON.stringify(schema, null, 2));
+```
+
+This creates the following SJOT schema:
+
+```js
+{
+  "@note": "SJOT schema created from JSON data by snapSJOT",
+  "@root": [
+    {
+      "@final": true,
+      "name": "string",
+      "v": [[ "string", "number" ]],
+      "tags": [ "string" ],
+      "package": {
+        "@final": true,
+        "id": "number",
+        "name": "string",
+        "opt?": "boolean"
+      }
+    }
+  ]
+}
+```
 
 How does SJOT compare to JSON schema?
 -------------------------------------
@@ -455,6 +436,24 @@ How does SJOT compare to JSON schema?
   only be one simple and independent way to combine constructs.
 - The **principle of least surprise** may not apply to JSON schema.
 
+What's included?
+----------------
+
+Three alternative versions of `sjot.js` are included:
+
+- `sjot-fast.js` is optimized for speed but validation error messages are less informative
+- `sjot-lean.js` is optimized for size but lacks `SJOT.check(schema)`
+- `sjot-mean.js` is optimized for speed and size
+
+Also included are the following utilities:
+
+- `dev/sjot2js.js` is a SJOT to JSON schema converter.
+- `dev/js2sjot.js` is a JSON schema to SJOT converter.
+- `dev/snapsjot.js` is the snapSJOT schema creator from JSON data.
+
+You can use these utilities interactively at
+<https://www.genivia.com/get-sjot.html#demo>
+
 Limitations
 -----------
 
@@ -467,11 +466,6 @@ limitation:
   to the excessive computational expense (the model satisfiability problem is
   NP-complete).  The model checker is optional and is not used by the SJOT
   validator.
-
-Feature wish list / nice to have
---------------------------------
-
-- Random JSON data generator from SJOT schemas for testing
 
 How to contribute?
 ------------------
