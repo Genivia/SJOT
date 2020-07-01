@@ -42,12 +42,13 @@ SJOT schema basics
 ------------------
 
 A SJOT schema is simply speaking a dictionary of named types, with `@root`
-defining the root type of the JSON document to validate:
+defining the root type of the JSON document to validate and optionally one or
+more named types that may be referenced:
 
     {
       "@root":     type,
-      "SomeType":  type,
-      "OtherType": type,
+      "Name":      type,
+      "OtherName": type,
       ...
     }
 
