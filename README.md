@@ -530,8 +530,8 @@ Changelog
 [sjot-url]: http://sjot.org
 [npm-image]: https://badge.fury.io/js/sjot.svg
 [npm-url]: https://www.npmjs.com/package/sjot
-[travis-image]: https://travis-ci.org/Genivia/SJOT.svg?branch=master
-[travis-url]: https://travis-ci.org/Genivia/SJOT
+[travis-image]: https://travis-ci.com/Genivia/SJOT.svg?branch=master
+[travis-url]: https://travis-ci.com/Genivia/SJOT
 [bsd-3-image]: https://img.shields.io/badge/license-BSD%203--Clause-blue.svg
 [bsd-3-url]: https://opensource.org/licenses/BSD-3-Clause
 [testling-image]: https://ci.testling.com/genivia-inc/SJOT.png
