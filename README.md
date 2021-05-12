@@ -41,9 +41,7 @@ Full documentation at <http://sjot.org>
 SJOT schema basics
 ------------------
 
-A SJOT schema is simply speaking a dictionary of named types, with `@root`
-defining the root type of the JSON document to validate and optionally one or
-more named types that may be referenced:
+A SJOT schema is simply a dictionary of named types:
 
     {
       "@root":     type,
@@ -52,9 +50,10 @@ more named types that may be referenced:
       ...
     }
 
-A SJOT type is one of:
+The `@root` defines the root `type` of the JSON documents.  A SJOT `type` is
+one of:
 
-    "any"                 any type (wildcard)
+    "any"                 anything (wildcard)
     "atom"                non-null primitive type
     "boolean"             Boolean
     "true"                fixed value true
@@ -99,6 +98,8 @@ A SJOT type is one of:
     [ type, ..., type ]   tuple of typed values
     [[ type, ..., type ]] union of types (choice of one of these types)
     { "prop": type, ... } object with typed properties
+
+A `type` references a named type that should be defined in the dictionary.
 
 An object property is optional when its name ends with a `?`, which may be
 followed by a default value for the property.  This default value will be
