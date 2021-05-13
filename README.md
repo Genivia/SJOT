@@ -50,8 +50,7 @@ A SJOT schema is simply a dictionary of named types:
       ...
     }
 
-The `@root` defines the root `type` of the JSON documents.  A SJOT `type` is
-one of:
+The `@root` defines the root `type` of the JSON documents.  A `type` is one of:
 
     "any"                 anything (wildcard)
     "atom"                non-null primitive type
@@ -99,15 +98,19 @@ one of:
     [[ type, ..., type ]] union of types (choice of one of these types)
     { "prop": type, ... } object with typed properties
 
-A `type` references a named type that should be defined in the dictionary.
+A `type` is a type expression listed above or the name of a type defined in the
+dictionary as a key with a type expression as its value.  In other words, a
+named type defined in the dictionary with a type expression is like a `typedef`
+in C/C++.
 
-An object property is optional when its name ends with a `?`, which may be
-followed by a default value for the property.  This default value will be
-assigned by the validator when the property is not present in the object or is
-null.
+A property of an object type `{ "prop": type, ... }` may be declared as
+optional by adding a `?` to its name, i.e. `"prop?"`.  This may be followed by
+a default value for the property, i.e. `"prop?123"`.  This default value will
+be assigned by the validator when the property is not present in the JSON
+object or when it is `null`.
 
-An object property name can be expressed as a regex string "(regex)" for
-property name matching.  The regex is anchored.
+A property of an object may be expressed as a regex string "(regex)" for
+property name matching, i.e. `"([a-z]+)"`.  The regex is anchored.
 
 Constraints on objects are expressed with `@extends`, `@final`, `@one`, `@any`,
 `@all`, `@dep`.
@@ -138,9 +141,10 @@ street, city, state and zip, and an optional phone number specified as a regex:
 
 ### Default values
 
-When an optional property is missing or is null, the default value will be
-assigned by the validator to this property.  For example, an object with an
-optional year since 1900 that defaults to 1900:
+When a property defined by a schema object is missing in the JSON input or is
+`null`, then the default value will be assigned by the validator to this
+property.  For example, an object with an optional year since 1900 that
+defaults to 1900:
 
     {
       "@root": { "year?1900": "1900.." }
