@@ -98,8 +98,8 @@ The `@root` defines the root `type` of the JSON documents.  A `type` is one of:
     [[ type, ..., type ]] union of types (choice of one of these types)
     { "prop": type, ... } object with typed properties
 
-A `type` is a type expression listed above or the name of a type defined in the
-dictionary as a key with a type expression as its value.  In other words, a
+A `type` is a type expression listed above or a named type `"#name"` defined in
+the dictionary as a key with a type expression as its value.  In other words, a
 named type defined in the dictionary with a type expression is like a `typedef`
 in C/C++.
 
